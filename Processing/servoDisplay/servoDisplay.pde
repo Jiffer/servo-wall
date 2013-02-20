@@ -8,8 +8,8 @@ OscP5 oscP5;
 NetAddress myRemoteLocation;
 
 int patLen = 8000;
-int pulse = 180;
-
+int pulse = 130; // in milliseconds
+int myFps = 300; //in frames per second
 
 VoiceList vListA = new VoiceList();
 VoiceList vListB = new VoiceList();
@@ -29,7 +29,7 @@ Actuator[] actuators = new Actuator [numAgents];
 
 Clocker myClock; 
 
-int myFps = 50;
+
 
 void setup(){
   size(columns*100, rows*100);
@@ -57,15 +57,15 @@ void draw(){
   
 void initObjects(){
   myClock = new Clocker();
-  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(1, 2, 3)), 3));
-  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(4, 5, 6)), 3));
-  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(7, 8, 9)), 3));
-  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(10, 11, 12)), 3));
-  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(13, 14, 15)), 3));
+  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(1, 2, 3)), 1));
+  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(0)), 0));
+  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(7, 8, 9)), 1));
+  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(0)), 0));
+  templatePatA.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(13)), 1));
   templatePatB.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(0)), 0));
+  templatePatB.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(5, 6)), 1));
   templatePatB.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(0)), 0));
-  templatePatB.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(0)), 0));
-  templatePatB.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(0)), 0));
+  templatePatB.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(11, 12)), 1));
   templatePatB.add(new VoiceDynPair(new ArrayList<Integer>(Arrays.asList(0)), 0)); 
   
   int shufIndex = 0;
@@ -75,15 +75,12 @@ void initObjects(){
   VoiceDynPair v;
   for (int i = 0; i < patLen; i++){
     v = new VoiceDynPair(templatePatA.get(shufIndex).voices, templatePatA.get(shufIndex).dynamic);
-    if (shufIndex == blank){
-      v.dynamic = 0;
-    }
+
     vdpA.add(v);
     if (shufIndex == 0){
       shufCount++;
       if (shufCount == shufTarget){
-//        Collections.shuffle(templatePatA);
-        blank = int(random(templatePatA.size()));
+        Collections.shuffle(templatePatA);
         shufCount = 0;
       }
     }
@@ -98,7 +95,7 @@ void initObjects(){
     if (shufIndex == 0){
       shufCount++;
       if (shufCount == shufTarget){
-//        Collections.shuffle(templatePatB);
+        Collections.shuffle(templatePatB);
         shufCount = 0;
       }
     }
@@ -159,7 +156,7 @@ class VoiceDynPair{
 class Actuator {
   int listIndex = 0;
   int eventCount = 0;
-  float slewTime = 100;
+  float slewTime = 100; // in milliseconds
   boolean to = true; //to and fro
   int angMin = 45;
   int angMax = 135;
@@ -248,7 +245,7 @@ class Actuator {
        
      }
       
-     float rScale = random(0.8, 1.0);
+     float rScale = random(1.0, 1.0); // look at this!
      float res = angDelta * rScale;
      angDelta = round(res);
      makeEvents();
@@ -256,7 +253,7 @@ class Actuator {
    
   }
 
-  
+// calculate intermediate points to go to each frame  
   void makeEvents(){
     events = new ArrayList<Float>();
     eventIndex = 0;
@@ -344,11 +341,13 @@ class Clocker {
     }
   }
   
+  int milliToFrame(float mills){
+    float frameDur = 1000. / myFps; // each frame is this many milliseconds
+    return round(mills / frameDur);
+}
+  
 }
 
 
- int milliToFrame(float mills){
-  float frameDur = 1000. / myFps; // each frame is this many milliseconds
-  return round(mills / frameDur);
-}
+
  
