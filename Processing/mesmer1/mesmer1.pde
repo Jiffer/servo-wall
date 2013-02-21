@@ -12,10 +12,10 @@ NetAddress myRemoteLocation;
 
 //extent of neighbor average is modulated
 int xDim = 1200;
-int yDim = 545; //545
+int yDim = 551; //545
 
 Cell[][] _cellArray;
-int _numX = 10; //11
+int _numX = 11; //11
 int _numY = 5;  //5
 int cellX =  xDim / _numX;
 int cellY =  yDim / _numY;
@@ -96,7 +96,7 @@ for (int x = 0; x < _numX; x++){
 
 
 void draw(){
-  background(200);
+  background(173, 184, 234);
   noisePnt += noiseInc;
   drawConduit();
 //  nPtr += nInc;
@@ -126,7 +126,7 @@ void mousePressed(){
 
 void drawConduit(){
   stroke(0, 0, 0, 120);
-  int offset = cellOffY + 20;
+  int offset = cellOffY;
   for (int i = 0; i < _numY; i++){
     int yLoc = (height / _numY) * i;
     yLoc += offset;
@@ -139,14 +139,38 @@ void drawConduit(){
   }
   
   for (int i = 0; i < _numX; i++){
+    for (int j = 0; j < _numY; j++){
+      int xLoc = (width / _numX ) * i;
+      int yLoc = (height / _numY) * j;
+      pushMatrix();
+      translate(xLoc, yLoc + ( cellY/2));
+      noFill();
+      arc(cellX/2, 0, cellX, cellY/1.2, 0, PI);
+      popMatrix();
+     noFill();
+    }
+  }
+  
+  
+  for (int i = 0; i < _numX; i++){
     int xLoc = (width / _numX) * i;
-    xLoc += (cellOffX);
+//    xLoc += (cellOffX);
     pushMatrix();
     translate(xLoc, 0);
-    line(-5, 0, -5, height);
-    line(5, 0, 5, height);
+    fill(0);
+    rect(0, 0, 2, height);
+//    line(0, 0, 0, height);
+//    line(5, 0, 5, height);
+    noFill();
     popMatrix();
   }
+  
+  pushMatrix();
+  translate(width-2, 0);
+  fill(0);
+  rect(0, 0, 2, height);
+  noFill();
+  popMatrix();
   
   
   stroke(0);
@@ -239,7 +263,7 @@ void calcNextState(){
    //rotate(PI * 1.75);
    float cRot = constrain(finRot, -90, 90);
    rotate(radians(cRot));
-   line(0, -65, 0, 65);
+   line(0, -(cellY/2), 0, cellY/2);
 //   line(0, 0, 0, 70);
    int nodeNum = round((pX * _numY) + pY + 1) ;
    float curAng = map(cRot, -90, 90, 40, 130);
