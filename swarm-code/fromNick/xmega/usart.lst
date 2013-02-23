@@ -1,0 +1,2895 @@
+   1               		.file	"usart.cpp"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__ = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  11               		.text
+  12               	.Ltext0:
+ 613               		.section	.text._ZThn2_N5Usart4freeEv,"ax",@progbits
+ 614               	.global	_ZThn2_N5Usart4freeEv
+ 616               	_ZThn2_N5Usart4freeEv:
+ 617               	/* prologue: function */
+ 618               	/* frame size = 0 */
+ 619               	/* stack size = 0 */
+ 620               	.L__stack_usage = 0
+ 621 0000 0297      		sbiw r24,2
+ 622 0002 0E94 0000 		call .LTHUNK0
+ 623               	/* epilogue start */
+ 624 0006 0895      		ret
+ 626               		.section	.text._ZN5Usart4freeEv,"ax",@progbits
+ 629               	.global	_ZN5Usart4freeEv
+ 631               	_ZN5Usart4freeEv:
+   1:usart.cpp     **** /************************************************************************/
+   2:usart.cpp     **** /* USART Driver                                                         */
+   3:usart.cpp     **** /*                                                                      */
+   4:usart.cpp     **** /* usart.cpp                                                            */
+   5:usart.cpp     **** /*                                                                      */
+   6:usart.cpp     **** /* Alex Forencich <alex@alexforencich.com>                              */
+   7:usart.cpp     **** /*                                                                      */
+   8:usart.cpp     **** /* Copyright (c) 2011 Alex Forencich                                    */
+   9:usart.cpp     **** /*                                                                      */
+  10:usart.cpp     **** /* Permission is hereby granted, free of charge, to any person          */
+  11:usart.cpp     **** /* obtaining a copy of this software and associated documentation       */
+  12:usart.cpp     **** /* files(the "Software"), to deal in the Software without restriction,  */
+  13:usart.cpp     **** /* including without limitation the rights to use, copy, modify, merge, */
+  14:usart.cpp     **** /* publish, distribute, sublicense, and/or sell copies of the Software, */
+  15:usart.cpp     **** /* and to permit persons to whom the Software is furnished to do so,    */
+  16:usart.cpp     **** /* subject to the following conditions:                                 */
+  17:usart.cpp     **** /*                                                                      */
+  18:usart.cpp     **** /* The above copyright notice and this permission notice shall be       */
+  19:usart.cpp     **** /* included in all copies or substantial portions of the Software.      */
+  20:usart.cpp     **** /*                                                                      */
+  21:usart.cpp     **** /* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,      */
+  22:usart.cpp     **** /* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF   */
+  23:usart.cpp     **** /* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                */
+  24:usart.cpp     **** /* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS  */
+  25:usart.cpp     **** /* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN   */
+  26:usart.cpp     **** /* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN    */
+  27:usart.cpp     **** /* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE     */
+  28:usart.cpp     **** /* SOFTWARE.                                                            */
+  29:usart.cpp     **** /*                                                                      */
+  30:usart.cpp     **** /************************************************************************/
+  31:usart.cpp     **** 
+  32:usart.cpp     **** #include "usart.h"
+  33:usart.cpp     **** 
+  34:usart.cpp     **** 
+  35:usart.cpp     **** // Statics
+  36:usart.cpp     **** Usart *Usart::usart_list[MAX_USART_IND+1];
+  37:usart.cpp     **** 
+  38:usart.cpp     **** #ifdef __AVR_XMEGA__
+  39:usart.cpp     **** 
+  40:usart.cpp     **** char __attribute__ ((noinline)) Usart::which_usart(USART_t *_usart)
+  41:usart.cpp     **** {
+  42:usart.cpp     **** #if MAX_USART_IND >= USARTC0_IND
+  43:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTC0)
+  44:usart.cpp     ****                 return USARTC0_IND;
+  45:usart.cpp     **** #endif
+  46:usart.cpp     **** #if MAX_USART_IND >= USARTC1_IND
+  47:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTC1)
+  48:usart.cpp     ****                 return USARTC1_IND;
+  49:usart.cpp     **** #endif
+  50:usart.cpp     **** #if MAX_USART_IND >= USARTD0_IND
+  51:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTD0)
+  52:usart.cpp     ****                 return USARTD0_IND;
+  53:usart.cpp     **** #endif
+  54:usart.cpp     **** #if MAX_USART_IND >= USARTD1_IND
+  55:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTD1)
+  56:usart.cpp     ****                 return USARTD1_IND;
+  57:usart.cpp     **** #endif
+  58:usart.cpp     **** #if MAX_USART_IND >= USARTE0_IND
+  59:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTE0)
+  60:usart.cpp     ****                 return USARTE0_IND;
+  61:usart.cpp     **** #endif
+  62:usart.cpp     **** #if MAX_USART_IND >= USARTE1_IND
+  63:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTE1)
+  64:usart.cpp     ****                 return USARTE1_IND;
+  65:usart.cpp     **** #endif
+  66:usart.cpp     **** #if MAX_USART_IND >= USARTF0_IND
+  67:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTF0)
+  68:usart.cpp     ****                 return USARTF0_IND;
+  69:usart.cpp     **** #endif
+  70:usart.cpp     **** #if MAX_USART_IND >= USARTF1_IND
+  71:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTF1)
+  72:usart.cpp     ****                 return USARTF1_IND;
+  73:usart.cpp     **** #endif
+  74:usart.cpp     ****         return USART_INVALID_IND;
+  75:usart.cpp     **** }
+  76:usart.cpp     **** 
+  77:usart.cpp     **** 
+  78:usart.cpp     **** USART_t * __attribute__ ((noinline)) Usart::get_usart(char _usart)
+  79:usart.cpp     **** {
+  80:usart.cpp     ****         switch (_usart)
+  81:usart.cpp     ****         {
+  82:usart.cpp     **** #if MAX_USART_IND >= USARTC0_IND
+  83:usart.cpp     ****                 case USARTC0_IND:
+  84:usart.cpp     ****                         return &USARTC0;
+  85:usart.cpp     **** #endif
+  86:usart.cpp     **** #if MAX_USART_IND >= USARTC1_IND
+  87:usart.cpp     ****                 case USARTC1_IND:
+  88:usart.cpp     ****                         return &USARTC1;
+  89:usart.cpp     **** #endif
+  90:usart.cpp     **** #if MAX_USART_IND >= USARTD0_IND
+  91:usart.cpp     ****                 case USARTD0_IND:
+  92:usart.cpp     ****                         return &USARTD0;
+  93:usart.cpp     **** #endif
+  94:usart.cpp     **** #if MAX_USART_IND >= USARTD1_IND
+  95:usart.cpp     ****                 case USARTD1_IND:
+  96:usart.cpp     ****                         return &USARTD1;
+  97:usart.cpp     **** #endif
+  98:usart.cpp     **** #if MAX_USART_IND >= USARTE0_IND
+  99:usart.cpp     ****                 case USARTE0_IND:
+ 100:usart.cpp     ****                         return &USARTE0;
+ 101:usart.cpp     **** #endif
+ 102:usart.cpp     **** #if MAX_USART_IND >= USARTE1_IND
+ 103:usart.cpp     ****                 case USARTE1_IND:
+ 104:usart.cpp     ****                         return &USARTE1;
+ 105:usart.cpp     **** #endif
+ 106:usart.cpp     **** #if MAX_USART_IND >= USARTF0_IND
+ 107:usart.cpp     ****                 case USARTF0_IND:
+ 108:usart.cpp     ****                         return &USARTF0;
+ 109:usart.cpp     **** #endif
+ 110:usart.cpp     **** #if MAX_USART_IND >= USARTF1_IND
+ 111:usart.cpp     ****                 case USARTF1_IND:
+ 112:usart.cpp     ****                         return &USARTF1;
+ 113:usart.cpp     **** #endif
+ 114:usart.cpp     ****                 default:
+ 115:usart.cpp     ****                         return 0;
+ 116:usart.cpp     ****         }
+ 117:usart.cpp     **** }
+ 118:usart.cpp     **** 
+ 119:usart.cpp     **** 
+ 120:usart.cpp     **** PORT_t * __attribute__ ((noinline)) Usart::get_port(char _usart)
+ 121:usart.cpp     **** {
+ 122:usart.cpp     ****         switch (_usart)
+ 123:usart.cpp     ****         {
+ 124:usart.cpp     **** #if MAX_USART_IND >= USARTC0_IND
+ 125:usart.cpp     ****                 case USARTC0_IND:
+ 126:usart.cpp     ****                         return &PORTC;
+ 127:usart.cpp     **** #endif
+ 128:usart.cpp     **** #if MAX_USART_IND >= USARTC1_IND
+ 129:usart.cpp     ****                 case USARTC1_IND:
+ 130:usart.cpp     ****                         return &PORTC;
+ 131:usart.cpp     **** #endif
+ 132:usart.cpp     **** #if MAX_USART_IND >= USARTD0_IND
+ 133:usart.cpp     ****                 case USARTD0_IND:
+ 134:usart.cpp     ****                         return &PORTD;
+ 135:usart.cpp     **** #endif
+ 136:usart.cpp     **** #if MAX_USART_IND >= USARTD1_IND
+ 137:usart.cpp     ****                 case USARTD1_IND:
+ 138:usart.cpp     ****                         return &PORTD;
+ 139:usart.cpp     **** #endif
+ 140:usart.cpp     **** #if MAX_USART_IND >= USARTE0_IND
+ 141:usart.cpp     ****                 case USARTE0_IND:
+ 142:usart.cpp     ****                         return &PORTE;
+ 143:usart.cpp     **** #endif
+ 144:usart.cpp     **** #if MAX_USART_IND >= USARTE1_IND
+ 145:usart.cpp     ****                 case USARTE1_IND:
+ 146:usart.cpp     ****                         return &PORTE;
+ 147:usart.cpp     **** #endif
+ 148:usart.cpp     **** #if MAX_USART_IND >= USARTF0_IND
+ 149:usart.cpp     ****                 case USARTF0_IND:
+ 150:usart.cpp     ****                         return &PORTF;
+ 151:usart.cpp     **** #endif
+ 152:usart.cpp     **** #if MAX_USART_IND >= USARTF1_IND
+ 153:usart.cpp     ****                 case USARTF1_IND:
+ 154:usart.cpp     ****                         return &PORTF;
+ 155:usart.cpp     **** #endif
+ 156:usart.cpp     ****                 default:
+ 157:usart.cpp     ****                         return 0;
+ 158:usart.cpp     ****         }
+ 159:usart.cpp     **** }
+ 160:usart.cpp     **** 
+ 161:usart.cpp     **** 
+ 162:usart.cpp     **** char __attribute__ ((noinline)) Usart::get_txpin(char _usart)
+ 163:usart.cpp     **** {
+ 164:usart.cpp     ****         switch (_usart)
+ 165:usart.cpp     ****         {
+ 166:usart.cpp     **** #if MAX_USART_IND >= USARTC0_IND
+ 167:usart.cpp     ****                 case USARTC0_IND:
+ 168:usart.cpp     ****                         return 3;
+ 169:usart.cpp     **** #endif
+ 170:usart.cpp     **** #if MAX_USART_IND >= USARTC1_IND
+ 171:usart.cpp     ****                 case USARTC1_IND:
+ 172:usart.cpp     ****                         return 7;
+ 173:usart.cpp     **** #endif
+ 174:usart.cpp     **** #if MAX_USART_IND >= USARTD0_IND
+ 175:usart.cpp     ****                 case USARTD0_IND:
+ 176:usart.cpp     ****                         return 3;
+ 177:usart.cpp     **** #endif
+ 178:usart.cpp     **** #if MAX_USART_IND >= USARTD1_IND
+ 179:usart.cpp     ****                 case USARTD1_IND:
+ 180:usart.cpp     ****                         return 7;
+ 181:usart.cpp     **** #endif
+ 182:usart.cpp     **** #if MAX_USART_IND >= USARTE0_IND
+ 183:usart.cpp     ****                 case USARTE0_IND:
+ 184:usart.cpp     ****                         return 3;
+ 185:usart.cpp     **** #endif
+ 186:usart.cpp     **** #if MAX_USART_IND >= USARTE1_IND
+ 187:usart.cpp     ****                 case USARTE1_IND:
+ 188:usart.cpp     ****                         return 7;
+ 189:usart.cpp     **** #endif
+ 190:usart.cpp     **** #if MAX_USART_IND >= USARTF0_IND
+ 191:usart.cpp     ****                 case USARTF0_IND:
+ 192:usart.cpp     ****                         return 3;
+ 193:usart.cpp     **** #endif
+ 194:usart.cpp     **** #if MAX_USART_IND >= USARTF1_IND
+ 195:usart.cpp     ****                 case USARTF1_IND:
+ 196:usart.cpp     ****                         return 7;
+ 197:usart.cpp     **** #endif
+ 198:usart.cpp     ****                 default:
+ 199:usart.cpp     ****                         return 0;
+ 200:usart.cpp     ****         }
+ 201:usart.cpp     **** }
+ 202:usart.cpp     **** 
+ 203:usart.cpp     **** #endif // __AVR_XMEGA__
+ 204:usart.cpp     **** 
+ 205:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 206:usart.cpp     **** Usart::Usart(USART_t *_usart) :
+ 207:usart.cpp     ****         usart(_usart),
+ 208:usart.cpp     **** #else // __AVR_XMEGA__
+ 209:usart.cpp     **** Usart::Usart(char _usart) :
+ 210:usart.cpp     ****         usart_ind(_usart),
+ 211:usart.cpp     **** #endif // __AVR_XMEGA__
+ 212:usart.cpp     ****         txbuf(0),
+ 213:usart.cpp     ****         txbuf_size(0),
+ 214:usart.cpp     ****         txbuf_head(0),
+ 215:usart.cpp     ****         txbuf_tail(0),
+ 216:usart.cpp     ****         rxbuf(0),
+ 217:usart.cpp     ****         rxbuf_size(0),
+ 218:usart.cpp     ****         rxbuf_head(0),
+ 219:usart.cpp     ****         rxbuf_tail(0),
+ 220:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 221:usart.cpp     ****         rtsport(0),
+ 222:usart.cpp     ****         ctsport(0),
+ 223:usart.cpp     ****         rtspin_bm(0),
+ 224:usart.cpp     ****         ctspin_bm(0),
+ 225:usart.cpp     **** #endif // __AVR_XMEGA__
+ 226:usart.cpp     ****         nonblocking(0),
+ 227:usart.cpp     ****         flags(USART_TX_QUEUE_FULL | USART_RX_QUEUE_FULL)
+ 228:usart.cpp     **** {
+ 229:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 230:usart.cpp     ****         usart_ind = which_usart(_usart);
+ 231:usart.cpp     **** #endif // __AVR_XMEGA__
+ 232:usart.cpp     ****         usart_list[(int)usart_ind] = this;
+ 233:usart.cpp     ****         
+ 234:usart.cpp     **** #ifndef __AVR_XMEGA__
+ 235:usart.cpp     ****         if (_usart == 0)
+ 236:usart.cpp     ****         {
+ 237:usart.cpp     ****                 udr = &UDR0;
+ 238:usart.cpp     ****                 ucsra = &UCSR0A;
+ 239:usart.cpp     ****                 ucsrb = &UCSR0B;
+ 240:usart.cpp     ****                 ucsrc = &UCSR0C;
+ 241:usart.cpp     ****                 ubrr = &UBRR0;
+ 242:usart.cpp     ****         }
+ 243:usart.cpp     ****         #ifdef UDR1
+ 244:usart.cpp     ****         else if (_usart == 1)
+ 245:usart.cpp     ****         {
+ 246:usart.cpp     ****                 udr = &UDR1;
+ 247:usart.cpp     ****                 ucsra = &UCSR1A;
+ 248:usart.cpp     ****                 ucsrb = &UCSR1B;
+ 249:usart.cpp     ****                 ucsrc = &UCSR1C;
+ 250:usart.cpp     ****                 ubrr = &UBRR1;
+ 251:usart.cpp     ****         }
+ 252:usart.cpp     ****         #endif // UDR1
+ 253:usart.cpp     **** #endif // __AVR_XMEGA__
+ 254:usart.cpp     **** }
+ 255:usart.cpp     **** 
+ 256:usart.cpp     **** 
+ 257:usart.cpp     **** Usart::~Usart()
+ 258:usart.cpp     **** {
+ 259:usart.cpp     ****         end();
+ 260:usart.cpp     ****         usart_list[(int)usart_ind] = 0;
+ 261:usart.cpp     **** }
+ 262:usart.cpp     **** 
+ 263:usart.cpp     **** 
+ 264:usart.cpp     **** void Usart::set_tx_buffer(char *_txbuf, size_t _txbuf_size)
+ 265:usart.cpp     **** {
+ 266:usart.cpp     ****         txbuf = _txbuf;
+ 267:usart.cpp     ****         txbuf_size = _txbuf_size;
+ 268:usart.cpp     ****         txbuf_head = 0;
+ 269:usart.cpp     ****         txbuf_tail = 0;
+ 270:usart.cpp     ****         flags &= ~USART_TX_QUEUE_FULL;
+ 271:usart.cpp     ****         flags |= USART_TX_QUEUE_EMPTY;
+ 272:usart.cpp     **** }
+ 273:usart.cpp     **** 
+ 274:usart.cpp     **** 
+ 275:usart.cpp     **** void Usart::set_rx_buffer(char *_rxbuf, size_t _rxbuf_size)
+ 276:usart.cpp     **** {
+ 277:usart.cpp     ****         rxbuf = _rxbuf;
+ 278:usart.cpp     ****         rxbuf_size = _rxbuf_size;
+ 279:usart.cpp     ****         rxbuf_head = 0;
+ 280:usart.cpp     ****         rxbuf_tail = 0;
+ 281:usart.cpp     ****         flags &= ~USART_RX_QUEUE_FULL;
+ 282:usart.cpp     ****         flags |= USART_RX_QUEUE_EMPTY;
+ 283:usart.cpp     ****         
+ 284:usart.cpp     ****         if (flags & USART_RUNNING)
+ 285:usart.cpp     ****         {
+ 286:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 287:usart.cpp     ****                 usart->CTRLA &= ~USART_RXCINTLVL_gm;
+ 288:usart.cpp     ****                 usart->CTRLA |= USART_RXCINTLVL_MED_gc;
+ 289:usart.cpp     **** #else // __AVR_XMEGA__
+ 290:usart.cpp     ****                 *ucsrb |= _BV(RXCIE0);
+ 291:usart.cpp     **** #endif // __AVR_XMEGA__
+ 292:usart.cpp     ****         }
+ 293:usart.cpp     **** }
+ 294:usart.cpp     **** 
+ 295:usart.cpp     **** 
+ 296:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 297:usart.cpp     **** void Usart::set_rts_pin(PORT_t *_rtsport, int _rtspin)
+ 298:usart.cpp     **** {
+ 299:usart.cpp     ****         rtsport = _rtsport;
+ 300:usart.cpp     ****         rtspin_bm = 1 << _rtspin;
+ 301:usart.cpp     ****         rtsport->DIRSET = rtspin_bm;
+ 302:usart.cpp     ****         
+ 303:usart.cpp     **** }
+ 304:usart.cpp     **** 
+ 305:usart.cpp     **** 
+ 306:usart.cpp     **** void Usart::set_cts_pin(PORT_t *_ctsport, int _ctspin)
+ 307:usart.cpp     **** {
+ 308:usart.cpp     ****         ctsport = _ctsport;
+ 309:usart.cpp     ****         ctspin_bm = 1 << _ctspin;
+ 310:usart.cpp     ****         ctsport->DIRCLR = ctspin_bm;
+ 311:usart.cpp     **** }
+ 312:usart.cpp     **** #endif // __AVR_XMEGA__
+ 313:usart.cpp     **** 
+ 314:usart.cpp     **** 
+ 315:usart.cpp     **** void Usart::set_nonblocking(uint8_t nb)
+ 316:usart.cpp     **** {
+ 317:usart.cpp     ****         nonblocking = nb;
+ 318:usart.cpp     **** }
+ 319:usart.cpp     **** 
+ 320:usart.cpp     **** 
+ 321:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 322:usart.cpp     **** void Usart::update_rts()
+ 323:usart.cpp     **** {
+ 324:usart.cpp     ****         if (rtsport == 0)
+ 325:usart.cpp     ****                 return;
+ 326:usart.cpp     ****         if (txbuf_size == 0)
+ 327:usart.cpp     ****         {
+ 328:usart.cpp     ****                 // no buffer, so just assert it
+ 329:usart.cpp     ****                 rtsport->OUTCLR = rtspin_bm;
+ 330:usart.cpp     ****         }
+ 331:usart.cpp     ****         else
+ 332:usart.cpp     ****         {
+ 333:usart.cpp     ****                 // define 'getting full' as 3/4
+ 334:usart.cpp     ****                 if (available() > ((rxbuf_size >> 1) + (rxbuf_size >> 2)))
+ 335:usart.cpp     ****                 {
+ 336:usart.cpp     ****                         rtsport->OUTSET = rtspin_bm;
+ 337:usart.cpp     ****                 }
+ 338:usart.cpp     ****                 else
+ 339:usart.cpp     ****                 {
+ 340:usart.cpp     ****                         rtsport->OUTCLR = rtspin_bm;
+ 341:usart.cpp     ****                 }
+ 342:usart.cpp     ****         }
+ 343:usart.cpp     **** }
+ 344:usart.cpp     **** 
+ 345:usart.cpp     **** 
+ 346:usart.cpp     **** void Usart::check_cts()
+ 347:usart.cpp     **** {
+ 348:usart.cpp     ****         if (ctsport == 0)
+ 349:usart.cpp     ****                 return;
+ 350:usart.cpp     ****         if (ctsport->IN & ctspin_bm)
+ 351:usart.cpp     ****         {
+ 352:usart.cpp     ****                 // deasserted, disable transmit
+ 353:usart.cpp     ****                 usart->CTRLA &= ~USART_DREINTLVL_gm;
+ 354:usart.cpp     ****         }
+ 355:usart.cpp     ****         else
+ 356:usart.cpp     ****         {
+ 357:usart.cpp     ****                 // asserted, enable transmit
+ 358:usart.cpp     ****                 if (!(flags & USART_TX_QUEUE_EMPTY))
+ 359:usart.cpp     ****                         usart->CTRLA |= USART_DREINTLVL_MED_gc;
+ 360:usart.cpp     ****         }
+ 361:usart.cpp     **** }
+ 362:usart.cpp     **** #endif // __AVR_XMEGA__
+ 363:usart.cpp     **** 
+ 364:usart.cpp     **** 
+ 365:usart.cpp     **** void __attribute__ ((noinline)) Usart::begin(long baud, char _clk2x, char puen)
+ 366:usart.cpp     **** {
+ 367:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 368:usart.cpp     ****         unsigned char pin;
+ 369:usart.cpp     ****         unsigned char pinmask;
+ 370:usart.cpp     ****         PORT_t *port;
+ 371:usart.cpp     ****         unsigned int bsel;
+ 372:usart.cpp     ****         char bscale;
+ 373:usart.cpp     ****         char clk2x;
+ 374:usart.cpp     ****         
+ 375:usart.cpp     ****         pin = get_txpin(usart_ind);
+ 376:usart.cpp     ****         port = get_port(usart_ind);
+ 377:usart.cpp     ****         pinmask = 1 << pin;
+ 378:usart.cpp     ****         port->DIRSET = pinmask;
+ 379:usart.cpp     ****         port->DIRCLR = pinmask >> 1;
+ 380:usart.cpp     ****         
+ 381:usart.cpp     ****         if (puen)
+ 382:usart.cpp     ****         {
+ 383:usart.cpp     ****                 *(&(port->PIN0CTRL)+(pin-1)) = PORT_OPC_PULLUP_gc;
+ 384:usart.cpp     ****         }
+ 385:usart.cpp     ****         
+ 386:usart.cpp     ****         if ((F_CPU == 2000000L) && (baud == 19200))
+ 387:usart.cpp     ****         {
+ 388:usart.cpp     ****                 bsel = 353;
+ 389:usart.cpp     ****                 bscale = -6;
+ 390:usart.cpp     ****                 clk2x = 0;
+ 391:usart.cpp     ****         }
+ 392:usart.cpp     ****         else if ((F_CPU == 2000000L) && (baud == 38400))
+ 393:usart.cpp     ****         {
+ 394:usart.cpp     ****                 bsel = 144;
+ 395:usart.cpp     ****                 bscale = -6;
+ 396:usart.cpp     ****                 clk2x = 0;
+ 397:usart.cpp     ****         }
+ 398:usart.cpp     ****         else if ((F_CPU == 2000000L) && (baud == 57600))
+ 399:usart.cpp     ****         {
+ 400:usart.cpp     ****                 bsel = 75;
+ 401:usart.cpp     ****                 bscale = -6;
+ 402:usart.cpp     ****                 clk2x = 0;
+ 403:usart.cpp     ****         }
+ 404:usart.cpp     ****         else if ((F_CPU == 2000000L) && (baud == 115200))
+ 405:usart.cpp     ****         {
+ 406:usart.cpp     ****                 bsel = 5;
+ 407:usart.cpp     ****                 bscale = -6;
+ 408:usart.cpp     ****                 clk2x = 0;
+ 409:usart.cpp     ****         }
+ 410:usart.cpp     ****         else if ((F_CPU == 32000000L) && (baud == 19200))
+ 411:usart.cpp     ****         {
+ 412:usart.cpp     ****                 bsel = 3301;
+ 413:usart.cpp     ****                 bscale = -5;
+ 414:usart.cpp     ****                 clk2x = 0;
+ 415:usart.cpp     ****         }
+ 416:usart.cpp     ****         else if ((F_CPU == 32000000L) && (baud == 38400))
+ 417:usart.cpp     ****         {
+ 418:usart.cpp     ****                 bsel = 3269;
+ 419:usart.cpp     ****                 bscale = -6;
+ 420:usart.cpp     ****                 clk2x = 0;
+ 421:usart.cpp     ****         }
+ 422:usart.cpp     ****         else if ((F_CPU == 32000000L) && (baud == 57600))
+ 423:usart.cpp     ****         {
+ 424:usart.cpp     ****                 bsel = 2158;
+ 425:usart.cpp     ****                 bscale = -6;
+ 426:usart.cpp     ****                 clk2x = 0;
+ 427:usart.cpp     ****         }
+ 428:usart.cpp     ****         else if ((F_CPU == 32000000L) && (baud == 115200))
+ 429:usart.cpp     ****         {
+ 430:usart.cpp     ****                 bsel = 1047;
+ 431:usart.cpp     ****                 bscale = -6;
+ 432:usart.cpp     ****                 clk2x = 0;
+ 433:usart.cpp     ****         }
+ 434:usart.cpp     ****         else if (_clk2x)
+ 435:usart.cpp     ****         {
+ 436:usart.cpp     ****                 bsel = ((F_CPU) / ((uint32_t)baud * 8) - 1);
+ 437:usart.cpp     ****                 bscale = 0;
+ 438:usart.cpp     ****                 clk2x = 1;
+ 439:usart.cpp     ****         }
+ 440:usart.cpp     ****         else
+ 441:usart.cpp     ****         {
+ 442:usart.cpp     ****                 bsel = ((F_CPU) / ((uint32_t)baud * 16) - 1);
+ 443:usart.cpp     ****                 bscale = 0;
+ 444:usart.cpp     ****                 clk2x = 0;
+ 445:usart.cpp     ****         }
+ 446:usart.cpp     ****         
+ 447:usart.cpp     ****         usart->BAUDCTRLA = (bsel & USART_BSEL_gm);
+ 448:usart.cpp     ****         usart->BAUDCTRLB = ((bscale << USART_BSCALE_gp) & USART_BSCALE_gm) | ((bsel >> 8) & 0x0f);
+ 449:usart.cpp     ****         
+ 450:usart.cpp     ****         if (clk2x)
+ 451:usart.cpp     ****         {
+ 452:usart.cpp     ****                 usart->CTRLB = USART_RXEN_bm | USART_CLK2X_bm | USART_TXEN_bm;
+ 453:usart.cpp     ****         }
+ 454:usart.cpp     ****         else
+ 455:usart.cpp     ****         {
+ 456:usart.cpp     ****                 usart->CTRLB = USART_RXEN_bm | USART_TXEN_bm;
+ 457:usart.cpp     ****         }
+ 458:usart.cpp     ****         
+ 459:usart.cpp     ****         if (rxbuf_size > 0)
+ 460:usart.cpp     ****         {
+ 461:usart.cpp     ****                 usart->CTRLA = USART_RXCINTLVL_MED_gc;
+ 462:usart.cpp     ****         }
+ 463:usart.cpp     ****         else
+ 464:usart.cpp     ****         {
+ 465:usart.cpp     ****                 usart->CTRLA = 0;
+ 466:usart.cpp     ****         }
+ 467:usart.cpp     ****         
+ 468:usart.cpp     ****         flags |= USART_RUNNING;
+ 469:usart.cpp     ****         
+ 470:usart.cpp     ****         update_rts();
+ 471:usart.cpp     **** #else // __AVR_XMEGA__
+ 472:usart.cpp     ****         if (_clk2x)
+ 473:usart.cpp     ****         {
+ 474:usart.cpp     ****                 *ubrr = ((uint32_t)((F_CPU) + ((uint32_t)(baud) * 4UL)) / ((uint32_t)(baud) * 8UL) 
+ 475:usart.cpp     ****                 *ucsra = _BV(U2X0);
+ 476:usart.cpp     ****         }
+ 477:usart.cpp     ****         else
+ 478:usart.cpp     ****         {
+ 479:usart.cpp     ****                 *ubrr = ((uint32_t)((F_CPU) + ((uint32_t)(baud) * 8UL)) / ((uint32_t)(baud) * 16UL)
+ 480:usart.cpp     ****                 *ucsra = 0;
+ 481:usart.cpp     ****         }
+ 482:usart.cpp     ****         
+ 483:usart.cpp     ****         if (rxbuf_size > 0)
+ 484:usart.cpp     ****         {
+ 485:usart.cpp     ****                 *ucsrb = _BV(RXEN0) | _BV(TXEN0) | _BV(RXCIE0);
+ 486:usart.cpp     ****         }
+ 487:usart.cpp     ****         else
+ 488:usart.cpp     ****         {
+ 489:usart.cpp     ****                 *ucsrb = _BV(RXEN0) | _BV(TXEN0);
+ 490:usart.cpp     ****         }
+ 491:usart.cpp     ****         
+ 492:usart.cpp     ****         *ucsrc = _BV(UCSZ01) | _BV(UCSZ00);
+ 493:usart.cpp     ****         
+ 494:usart.cpp     ****         flags |= USART_RUNNING;
+ 495:usart.cpp     **** #endif // __AVR_XMEGA__
+ 496:usart.cpp     **** }
+ 497:usart.cpp     **** 
+ 498:usart.cpp     **** 
+ 499:usart.cpp     **** void __attribute__ ((noinline)) Usart::end()
+ 500:usart.cpp     **** {
+ 501:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 502:usart.cpp     ****         usart->CTRLA = 0;
+ 503:usart.cpp     ****         usart->CTRLB = 0;
+ 504:usart.cpp     **** #else // __AVR_XMEGA__
+ 505:usart.cpp     ****         *ucsrb = 0;
+ 506:usart.cpp     **** #endif // __AVR_XMEGA__
+ 507:usart.cpp     ****         flags &= ~USART_RUNNING;
+ 508:usart.cpp     **** }
+ 509:usart.cpp     **** 
+ 510:usart.cpp     **** 
+ 511:usart.cpp     **** void Usart::recv()
+ 512:usart.cpp     **** {
+ 513:usart.cpp     ****         char tmp;
+ 514:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 515:usart.cpp     ****         if (usart->STATUS & USART_RXCIF_bm)
+ 516:usart.cpp     **** #else // __AVR_XMEGA__
+ 517:usart.cpp     ****         if (*ucsra & _BV(RXC0))
+ 518:usart.cpp     **** #endif // __AVR_XMEGA__
+ 519:usart.cpp     ****         {
+ 520:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 521:usart.cpp     ****                 tmp = usart->DATA;
+ 522:usart.cpp     **** #else // __AVR_XMEGA__
+ 523:usart.cpp     ****                 tmp = *udr;
+ 524:usart.cpp     **** #endif // __AVR_XMEGA__
+ 525:usart.cpp     ****                 if (!(flags & USART_RX_QUEUE_FULL))
+ 526:usart.cpp     ****                 {
+ 527:usart.cpp     ****                         rxbuf[rxbuf_head++] = tmp;
+ 528:usart.cpp     ****                         flags &= ~USART_RX_QUEUE_EMPTY;
+ 529:usart.cpp     ****                         if (rxbuf_head >= rxbuf_size)
+ 530:usart.cpp     ****                                 rxbuf_head = 0;
+ 531:usart.cpp     ****                         if (rxbuf_head == rxbuf_tail)
+ 532:usart.cpp     ****                                 flags |= USART_RX_QUEUE_FULL;
+ 533:usart.cpp     ****                 }
+ 534:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 535:usart.cpp     ****                 update_rts();
+ 536:usart.cpp     **** #endif // __AVR_XMEGA__
+ 537:usart.cpp     ****         }
+ 538:usart.cpp     **** }
+ 539:usart.cpp     **** 
+ 540:usart.cpp     **** 
+ 541:usart.cpp     **** void Usart::xmit()
+ 542:usart.cpp     **** {
+ 543:usart.cpp     ****         if (!(flags & USART_TX_QUEUE_EMPTY))
+ 544:usart.cpp     ****         {
+ 545:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 546:usart.cpp     ****                 usart->DATA = txbuf[txbuf_tail++];
+ 547:usart.cpp     **** #else // __AVR_XMEGA__
+ 548:usart.cpp     ****                 *udr = txbuf[txbuf_tail++];
+ 549:usart.cpp     **** #endif // __AVR_XMEGA__
+ 550:usart.cpp     ****                 flags &= ~USART_TX_QUEUE_FULL;
+ 551:usart.cpp     ****                 if (txbuf_tail >= txbuf_size)
+ 552:usart.cpp     ****                         txbuf_tail = 0;
+ 553:usart.cpp     ****                 if (txbuf_head == txbuf_tail)
+ 554:usart.cpp     ****                         flags |= USART_TX_QUEUE_EMPTY;
+ 555:usart.cpp     ****         }
+ 556:usart.cpp     ****         if (flags & USART_TX_QUEUE_EMPTY)
+ 557:usart.cpp     ****         {
+ 558:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 559:usart.cpp     ****                 usart->CTRLA &= ~USART_DREINTLVL_gm;
+ 560:usart.cpp     **** #else // __AVR_XMEGA__
+ 561:usart.cpp     ****                 *ucsrb &= ~_BV(UDRIE0);
+ 562:usart.cpp     **** #endif // __AVR_XMEGA__
+ 563:usart.cpp     ****         }
+ 564:usart.cpp     **** }
+ 565:usart.cpp     **** 
+ 566:usart.cpp     **** 
+ 567:usart.cpp     **** size_t Usart::free()
+ 568:usart.cpp     **** {
+ 633               	.LM0:
+ 634               	.LFBB1:
+ 635               	/* prologue: function */
+ 636               	/* frame size = 0 */
+ 637               	/* stack size = 0 */
+ 638               	.L__stack_usage = 0
+ 640               	.LM1:
+ 641 0000 FC01      		movw r30,r24
+ 642               	.LBB19:
+ 569:usart.cpp     ****         int cnt = txbuf_tail - txbuf_head;
+ 644               	.LM2:
+ 645 0002 2585      		ldd r18,Z+13
+ 646 0004 3685      		ldd r19,Z+14
+ 647 0006 8385      		ldd r24,Z+11
+ 648 0008 9485      		ldd r25,Z+12
+ 649 000a 281B      		sub r18,r24
+ 650 000c 390B      		sbc r19,r25
+ 651 000e C901      		movw r24,r18
+ 570:usart.cpp     ****         if (cnt < 0 || flags & USART_TX_QUEUE_EMPTY)
+ 653               	.LM3:
+ 654 0010 37FD      		sbrc r19,7
+ 655 0012 00C0      		rjmp .L3
+ 657               	.LM4:
+ 658 0014 468D      		ldd r20,Z+30
+ 659 0016 44FF      		sbrs r20,4
+ 660 0018 00C0      		rjmp .L4
+ 661               	.L3:
+ 571:usart.cpp     ****                 cnt += txbuf_size;
+ 663               	.LM5:
+ 664 001a 8185      		ldd r24,Z+9
+ 665 001c 9285      		ldd r25,Z+10
+ 666 001e 820F      		add r24,r18
+ 667 0020 931F      		adc r25,r19
+ 668               	.L4:
+ 669               	.LBE19:
+ 572:usart.cpp     ****         return cnt;
+ 573:usart.cpp     **** }
+ 671               	.LM6:
+ 672 0022 0895      		ret
+ 677               	.Lscope1:
+ 678               		.section	.text._ZN5Usart9availableEv,"ax",@progbits
+ 681               	.global	_ZN5Usart9availableEv
+ 683               	_ZN5Usart9availableEv:
+ 574:usart.cpp     **** 
+ 575:usart.cpp     **** 
+ 576:usart.cpp     **** void Usart::put(char c)
+ 577:usart.cpp     **** {
+ 578:usart.cpp     ****         uint8_t saved_status = 0;
+ 579:usart.cpp     ****         
+ 580:usart.cpp     ****         if (!(flags & USART_RUNNING) || (!(SREG & SREG_I) && (flags & USART_TX_QUEUE_FULL)))
+ 581:usart.cpp     ****                 return;
+ 582:usart.cpp     ****         
+ 583:usart.cpp     ****         // blocking write if no buffer
+ 584:usart.cpp     ****         if (txbuf_size == 0)
+ 585:usart.cpp     ****         {
+ 586:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 587:usart.cpp     ****                 while (!(usart->STATUS & USART_DREIF_bm)) { };
+ 588:usart.cpp     ****                 usart->DATA = c;
+ 589:usart.cpp     **** #else // __AVR_XMEGA__
+ 590:usart.cpp     ****                 while (!(*ucsra & _BV(UDRE0))) { };
+ 591:usart.cpp     ****                 *udr = c;
+ 592:usart.cpp     **** #endif // __AVR_XMEGA__
+ 593:usart.cpp     ****                 return;
+ 594:usart.cpp     ****         }
+ 595:usart.cpp     ****         
+ 596:usart.cpp     ****         // return if nonblocking
+ 597:usart.cpp     ****         if ((flags & USART_TX_QUEUE_FULL) && nonblocking)
+ 598:usart.cpp     ****                 return;
+ 599:usart.cpp     ****         
+ 600:usart.cpp     ****         while (flags & USART_TX_QUEUE_FULL) { };
+ 601:usart.cpp     ****         
+ 602:usart.cpp     ****         saved_status = SREG;
+ 603:usart.cpp     ****         cli();
+ 604:usart.cpp     ****         
+ 605:usart.cpp     ****         txbuf[txbuf_head++] = c;
+ 606:usart.cpp     ****         flags &= ~USART_TX_QUEUE_EMPTY;
+ 607:usart.cpp     ****         if (txbuf_head >= txbuf_size)
+ 608:usart.cpp     ****                 txbuf_head = 0;
+ 609:usart.cpp     ****         if (txbuf_head == txbuf_tail)
+ 610:usart.cpp     ****                 flags |= USART_TX_QUEUE_FULL;
+ 611:usart.cpp     ****         
+ 612:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 613:usart.cpp     ****         usart->CTRLA |= USART_DREINTLVL_MED_gc;
+ 614:usart.cpp     **** #else // __AVR_XMEGA__
+ 615:usart.cpp     ****         *ucsrb |= _BV(UDRIE0);
+ 616:usart.cpp     **** #endif // __AVR_XMEGA__
+ 617:usart.cpp     ****         
+ 618:usart.cpp     ****         SREG = saved_status;
+ 619:usart.cpp     **** }
+ 620:usart.cpp     **** 
+ 621:usart.cpp     **** 
+ 622:usart.cpp     **** size_t Usart::available()
+ 623:usart.cpp     **** {
+ 685               	.LM7:
+ 686               	.LFBB2:
+ 687               	/* prologue: function */
+ 688               	/* frame size = 0 */
+ 689               	/* stack size = 0 */
+ 690               	.L__stack_usage = 0
+ 691 0000 FC01      		movw r30,r24
+ 692               	.LBB20:
+ 624:usart.cpp     ****         int cnt = rxbuf_head - rxbuf_tail;
+ 694               	.LM8:
+ 695 0002 2389      		ldd r18,Z+19
+ 696 0004 3489      		ldd r19,Z+20
+ 697 0006 8589      		ldd r24,Z+21
+ 698 0008 9689      		ldd r25,Z+22
+ 699 000a 281B      		sub r18,r24
+ 700 000c 390B      		sbc r19,r25
+ 701 000e C901      		movw r24,r18
+ 625:usart.cpp     ****         if (cnt < 0 || flags & USART_RX_QUEUE_FULL)
+ 703               	.LM9:
+ 704 0010 37FD      		sbrc r19,7
+ 705 0012 00C0      		rjmp .L6
+ 707               	.LM10:
+ 708 0014 468D      		ldd r20,Z+30
+ 709 0016 47FF      		sbrs r20,7
+ 710 0018 00C0      		rjmp .L7
+ 711               	.L6:
+ 626:usart.cpp     ****                 cnt += rxbuf_size;
+ 713               	.LM11:
+ 714 001a 8189      		ldd r24,Z+17
+ 715 001c 9289      		ldd r25,Z+18
+ 716 001e 820F      		add r24,r18
+ 717 0020 931F      		adc r25,r19
+ 718               	.L7:
+ 719               	.LBE20:
+ 627:usart.cpp     ****         return cnt;
+ 628:usart.cpp     **** }
+ 721               	.LM12:
+ 722 0022 0895      		ret
+ 727               	.Lscope2:
+ 728               		.section	.text._ZN5Usart4peekEj,"ax",@progbits
+ 732               	.global	_ZN5Usart4peekEj
+ 734               	_ZN5Usart4peekEj:
+ 629:usart.cpp     **** 
+ 630:usart.cpp     **** 
+ 631:usart.cpp     **** char Usart::get()
+ 632:usart.cpp     **** {
+ 633:usart.cpp     ****         uint8_t saved_status = 0;
+ 634:usart.cpp     ****         char c;
+ 635:usart.cpp     ****         
+ 636:usart.cpp     ****         if (!(flags & USART_RUNNING) || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE_EMPTY)))
+ 637:usart.cpp     ****                 return 0;
+ 638:usart.cpp     ****         
+ 639:usart.cpp     ****         // blocking read if no buffer
+ 640:usart.cpp     ****         if (rxbuf_size == 0)
+ 641:usart.cpp     ****         {
+ 642:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 643:usart.cpp     ****                 while (!(usart->STATUS & USART_RXCIF_bm)) { };
+ 644:usart.cpp     ****                 return usart->DATA;
+ 645:usart.cpp     **** #else // __AVR_XMEGA__
+ 646:usart.cpp     ****                 while (!(*ucsra & _BV(RXC0))) { };
+ 647:usart.cpp     ****                 return *udr;
+ 648:usart.cpp     **** #endif // __AVR_XMEGA__
+ 649:usart.cpp     ****         }
+ 650:usart.cpp     ****         
+ 651:usart.cpp     ****         // return if nonblocking
+ 652:usart.cpp     ****         if ((flags & USART_RX_QUEUE_EMPTY) && nonblocking)
+ 653:usart.cpp     ****                 return 0;
+ 654:usart.cpp     ****         
+ 655:usart.cpp     ****         while (flags & USART_RX_QUEUE_EMPTY) { };
+ 656:usart.cpp     ****         
+ 657:usart.cpp     ****         saved_status = SREG;
+ 658:usart.cpp     ****         cli();
+ 659:usart.cpp     ****         
+ 660:usart.cpp     ****         c = rxbuf[rxbuf_tail++];
+ 661:usart.cpp     ****         flags &= ~USART_RX_QUEUE_FULL;
+ 662:usart.cpp     ****         if (rxbuf_tail >= rxbuf_size)
+ 663:usart.cpp     ****                 rxbuf_tail = 0;
+ 664:usart.cpp     ****         if (rxbuf_head == rxbuf_tail)
+ 665:usart.cpp     ****                 flags |= USART_RX_QUEUE_EMPTY;
+ 666:usart.cpp     ****         
+ 667:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 668:usart.cpp     ****         update_rts();
+ 669:usart.cpp     **** #endif // __AVR_XMEGA__
+ 670:usart.cpp     ****         
+ 671:usart.cpp     ****         SREG = saved_status;
+ 672:usart.cpp     ****         
+ 673:usart.cpp     ****         return c;
+ 674:usart.cpp     **** }
+ 675:usart.cpp     **** 
+ 676:usart.cpp     **** 
+ 677:usart.cpp     **** int Usart::peek(size_t index)
+ 678:usart.cpp     **** {
+ 736               	.LM13:
+ 737               	.LFBB3:
+ 738               	/* prologue: function */
+ 739               	/* frame size = 0 */
+ 740               	/* stack size = 0 */
+ 741               	.L__stack_usage = 0
+ 742 0000 FC01      		movw r30,r24
+ 743               	.LBB21:
+ 679:usart.cpp     ****         uint8_t saved_status = 0;
+ 680:usart.cpp     ****         char c;
+ 681:usart.cpp     ****         
+ 682:usart.cpp     ****         if (!(flags & USART_RUNNING) || (flags & USART_RX_QUEUE_EMPTY))
+ 745               	.LM14:
+ 746 0002 868D      		ldd r24,Z+30
+ 747 0004 80FF      		sbrs r24,0
+ 748 0006 00C0      		rjmp .L14
+ 750               	.LM15:
+ 751 0008 868D      		ldd r24,Z+30
+ 752 000a 86FD      		sbrc r24,6
+ 753 000c 00C0      		rjmp .L14
+ 754 000e 00C0      		rjmp .L18
+ 755               	.L17:
+ 683:usart.cpp     ****                 return EOF;
+ 684:usart.cpp     ****         
+ 685:usart.cpp     ****         // return EOF if invalid index
+ 686:usart.cpp     ****         if (index >= rxbuf_size)
+ 687:usart.cpp     ****                 return EOF;
+ 688:usart.cpp     ****         
+ 689:usart.cpp     ****         saved_status = SREG;
+ 757               	.LM16:
+ 758 0010 4FB7      		in r20,__SREG__
+ 690:usart.cpp     ****         cli();
+ 760               	.LM17:
+ 761               	/* #APP */
+ 762               	 ;  690 "usart.cpp" 1
+ 763 0012 F894      		cli
+ 764               	 ;  0 "" 2
+ 691:usart.cpp     ****         
+ 692:usart.cpp     ****         index += rxbuf_tail;
+ 766               	.LM18:
+ 767               	/* #NOAPP */
+ 768 0014 8589      		ldd r24,Z+21
+ 769 0016 9689      		ldd r25,Z+22
+ 770 0018 860F      		add r24,r22
+ 771 001a 971F      		adc r25,r23
+ 693:usart.cpp     ****         if (index >= rxbuf_size)
+ 773               	.LM19:
+ 774 001c 2189      		ldd r18,Z+17
+ 775 001e 3289      		ldd r19,Z+18
+ 776 0020 8217      		cp r24,r18
+ 777 0022 9307      		cpc r25,r19
+ 778 0024 00F0      		brlo .L11
+ 694:usart.cpp     ****                 index -= rxbuf_size;
+ 780               	.LM20:
+ 781 0026 821B      		sub r24,r18
+ 782 0028 930B      		sbc r25,r19
+ 783               	.L11:
+ 695:usart.cpp     ****         
+ 696:usart.cpp     ****         c = rxbuf[index];
+ 785               	.LM21:
+ 786 002a 0784      		ldd __tmp_reg__,Z+15
+ 787 002c F089      		ldd r31,Z+16
+ 788 002e E02D      		mov r30,__tmp_reg__
+ 789 0030 E80F      		add r30,r24
+ 790 0032 F91F      		adc r31,r25
+ 791 0034 8081      		ld r24,Z
+ 697:usart.cpp     ****         
+ 698:usart.cpp     ****         SREG = saved_status;
+ 793               	.LM22:
+ 794 0036 4FBF      		out __SREG__,r20
+ 699:usart.cpp     ****         
+ 700:usart.cpp     ****         return c;
+ 796               	.LM23:
+ 797 0038 90E0      		ldi r25,lo8(0)
+ 798 003a 0895      		ret
+ 799               	.L14:
+ 683:usart.cpp     ****                 return EOF;
+ 801               	.LM24:
+ 802 003c 8FEF      		ldi r24,lo8(-1)
+ 803 003e 9FEF      		ldi r25,hi8(-1)
+ 804 0040 0895      		ret
+ 805               	.L19:
+ 687:usart.cpp     ****                 return EOF;
+ 807               	.LM25:
+ 808 0042 8FEF      		ldi r24,lo8(-1)
+ 809 0044 9FEF      		ldi r25,hi8(-1)
+ 810               	.LBE21:
+ 701:usart.cpp     **** }
+ 812               	.LM26:
+ 813 0046 0895      		ret
+ 814               	.L18:
+ 815               	.LBB22:
+ 686:usart.cpp     ****         if (index >= rxbuf_size)
+ 817               	.LM27:
+ 818 0048 8189      		ldd r24,Z+17
+ 819 004a 9289      		ldd r25,Z+18
+ 820 004c 6817      		cp r22,r24
+ 821 004e 7907      		cpc r23,r25
+ 822 0050 00F0      		brlo .L17
+ 823 0052 00C0      		rjmp .L19
+ 824               	.LBE22:
+ 834               	.Lscope3:
+ 835               		.section	.text._ZN5Usart3putEcP6__file,"ax",@progbits
+ 839               	.global	_ZN5Usart3putEcP6__file
+ 841               	_ZN5Usart3putEcP6__file:
+ 702:usart.cpp     **** 
+ 703:usart.cpp     **** 
+ 704:usart.cpp     **** int Usart::ungetc(int c)
+ 705:usart.cpp     **** {
+ 706:usart.cpp     ****         uint8_t saved_status = 0;
+ 707:usart.cpp     ****         
+ 708:usart.cpp     ****         if (c == EOF || flags & USART_RX_QUEUE_FULL || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE
+ 709:usart.cpp     ****                 return EOF;
+ 710:usart.cpp     ****         
+ 711:usart.cpp     ****         // return EOF if no buffer
+ 712:usart.cpp     ****         if (rxbuf_size == 0)
+ 713:usart.cpp     ****                 return EOF;
+ 714:usart.cpp     ****         
+ 715:usart.cpp     ****         saved_status = SREG;
+ 716:usart.cpp     ****         cli();
+ 717:usart.cpp     ****         
+ 718:usart.cpp     ****         rxbuf[rxbuf_head++] = c;
+ 719:usart.cpp     ****         flags &= ~USART_RX_QUEUE_EMPTY;
+ 720:usart.cpp     ****         if (rxbuf_head >= rxbuf_size)
+ 721:usart.cpp     ****                 rxbuf_head = 0;
+ 722:usart.cpp     ****         if (rxbuf_head == rxbuf_tail)
+ 723:usart.cpp     ****                 flags |= USART_RX_QUEUE_FULL;
+ 724:usart.cpp     ****         
+ 725:usart.cpp     ****         SREG = saved_status;
+ 726:usart.cpp     ****         
+ 727:usart.cpp     ****         return c;
+ 728:usart.cpp     **** }
+ 729:usart.cpp     **** 
+ 730:usart.cpp     **** 
+ 731:usart.cpp     **** void Usart::setup_stream(FILE *stream)
+ 732:usart.cpp     **** {
+ 733:usart.cpp     ****         fdev_setup_stream(stream, put, get, _FDEV_SETUP_RW);
+ 734:usart.cpp     ****         fdev_set_udata(stream, this);
+ 735:usart.cpp     **** }
+ 736:usart.cpp     **** 
+ 737:usart.cpp     **** 
+ 738:usart.cpp     **** // static
+ 739:usart.cpp     **** int Usart::put(char c, FILE *stream)
+ 740:usart.cpp     **** {
+ 843               	.LM28:
+ 844               	.LFBB4:
+ 845               	/* prologue: function */
+ 846               	/* frame size = 0 */
+ 847               	/* stack size = 0 */
+ 848               	.L__stack_usage = 0
+ 849 0000 282F      		mov r18,r24
+ 850 0002 FB01      		movw r30,r22
+ 851               	.LBB23:
+ 741:usart.cpp     ****         Usart *u;
+ 742:usart.cpp     ****         u = (Usart *)fdev_get_udata(stream);
+ 853               	.LM29:
+ 854 0004 A485      		ldd r26,Z+12
+ 855 0006 B585      		ldd r27,Z+13
+ 743:usart.cpp     ****         if (u != 0)
+ 857               	.LM30:
+ 858 0008 1097      		sbiw r26,0
+ 859 000a 01F0      		breq .L22
+ 744:usart.cpp     ****         {
+ 745:usart.cpp     ****                 u->put(c);
+ 861               	.LM31:
+ 862 000c ED91      		ld r30,X+
+ 863 000e FC91      		ld r31,X
+ 864 0010 1197      		sbiw r26,1
+ 865 0012 0484      		ldd __tmp_reg__,Z+12
+ 866 0014 F585      		ldd r31,Z+13
+ 867 0016 E02D      		mov r30,__tmp_reg__
+ 868 0018 CD01      		movw r24,r26
+ 869 001a 622F      		mov r22,r18
+ 870 001c 1995      		eicall
+ 746:usart.cpp     ****                 return 0;
+ 872               	.LM32:
+ 873 001e 80E0      		ldi r24,lo8(0)
+ 874 0020 90E0      		ldi r25,hi8(0)
+ 875 0022 0895      		ret
+ 876               	.L22:
+ 747:usart.cpp     ****         }
+ 748:usart.cpp     ****         return _FDEV_ERR;
+ 878               	.LM33:
+ 879 0024 8FEF      		ldi r24,lo8(-1)
+ 880 0026 9FEF      		ldi r25,hi8(-1)
+ 881               	.LBE23:
+ 749:usart.cpp     **** }
+ 883               	.LM34:
+ 884 0028 0895      		ret
+ 889               	.Lscope4:
+ 890               		.section	.text._ZN5Usart3getEP6__file,"ax",@progbits
+ 893               	.global	_ZN5Usart3getEP6__file
+ 895               	_ZN5Usart3getEP6__file:
+ 750:usart.cpp     **** 
+ 751:usart.cpp     **** 
+ 752:usart.cpp     **** // static
+ 753:usart.cpp     **** int Usart::get(FILE *stream)
+ 754:usart.cpp     **** {
+ 897               	.LM35:
+ 898               	.LFBB5:
+ 899               	/* prologue: function */
+ 900               	/* frame size = 0 */
+ 901               	/* stack size = 0 */
+ 902               	.L__stack_usage = 0
+ 903               	.LBB24:
+ 755:usart.cpp     ****         Usart *u;
+ 756:usart.cpp     ****         u = (Usart *)fdev_get_udata(stream);
+ 905               	.LM36:
+ 906 0000 DC01      		movw r26,r24
+ 907 0002 1C96      		adiw r26,12
+ 908 0004 8D91      		ld r24,X+
+ 909 0006 9C91      		ld r25,X
+ 910 0008 1D97      		sbiw r26,12+1
+ 757:usart.cpp     ****         if (u != 0)
+ 912               	.LM37:
+ 913 000a 0097      		sbiw r24,0
+ 914 000c 01F0      		breq .L25
+ 758:usart.cpp     ****         {
+ 759:usart.cpp     ****                 return u->get();
+ 916               	.LM38:
+ 917 000e DC01      		movw r26,r24
+ 918 0010 ED91      		ld r30,X+
+ 919 0012 FC91      		ld r31,X
+ 920 0014 0280      		ldd __tmp_reg__,Z+2
+ 921 0016 F381      		ldd r31,Z+3
+ 922 0018 E02D      		mov r30,__tmp_reg__
+ 923 001a 1995      		eicall
+ 924 001c 90E0      		ldi r25,lo8(0)
+ 925 001e 0895      		ret
+ 926               	.L25:
+ 760:usart.cpp     ****         }
+ 761:usart.cpp     ****         return _FDEV_ERR;
+ 928               	.LM39:
+ 929 0020 8FEF      		ldi r24,lo8(-1)
+ 930 0022 9FEF      		ldi r25,hi8(-1)
+ 931               	.LBE24:
+ 762:usart.cpp     **** }
+ 933               	.LM40:
+ 934 0024 0895      		ret
+ 939               	.Lscope5:
+ 940               		.section	.text._ZThn2_N5Usart3putEc,"ax",@progbits
+ 941               	.global	_ZThn2_N5Usart3putEc
+ 943               	_ZThn2_N5Usart3putEc:
+ 944               	/* prologue: function */
+ 945               	/* frame size = 0 */
+ 946               	/* stack size = 0 */
+ 947               	.L__stack_usage = 0
+ 948 0000 0297      		sbiw r24,2
+ 949 0002 0E94 0000 		call .LTHUNK1
+ 950               	/* epilogue start */
+ 951 0006 0895      		ret
+ 953               		.section	.text._ZN5Usart3putEc,"ax",@progbits
+ 957               	.global	_ZN5Usart3putEc
+ 959               	_ZN5Usart3putEc:
+ 577:usart.cpp     **** {
+ 961               	.LM41:
+ 962               	.LFBB6:
+ 963               	/* prologue: function */
+ 964               	/* frame size = 0 */
+ 965               	/* stack size = 0 */
+ 966               	.L__stack_usage = 0
+ 577:usart.cpp     **** {
+ 968               	.LM42:
+ 969 0000 FC01      		movw r30,r24
+ 970               	.LBB29:
+ 580:usart.cpp     ****         if (!(flags & USART_RUNNING) || (!(SREG & SREG_I) && (flags & USART_TX_QUEUE_FULL)))
+ 972               	.LM43:
+ 973 0002 868D      		ldd r24,Z+30
+ 974 0004 80FF      		sbrs r24,0
+ 975 0006 00C0      		rjmp .L27
+ 580:usart.cpp     ****         if (!(flags & USART_RUNNING) || (!(SREG & SREG_I) && (flags & USART_TX_QUEUE_FULL)))
+ 977               	.LM44:
+ 978 0008 8FB7      		in r24,__SREG__
+ 979 000a 90E0      		ldi r25,lo8(0)
+ 980 000c 8770      		andi r24,lo8(7)
+ 981 000e 9070      		andi r25,hi8(7)
+ 982 0010 0097      		sbiw r24,0
+ 983 0012 01F4      		brne .L29
+ 580:usart.cpp     ****         if (!(flags & USART_RUNNING) || (!(SREG & SREG_I) && (flags & USART_TX_QUEUE_FULL)))
+ 985               	.LM45:
+ 986 0014 868D      		ldd r24,Z+30
+ 987 0016 85FD      		sbrc r24,5
+ 988 0018 00C0      		rjmp .L27
+ 989 001a 00C0      		rjmp .L29
+ 990               	.L30:
+ 587:usart.cpp     ****                 while (!(usart->STATUS & USART_DREIF_bm)) { };
+ 992               	.LM46:
+ 993 001c 8181      		ldd r24,Z+1
+ 994 001e 85FF      		sbrs r24,5
+ 995 0020 00C0      		rjmp .L30
+ 588:usart.cpp     ****                 usart->DATA = c;
+ 997               	.LM47:
+ 998 0022 6083      		st Z,r22
+ 593:usart.cpp     ****                 return;
+ 1000               	.LM48:
+ 1001 0024 0895      		ret
+ 1002               	.L34:
+ 597:usart.cpp     ****         if ((flags & USART_TX_QUEUE_FULL) && nonblocking)
+ 1004               	.LM49:
+ 1005 0026 868D      		ldd r24,Z+30
+ 1006 0028 85FF      		sbrs r24,5
+ 1007 002a 00C0      		rjmp .L35
+ 597:usart.cpp     ****         if ((flags & USART_TX_QUEUE_FULL) && nonblocking)
+ 1009               	.LM50:
+ 1010 002c 858D      		ldd r24,Z+29
+ 1011 002e 8823      		tst r24
+ 1012 0030 01F4      		brne .L27
+ 1013               	.L35:
+ 1014               	.LBE29:
+ 1015               	.LBB30:
+ 1016               	.LBB31:
+ 600:usart.cpp     ****         while (flags & USART_TX_QUEUE_FULL) { };
+ 1018               	.LM51:
+ 1019 0032 868D      		ldd r24,Z+30
+ 1020 0034 85FD      		sbrc r24,5
+ 1021 0036 00C0      		rjmp .L35
+ 602:usart.cpp     ****         saved_status = SREG;
+ 1023               	.LM52:
+ 1024 0038 4FB7      		in r20,__SREG__
+ 603:usart.cpp     ****         cli();
+ 1026               	.LM53:
+ 1027               	/* #APP */
+ 1028               	 ;  603 "usart.cpp" 1
+ 1029 003a F894      		cli
+ 1030               	 ;  0 "" 2
+ 605:usart.cpp     ****         txbuf[txbuf_head++] = c;
+ 1032               	.LM54:
+ 1033               	/* #NOAPP */
+ 1034 003c 8385      		ldd r24,Z+11
+ 1035 003e 9485      		ldd r25,Z+12
+ 1036 0040 A781      		ldd r26,Z+7
+ 1037 0042 B085      		ldd r27,Z+8
+ 1038 0044 A80F      		add r26,r24
+ 1039 0046 B91F      		adc r27,r25
+ 1040 0048 6C93      		st X,r22
+ 1041 004a 0196      		adiw r24,1
+ 1042 004c 8387      		std Z+11,r24
+ 1043 004e 9487      		std Z+12,r25
+ 606:usart.cpp     ****         flags &= ~USART_TX_QUEUE_EMPTY;
+ 1045               	.LM55:
+ 1046 0050 268D      		ldd r18,Z+30
+ 1047 0052 2F7E      		andi r18,lo8(-17)
+ 1048 0054 268F      		std Z+30,r18
+ 607:usart.cpp     ****         if (txbuf_head >= txbuf_size)
+ 1050               	.LM56:
+ 1051 0056 2185      		ldd r18,Z+9
+ 1052 0058 3285      		ldd r19,Z+10
+ 1053 005a 8217      		cp r24,r18
+ 1054 005c 9307      		cpc r25,r19
+ 1055 005e 00F0      		brlo .L32
+ 608:usart.cpp     ****                 txbuf_head = 0;
+ 1057               	.LM57:
+ 1058 0060 1386      		std Z+11,__zero_reg__
+ 1059 0062 1486      		std Z+12,__zero_reg__
+ 1060               	.L32:
+ 609:usart.cpp     ****         if (txbuf_head == txbuf_tail)
+ 1062               	.LM58:
+ 1063 0064 2385      		ldd r18,Z+11
+ 1064 0066 3485      		ldd r19,Z+12
+ 1065 0068 8585      		ldd r24,Z+13
+ 1066 006a 9685      		ldd r25,Z+14
+ 1067 006c 2817      		cp r18,r24
+ 1068 006e 3907      		cpc r19,r25
+ 1069 0070 01F4      		brne .L33
+ 610:usart.cpp     ****                 flags |= USART_TX_QUEUE_FULL;
+ 1071               	.LM59:
+ 1072 0072 868D      		ldd r24,Z+30
+ 1073 0074 8062      		ori r24,lo8(32)
+ 1074 0076 868F      		std Z+30,r24
+ 1075               	.L33:
+ 613:usart.cpp     ****         usart->CTRLA |= USART_DREINTLVL_MED_gc;
+ 1077               	.LM60:
+ 1078 0078 0480      		ldd __tmp_reg__,Z+4
+ 1079 007a F581      		ldd r31,Z+5
+ 1080 007c E02D      		mov r30,__tmp_reg__
+ 1081 007e 8381      		ldd r24,Z+3
+ 1082 0080 8260      		ori r24,lo8(2)
+ 1083 0082 8383      		std Z+3,r24
+ 618:usart.cpp     ****         SREG = saved_status;
+ 1085               	.LM61:
+ 1086 0084 4FBF      		out __SREG__,r20
+ 1087 0086 0895      		ret
+ 1088               	.L29:
+ 1089               	.LBE31:
+ 1090               	.LBE30:
+ 1091               	.LBB32:
+ 584:usart.cpp     ****         if (txbuf_size == 0)
+ 1093               	.LM62:
+ 1094 0088 8185      		ldd r24,Z+9
+ 1095 008a 9285      		ldd r25,Z+10
+ 1096 008c 0097      		sbiw r24,0
+ 1097 008e 01F4      		brne .L34
+ 587:usart.cpp     ****                 while (!(usart->STATUS & USART_DREIF_bm)) { };
+ 1099               	.LM63:
+ 1100 0090 0480      		ldd __tmp_reg__,Z+4
+ 1101 0092 F581      		ldd r31,Z+5
+ 1102 0094 E02D      		mov r30,__tmp_reg__
+ 1103 0096 00C0      		rjmp .L30
+ 1104               	.L27:
+ 1105 0098 0895      		ret
+ 1106               	.LBE32:
+ 1111               	.Lscope6:
+ 1112               		.section	.text._ZN5Usart11which_usartEP12USART_struct,"ax",@progbits
+ 1115               	.global	_ZN5Usart11which_usartEP12USART_struct
+ 1117               	_ZN5Usart11which_usartEP12USART_struct:
+  41:usart.cpp     **** {
+ 1119               	.LM64:
+ 1120               	.LFBB7:
+ 1121               	/* prologue: function */
+ 1122               	/* frame size = 0 */
+ 1123               	/* stack size = 0 */
+ 1124               	.L__stack_usage = 0
+  43:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTC0)
+ 1126               	.LM65:
+ 1127 0000 28E0      		ldi r18,hi8(2208)
+ 1128 0002 803A      		cpi r24,lo8(2208)
+ 1129 0004 9207      		cpc r25,r18
+ 1130 0006 01F0      		breq .L40
+  47:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTC1)
+ 1132               	.LM66:
+ 1133 0008 28E0      		ldi r18,hi8(2224)
+ 1134 000a 803B      		cpi r24,lo8(2224)
+ 1135 000c 9207      		cpc r25,r18
+ 1136 000e 01F0      		breq .L41
+  51:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTD0)
+ 1138               	.LM67:
+ 1139 0010 29E0      		ldi r18,hi8(2464)
+ 1140 0012 803A      		cpi r24,lo8(2464)
+ 1141 0014 9207      		cpc r25,r18
+ 1142 0016 01F0      		breq .L42
+  55:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTD1)
+ 1144               	.LM68:
+ 1145 0018 29E0      		ldi r18,hi8(2480)
+ 1146 001a 803B      		cpi r24,lo8(2480)
+ 1147 001c 9207      		cpc r25,r18
+ 1148 001e 01F0      		breq .L43
+  59:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTE0)
+ 1150               	.LM69:
+ 1151 0020 2AE0      		ldi r18,hi8(2720)
+ 1152 0022 803A      		cpi r24,lo8(2720)
+ 1153 0024 9207      		cpc r25,r18
+ 1154 0026 01F0      		breq .L44
+  63:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTE1)
+ 1156               	.LM70:
+ 1157 0028 2AE0      		ldi r18,hi8(2736)
+ 1158 002a 803B      		cpi r24,lo8(2736)
+ 1159 002c 9207      		cpc r25,r18
+ 1160 002e 01F0      		breq .L45
+  67:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTF0)
+ 1162               	.LM71:
+ 1163 0030 2BE0      		ldi r18,hi8(2976)
+ 1164 0032 803A      		cpi r24,lo8(2976)
+ 1165 0034 9207      		cpc r25,r18
+ 1166 0036 01F0      		breq .L46
+  71:usart.cpp     ****         if ((uintptr_t)_usart == (uintptr_t)&USARTF1)
+ 1168               	.LM72:
+ 1169 0038 2BE0      		ldi r18,hi8(2992)
+ 1170 003a 803B      		cpi r24,lo8(2992)
+ 1171 003c 9207      		cpc r25,r18
+ 1172 003e 01F4      		brne .L47
+  72:usart.cpp     ****                 return USARTF1_IND;
+ 1174               	.LM73:
+ 1175 0040 87E0      		ldi r24,lo8(7)
+ 1176 0042 0895      		ret
+ 1177               	.L40:
+  44:usart.cpp     ****                 return USARTC0_IND;
+ 1179               	.LM74:
+ 1180 0044 80E0      		ldi r24,lo8(0)
+ 1181 0046 0895      		ret
+ 1182               	.L41:
+  48:usart.cpp     ****                 return USARTC1_IND;
+ 1184               	.LM75:
+ 1185 0048 83E0      		ldi r24,lo8(3)
+ 1186 004a 0895      		ret
+ 1187               	.L42:
+  52:usart.cpp     ****                 return USARTD0_IND;
+ 1189               	.LM76:
+ 1190 004c 81E0      		ldi r24,lo8(1)
+ 1191 004e 0895      		ret
+ 1192               	.L43:
+  56:usart.cpp     ****                 return USARTD1_IND;
+ 1194               	.LM77:
+ 1195 0050 84E0      		ldi r24,lo8(4)
+ 1196 0052 0895      		ret
+ 1197               	.L44:
+  60:usart.cpp     ****                 return USARTE0_IND;
+ 1199               	.LM78:
+ 1200 0054 82E0      		ldi r24,lo8(2)
+ 1201 0056 0895      		ret
+ 1202               	.L45:
+  64:usart.cpp     ****                 return USARTE1_IND;
+ 1204               	.LM79:
+ 1205 0058 85E0      		ldi r24,lo8(5)
+ 1206 005a 0895      		ret
+ 1207               	.L46:
+  68:usart.cpp     ****                 return USARTF0_IND;
+ 1209               	.LM80:
+ 1210 005c 86E0      		ldi r24,lo8(6)
+ 1211 005e 0895      		ret
+ 1212               	.L47:
+  74:usart.cpp     ****         return USART_INVALID_IND;
+ 1214               	.LM81:
+ 1215 0060 8FEF      		ldi r24,lo8(-1)
+  75:usart.cpp     **** }
+ 1217               	.LM82:
+ 1218 0062 0895      		ret
+ 1220               	.Lscope7:
+ 1221               		.section	.text._ZN5Usart9get_usartEc,"ax",@progbits
+ 1224               	.global	_ZN5Usart9get_usartEc
+ 1226               	_ZN5Usart9get_usartEc:
+  79:usart.cpp     **** {
+ 1228               	.LM83:
+ 1229               	.LFBB8:
+ 1230               	/* prologue: function */
+ 1231               	/* frame size = 0 */
+ 1232               	/* stack size = 0 */
+ 1233               	.L__stack_usage = 0
+  79:usart.cpp     **** {
+ 1235               	.LM84:
+ 1236 0000 8830      		cpi r24,lo8(8)
+ 1237 0002 00F4      		brsh .L50
+ 1238 0004 E82F      		mov r30,r24
+ 1239 0006 F0E0      		ldi r31,lo8(0)
+ 1240 0008 EE0F      		lsl r30
+ 1241 000a FF1F      		rol r31
+ 1242 000c E050      		subi r30,lo8(-(CSWTCH.34))
+ 1243 000e F040      		sbci r31,hi8(-(CSWTCH.34))
+ 1244 0010 8081      		ld r24,Z
+ 1245 0012 9181      		ldd r25,Z+1
+ 1246 0014 0895      		ret
+ 1247               	.L50:
+ 1248 0016 80E0      		ldi r24,lo8(0)
+ 1249 0018 90E0      		ldi r25,hi8(0)
+ 117:usart.cpp     **** }
+ 1251               	.LM85:
+ 1252 001a 0895      		ret
+ 1254               	.Lscope8:
+ 1255               		.section	.text._ZN5Usart8get_portEc,"ax",@progbits
+ 1258               	.global	_ZN5Usart8get_portEc
+ 1260               	_ZN5Usart8get_portEc:
+ 121:usart.cpp     **** {
+ 1262               	.LM86:
+ 1263               	.LFBB9:
+ 1264               	/* prologue: function */
+ 1265               	/* frame size = 0 */
+ 1266               	/* stack size = 0 */
+ 1267               	.L__stack_usage = 0
+ 121:usart.cpp     **** {
+ 1269               	.LM87:
+ 1270 0000 8830      		cpi r24,lo8(8)
+ 1271 0002 00F4      		brsh .L53
+ 1272 0004 E82F      		mov r30,r24
+ 1273 0006 F0E0      		ldi r31,lo8(0)
+ 1274 0008 EE0F      		lsl r30
+ 1275 000a FF1F      		rol r31
+ 1276 000c E050      		subi r30,lo8(-(CSWTCH.36))
+ 1277 000e F040      		sbci r31,hi8(-(CSWTCH.36))
+ 1278 0010 8081      		ld r24,Z
+ 1279 0012 9181      		ldd r25,Z+1
+ 1280 0014 0895      		ret
+ 1281               	.L53:
+ 1282 0016 80E0      		ldi r24,lo8(0)
+ 1283 0018 90E0      		ldi r25,hi8(0)
+ 159:usart.cpp     **** }
+ 1285               	.LM88:
+ 1286 001a 0895      		ret
+ 1288               	.Lscope9:
+ 1289               		.section	.text._ZN5Usart9get_txpinEc,"ax",@progbits
+ 1292               	.global	_ZN5Usart9get_txpinEc
+ 1294               	_ZN5Usart9get_txpinEc:
+ 163:usart.cpp     **** {
+ 1296               	.LM89:
+ 1297               	.LFBB10:
+ 1298               	/* prologue: function */
+ 1299               	/* frame size = 0 */
+ 1300               	/* stack size = 0 */
+ 1301               	.L__stack_usage = 0
+ 163:usart.cpp     **** {
+ 1303               	.LM90:
+ 1304 0000 8830      		cpi r24,lo8(8)
+ 1305 0002 00F4      		brsh .L56
+ 1306 0004 E82F      		mov r30,r24
+ 1307 0006 F0E0      		ldi r31,lo8(0)
+ 1308 0008 E050      		subi r30,lo8(-(CSWTCH.38))
+ 1309 000a F040      		sbci r31,hi8(-(CSWTCH.38))
+ 1310 000c 8081      		ld r24,Z
+ 1311 000e 0895      		ret
+ 1312               	.L56:
+ 1313 0010 80E0      		ldi r24,lo8(0)
+ 201:usart.cpp     **** }
+ 1315               	.LM91:
+ 1316 0012 0895      		ret
+ 1318               	.Lscope10:
+ 1319               		.section	.text._ZN5UsartC2EP12USART_struct,"ax",@progbits
+ 1323               	.global	_ZN5UsartC2EP12USART_struct
+ 1325               	_ZN5UsartC2EP12USART_struct:
+ 206:usart.cpp     **** Usart::Usart(USART_t *_usart) :
+ 1327               	.LM92:
+ 1328               	.LFBB11:
+ 1329 0000 CF93      		push r28
+ 1330 0002 DF93      		push r29
+ 1331               	/* prologue: function */
+ 1332               	/* frame size = 0 */
+ 1333               	/* stack size = 2 */
+ 1334               	.L__stack_usage = 2
+ 1335 0004 EC01      		movw r28,r24
+ 1336 0006 CB01      		movw r24,r22
+ 1337               	.LBB33:
+ 227:usart.cpp     ****         flags(USART_TX_QUEUE_FULL | USART_RX_QUEUE_FULL)
+ 1339               	.LM93:
+ 1340 0008 20E0      		ldi r18,lo8(_ZTV5Usart+4)
+ 1341 000a 30E0      		ldi r19,hi8(_ZTV5Usart+4)
+ 1342 000c 2883      		st Y,r18
+ 1343 000e 3983      		std Y+1,r19
+ 1344 0010 2E5E      		subi r18,lo8(-(18))
+ 1345 0012 3F4F      		sbci r19,hi8(-(18))
+ 1346 0014 2A83      		std Y+2,r18
+ 1347 0016 3B83      		std Y+3,r19
+ 1348 0018 6C83      		std Y+4,r22
+ 1349 001a 7D83      		std Y+5,r23
+ 1350 001c 1F82      		std Y+7,__zero_reg__
+ 1351 001e 1886      		std Y+8,__zero_reg__
+ 1352 0020 1986      		std Y+9,__zero_reg__
+ 1353 0022 1A86      		std Y+10,__zero_reg__
+ 1354 0024 1B86      		std Y+11,__zero_reg__
+ 1355 0026 1C86      		std Y+12,__zero_reg__
+ 1356 0028 1D86      		std Y+13,__zero_reg__
+ 1357 002a 1E86      		std Y+14,__zero_reg__
+ 1358 002c 1F86      		std Y+15,__zero_reg__
+ 1359 002e 188A      		std Y+16,__zero_reg__
+ 1360 0030 198A      		std Y+17,__zero_reg__
+ 1361 0032 1A8A      		std Y+18,__zero_reg__
+ 1362 0034 1B8A      		std Y+19,__zero_reg__
+ 1363 0036 1C8A      		std Y+20,__zero_reg__
+ 1364 0038 1D8A      		std Y+21,__zero_reg__
+ 1365 003a 1E8A      		std Y+22,__zero_reg__
+ 1366 003c 1F8A      		std Y+23,__zero_reg__
+ 1367 003e 188E      		std Y+24,__zero_reg__
+ 1368 0040 198E      		std Y+25,__zero_reg__
+ 1369 0042 1A8E      		std Y+26,__zero_reg__
+ 1370 0044 1B8E      		std Y+27,__zero_reg__
+ 1371 0046 1C8E      		std Y+28,__zero_reg__
+ 1372 0048 1D8E      		std Y+29,__zero_reg__
+ 1373 004a 20EA      		ldi r18,lo8(-96)
+ 1374 004c 2E8F      		std Y+30,r18
+ 230:usart.cpp     ****         usart_ind = which_usart(_usart);
+ 1376               	.LM94:
+ 1377 004e 0E94 0000 		call _ZN5Usart11which_usartEP12USART_struct
+ 1378 0052 8E83      		std Y+6,r24
+ 232:usart.cpp     ****         usart_list[(int)usart_ind] = this;
+ 1380               	.LM95:
+ 1381 0054 E82F      		mov r30,r24
+ 1382 0056 F0E0      		ldi r31,lo8(0)
+ 1383 0058 EE0F      		lsl r30
+ 1384 005a FF1F      		rol r31
+ 1385 005c E050      		subi r30,lo8(-(_ZN5Usart10usart_listE))
+ 1386 005e F040      		sbci r31,hi8(-(_ZN5Usart10usart_listE))
+ 1387 0060 C083      		st Z,r28
+ 1388 0062 D183      		std Z+1,r29
+ 1389               	/* epilogue start */
+ 1390               	.LBE33:
+ 254:usart.cpp     **** }
+ 1392               	.LM96:
+ 1393 0064 DF91      		pop r29
+ 1394 0066 CF91      		pop r28
+ 1395 0068 0895      		ret
+ 1397               	.Lscope11:
+ 1398               		.section	.text._ZN5Usart13set_tx_bufferEPcj,"ax",@progbits
+ 1403               	.global	_ZN5Usart13set_tx_bufferEPcj
+ 1405               	_ZN5Usart13set_tx_bufferEPcj:
+ 265:usart.cpp     **** {
+ 1407               	.LM97:
+ 1408               	.LFBB12:
+ 1409               	/* prologue: function */
+ 1410               	/* frame size = 0 */
+ 1411               	/* stack size = 0 */
+ 1412               	.L__stack_usage = 0
+ 1413 0000 FC01      		movw r30,r24
+ 266:usart.cpp     ****         txbuf = _txbuf;
+ 1415               	.LM98:
+ 1416 0002 6783      		std Z+7,r22
+ 1417 0004 7087      		std Z+8,r23
+ 267:usart.cpp     ****         txbuf_size = _txbuf_size;
+ 1419               	.LM99:
+ 1420 0006 4187      		std Z+9,r20
+ 1421 0008 5287      		std Z+10,r21
+ 268:usart.cpp     ****         txbuf_head = 0;
+ 1423               	.LM100:
+ 1424 000a 1386      		std Z+11,__zero_reg__
+ 1425 000c 1486      		std Z+12,__zero_reg__
+ 269:usart.cpp     ****         txbuf_tail = 0;
+ 1427               	.LM101:
+ 1428 000e 1586      		std Z+13,__zero_reg__
+ 1429 0010 1686      		std Z+14,__zero_reg__
+ 270:usart.cpp     ****         flags &= ~USART_TX_QUEUE_FULL;
+ 1431               	.LM102:
+ 1432 0012 868D      		ldd r24,Z+30
+ 1433 0014 8F7D      		andi r24,lo8(-33)
+ 1434 0016 868F      		std Z+30,r24
+ 271:usart.cpp     ****         flags |= USART_TX_QUEUE_EMPTY;
+ 1436               	.LM103:
+ 1437 0018 868D      		ldd r24,Z+30
+ 1438 001a 8061      		ori r24,lo8(16)
+ 1439 001c 868F      		std Z+30,r24
+ 1440               	/* epilogue start */
+ 272:usart.cpp     **** }
+ 1442               	.LM104:
+ 1443 001e 0895      		ret
+ 1445               	.Lscope12:
+ 1446               		.section	.text._ZN5Usart13set_rx_bufferEPcj,"ax",@progbits
+ 1451               	.global	_ZN5Usart13set_rx_bufferEPcj
+ 1453               	_ZN5Usart13set_rx_bufferEPcj:
+ 276:usart.cpp     **** {
+ 1455               	.LM105:
+ 1456               	.LFBB13:
+ 1457               	/* prologue: function */
+ 1458               	/* frame size = 0 */
+ 1459               	/* stack size = 0 */
+ 1460               	.L__stack_usage = 0
+ 1461 0000 FC01      		movw r30,r24
+ 277:usart.cpp     ****         rxbuf = _rxbuf;
+ 1463               	.LM106:
+ 1464 0002 6787      		std Z+15,r22
+ 1465 0004 708B      		std Z+16,r23
+ 278:usart.cpp     ****         rxbuf_size = _rxbuf_size;
+ 1467               	.LM107:
+ 1468 0006 418B      		std Z+17,r20
+ 1469 0008 528B      		std Z+18,r21
+ 279:usart.cpp     ****         rxbuf_head = 0;
+ 1471               	.LM108:
+ 1472 000a 138A      		std Z+19,__zero_reg__
+ 1473 000c 148A      		std Z+20,__zero_reg__
+ 280:usart.cpp     ****         rxbuf_tail = 0;
+ 1475               	.LM109:
+ 1476 000e 158A      		std Z+21,__zero_reg__
+ 1477 0010 168A      		std Z+22,__zero_reg__
+ 281:usart.cpp     ****         flags &= ~USART_RX_QUEUE_FULL;
+ 1479               	.LM110:
+ 1480 0012 868D      		ldd r24,Z+30
+ 1481 0014 8F77      		andi r24,lo8(127)
+ 1482 0016 868F      		std Z+30,r24
+ 282:usart.cpp     ****         flags |= USART_RX_QUEUE_EMPTY;
+ 1484               	.LM111:
+ 1485 0018 868D      		ldd r24,Z+30
+ 1486 001a 8064      		ori r24,lo8(64)
+ 1487 001c 868F      		std Z+30,r24
+ 284:usart.cpp     ****         if (flags & USART_RUNNING)
+ 1489               	.LM112:
+ 1490 001e 868D      		ldd r24,Z+30
+ 1491 0020 80FF      		sbrs r24,0
+ 1492 0022 00C0      		rjmp .L59
+ 287:usart.cpp     ****                 usart->CTRLA &= ~USART_RXCINTLVL_gm;
+ 1494               	.LM113:
+ 1495 0024 A481      		ldd r26,Z+4
+ 1496 0026 B581      		ldd r27,Z+5
+ 1497 0028 1396      		adiw r26,3
+ 1498 002a 8C91      		ld r24,X
+ 1499 002c 1397      		sbiw r26,3
+ 1500 002e 8F7C      		andi r24,lo8(-49)
+ 1501 0030 1396      		adiw r26,3
+ 1502 0032 8C93      		st X,r24
+ 1503 0034 1397      		sbiw r26,3
+ 288:usart.cpp     ****                 usart->CTRLA |= USART_RXCINTLVL_MED_gc;
+ 1505               	.LM114:
+ 1506 0036 0480      		ldd __tmp_reg__,Z+4
+ 1507 0038 F581      		ldd r31,Z+5
+ 1508 003a E02D      		mov r30,__tmp_reg__
+ 1509 003c 8381      		ldd r24,Z+3
+ 1510 003e 8062      		ori r24,lo8(32)
+ 1511 0040 8383      		std Z+3,r24
+ 1512               	.L59:
+ 1513 0042 0895      		ret
+ 1515               	.Lscope13:
+ 1516               		.section	.text._ZN5Usart11set_rts_pinEP11PORT_structi,"ax",@progbits
+ 1520               	.global	_ZN5Usart11set_rts_pinEP11PORT_structi
+ 1522               	_ZN5Usart11set_rts_pinEP11PORT_structi:
+ 298:usart.cpp     **** {
+ 1524               	.LM115:
+ 1525               	.LFBB14:
+ 1526               	/* prologue: function */
+ 1527               	/* frame size = 0 */
+ 1528               	/* stack size = 0 */
+ 1529               	.L__stack_usage = 0
+ 1530 0000 FC01      		movw r30,r24
+ 299:usart.cpp     ****         rtsport = _rtsport;
+ 1532               	.LM116:
+ 1533 0002 678B      		std Z+23,r22
+ 1534 0004 708F      		std Z+24,r23
+ 300:usart.cpp     ****         rtspin_bm = 1 << _rtspin;
+ 1536               	.LM117:
+ 1537 0006 81E0      		ldi r24,lo8(1)
+ 1538 0008 90E0      		ldi r25,hi8(1)
+ 1539 000a 00C0      		rjmp 2f
+ 1540 000c 880F      	1:	lsl r24
+ 1541 000e 991F      		rol r25
+ 1542 0010 4A95      	2:	dec r20
+ 1543 0012 02F4      		brpl 1b
+ 1544 0014 838F      		std Z+27,r24
+ 301:usart.cpp     ****         rtsport->DIRSET = rtspin_bm;
+ 1546               	.LM118:
+ 1547 0016 FB01      		movw r30,r22
+ 1548 0018 8183      		std Z+1,r24
+ 1549               	/* epilogue start */
+ 303:usart.cpp     **** }
+ 1551               	.LM119:
+ 1552 001a 0895      		ret
+ 1554               	.Lscope14:
+ 1555               		.section	.text._ZN5Usart11set_cts_pinEP11PORT_structi,"ax",@progbits
+ 1559               	.global	_ZN5Usart11set_cts_pinEP11PORT_structi
+ 1561               	_ZN5Usart11set_cts_pinEP11PORT_structi:
+ 307:usart.cpp     **** {
+ 1563               	.LM120:
+ 1564               	.LFBB15:
+ 1565               	/* prologue: function */
+ 1566               	/* frame size = 0 */
+ 1567               	/* stack size = 0 */
+ 1568               	.L__stack_usage = 0
+ 1569 0000 FC01      		movw r30,r24
+ 308:usart.cpp     ****         ctsport = _ctsport;
+ 1571               	.LM121:
+ 1572 0002 618F      		std Z+25,r22
+ 1573 0004 728F      		std Z+26,r23
+ 309:usart.cpp     ****         ctspin_bm = 1 << _ctspin;
+ 1575               	.LM122:
+ 1576 0006 81E0      		ldi r24,lo8(1)
+ 1577 0008 90E0      		ldi r25,hi8(1)
+ 1578 000a 00C0      		rjmp 2f
+ 1579 000c 880F      	1:	lsl r24
+ 1580 000e 991F      		rol r25
+ 1581 0010 4A95      	2:	dec r20
+ 1582 0012 02F4      		brpl 1b
+ 1583 0014 848F      		std Z+28,r24
+ 310:usart.cpp     ****         ctsport->DIRCLR = ctspin_bm;
+ 1585               	.LM123:
+ 1586 0016 FB01      		movw r30,r22
+ 1587 0018 8283      		std Z+2,r24
+ 1588               	/* epilogue start */
+ 311:usart.cpp     **** }
+ 1590               	.LM124:
+ 1591 001a 0895      		ret
+ 1593               	.Lscope15:
+ 1594               		.section	.text._ZN5Usart15set_nonblockingEh,"ax",@progbits
+ 1598               	.global	_ZN5Usart15set_nonblockingEh
+ 1600               	_ZN5Usart15set_nonblockingEh:
+ 316:usart.cpp     **** {
+ 1602               	.LM125:
+ 1603               	.LFBB16:
+ 1604               	/* prologue: function */
+ 1605               	/* frame size = 0 */
+ 1606               	/* stack size = 0 */
+ 1607               	.L__stack_usage = 0
+ 317:usart.cpp     ****         nonblocking = nb;
+ 1609               	.LM126:
+ 1610 0000 FC01      		movw r30,r24
+ 1611 0002 658F      		std Z+29,r22
+ 1612               	/* epilogue start */
+ 318:usart.cpp     **** }
+ 1614               	.LM127:
+ 1615 0004 0895      		ret
+ 1617               	.Lscope16:
+ 1618               		.section	.text._ZN5Usart10update_rtsEv,"ax",@progbits
+ 1621               	.global	_ZN5Usart10update_rtsEv
+ 1623               	_ZN5Usart10update_rtsEv:
+ 323:usart.cpp     **** {
+ 1625               	.LM128:
+ 1626               	.LFBB17:
+ 1627 0000 CF93      		push r28
+ 1628 0002 DF93      		push r29
+ 1629               	/* prologue: function */
+ 1630               	/* frame size = 0 */
+ 1631               	/* stack size = 2 */
+ 1632               	.L__stack_usage = 2
+ 1633 0004 EC01      		movw r28,r24
+ 324:usart.cpp     ****         if (rtsport == 0)
+ 1635               	.LM129:
+ 1636 0006 EF89      		ldd r30,Y+23
+ 1637 0008 F88D      		ldd r31,Y+24
+ 1638 000a 3097      		sbiw r30,0
+ 1639 000c 01F0      		breq .L64
+ 326:usart.cpp     ****         if (txbuf_size == 0)
+ 1641               	.LM130:
+ 1642 000e 8985      		ldd r24,Y+9
+ 1643 0010 9A85      		ldd r25,Y+10
+ 1644 0012 0097      		sbiw r24,0
+ 1645 0014 01F4      		brne .L66
+ 329:usart.cpp     ****                 rtsport->OUTCLR = rtspin_bm;
+ 1647               	.LM131:
+ 1648 0016 8B8D      		ldd r24,Y+27
+ 1649 0018 8683      		std Z+6,r24
+ 1650 001a 00C0      		rjmp .L64
+ 1651               	.L66:
+ 1652               	.LBB36:
+ 1653               	.LBB37:
+ 334:usart.cpp     ****                 if (available() > ((rxbuf_size >> 1) + (rxbuf_size >> 2)))
+ 1655               	.LM132:
+ 1656 001c E881      		ld r30,Y
+ 1657 001e F981      		ldd r31,Y+1
+ 1658 0020 0190      		ld __tmp_reg__,Z+
+ 1659 0022 F081      		ld r31,Z
+ 1660 0024 E02D      		mov r30,__tmp_reg__
+ 1661 0026 CE01      		movw r24,r28
+ 1662 0028 1995      		eicall
+ 1663 002a 2989      		ldd r18,Y+17
+ 1664 002c 3A89      		ldd r19,Y+18
+ 1665 002e A901      		movw r20,r18
+ 1666 0030 5695      		lsr r21
+ 1667 0032 4795      		ror r20
+ 1668 0034 5695      		lsr r21
+ 1669 0036 4795      		ror r20
+ 1670 0038 3695      		lsr r19
+ 1671 003a 2795      		ror r18
+ 1672 003c 420F      		add r20,r18
+ 1673 003e 531F      		adc r21,r19
+ 1674 0040 EF89      		ldd r30,Y+23
+ 1675 0042 F88D      		ldd r31,Y+24
+ 1676 0044 2B8D      		ldd r18,Y+27
+ 1677 0046 4817      		cp r20,r24
+ 1678 0048 5907      		cpc r21,r25
+ 1679 004a 00F4      		brsh .L67
+ 336:usart.cpp     ****                         rtsport->OUTSET = rtspin_bm;
+ 1681               	.LM133:
+ 1682 004c 2583      		std Z+5,r18
+ 1683 004e 00C0      		rjmp .L64
+ 1684               	.L67:
+ 340:usart.cpp     ****                         rtsport->OUTCLR = rtspin_bm;
+ 1686               	.LM134:
+ 1687 0050 2683      		std Z+6,r18
+ 1688               	.L64:
+ 1689               	/* epilogue start */
+ 1690               	.LBE37:
+ 1691               	.LBE36:
+ 343:usart.cpp     **** }
+ 1693               	.LM135:
+ 1694 0052 DF91      		pop r29
+ 1695 0054 CF91      		pop r28
+ 1696 0056 0895      		ret
+ 1698               	.Lscope17:
+ 1699               		.section	.text._ZN5Usart3getEv,"ax",@progbits
+ 1702               	.global	_ZN5Usart3getEv
+ 1704               	_ZN5Usart3getEv:
+ 632:usart.cpp     **** {
+ 1706               	.LM136:
+ 1707               	.LFBB18:
+ 1708 0000 CF93      		push r28
+ 1709 0002 DF93      		push r29
+ 1710               	/* prologue: function */
+ 1711               	/* frame size = 0 */
+ 1712               	/* stack size = 2 */
+ 1713               	.L__stack_usage = 2
+ 1714 0004 FC01      		movw r30,r24
+ 1715               	.LBB42:
+ 636:usart.cpp     ****         if (!(flags & USART_RUNNING) || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE_EMPTY)))
+ 1717               	.LM137:
+ 1718 0006 868D      		ldd r24,Z+30
+ 1719 0008 80FF      		sbrs r24,0
+ 1720 000a 00C0      		rjmp .L78
+ 636:usart.cpp     ****         if (!(flags & USART_RUNNING) || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE_EMPTY)))
+ 1722               	.LM138:
+ 1723 000c 8FB7      		in r24,__SREG__
+ 1724 000e 90E0      		ldi r25,lo8(0)
+ 1725 0010 8770      		andi r24,lo8(7)
+ 1726 0012 9070      		andi r25,hi8(7)
+ 1727 0014 0097      		sbiw r24,0
+ 1728 0016 01F4      		brne .L70
+ 636:usart.cpp     ****         if (!(flags & USART_RUNNING) || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE_EMPTY)))
+ 1730               	.LM139:
+ 1731 0018 868D      		ldd r24,Z+30
+ 1732 001a 86FD      		sbrc r24,6
+ 1733 001c 00C0      		rjmp .L78
+ 1734 001e 00C0      		rjmp .L70
+ 1735               	.L71:
+ 643:usart.cpp     ****                 while (!(usart->STATUS & USART_RXCIF_bm)) { };
+ 1737               	.LM140:
+ 1738 0020 8181      		ldd r24,Z+1
+ 1739 0022 87FF      		sbrs r24,7
+ 1740 0024 00C0      		rjmp .L71
+ 644:usart.cpp     ****                 return usart->DATA;
+ 1742               	.LM141:
+ 1743 0026 C081      		ld r28,Z
+ 1744 0028 00C0      		rjmp .L69
+ 1745               	.L75:
+ 652:usart.cpp     ****         if ((flags & USART_RX_QUEUE_EMPTY) && nonblocking)
+ 1747               	.LM142:
+ 1748 002a 868D      		ldd r24,Z+30
+ 1749 002c 86FF      		sbrs r24,6
+ 1750 002e 00C0      		rjmp .L79
+ 652:usart.cpp     ****         if ((flags & USART_RX_QUEUE_EMPTY) && nonblocking)
+ 1752               	.LM143:
+ 1753 0030 858D      		ldd r24,Z+29
+ 1754 0032 8823      		tst r24
+ 1755 0034 01F4      		brne .L78
+ 1756               	.L79:
+ 1757               	.LBE42:
+ 1758               	.LBB43:
+ 1759               	.LBB44:
+ 655:usart.cpp     ****         while (flags & USART_RX_QUEUE_EMPTY) { };
+ 1761               	.LM144:
+ 1762 0036 868D      		ldd r24,Z+30
+ 1763 0038 86FD      		sbrc r24,6
+ 1764 003a 00C0      		rjmp .L79
+ 657:usart.cpp     ****         saved_status = SREG;
+ 1766               	.LM145:
+ 1767 003c DFB7      		in r29,__SREG__
+ 658:usart.cpp     ****         cli();
+ 1769               	.LM146:
+ 1770               	/* #APP */
+ 1771               	 ;  658 "usart.cpp" 1
+ 1772 003e F894      		cli
+ 1773               	 ;  0 "" 2
+ 660:usart.cpp     ****         c = rxbuf[rxbuf_tail++];
+ 1775               	.LM147:
+ 1776               	/* #NOAPP */
+ 1777 0040 8589      		ldd r24,Z+21
+ 1778 0042 9689      		ldd r25,Z+22
+ 1779 0044 A785      		ldd r26,Z+15
+ 1780 0046 B089      		ldd r27,Z+16
+ 1781 0048 A80F      		add r26,r24
+ 1782 004a B91F      		adc r27,r25
+ 1783 004c CC91      		ld r28,X
+ 1784 004e 0196      		adiw r24,1
+ 1785 0050 858B      		std Z+21,r24
+ 1786 0052 968B      		std Z+22,r25
+ 661:usart.cpp     ****         flags &= ~USART_RX_QUEUE_FULL;
+ 1788               	.LM148:
+ 1789 0054 268D      		ldd r18,Z+30
+ 1790 0056 2F77      		andi r18,lo8(127)
+ 1791 0058 268F      		std Z+30,r18
+ 662:usart.cpp     ****         if (rxbuf_tail >= rxbuf_size)
+ 1793               	.LM149:
+ 1794 005a 2189      		ldd r18,Z+17
+ 1795 005c 3289      		ldd r19,Z+18
+ 1796 005e 8217      		cp r24,r18
+ 1797 0060 9307      		cpc r25,r19
+ 1798 0062 00F0      		brlo .L73
+ 663:usart.cpp     ****                 rxbuf_tail = 0;
+ 1800               	.LM150:
+ 1801 0064 158A      		std Z+21,__zero_reg__
+ 1802 0066 168A      		std Z+22,__zero_reg__
+ 1803               	.L73:
+ 664:usart.cpp     ****         if (rxbuf_head == rxbuf_tail)
+ 1805               	.LM151:
+ 1806 0068 2389      		ldd r18,Z+19
+ 1807 006a 3489      		ldd r19,Z+20
+ 1808 006c 8589      		ldd r24,Z+21
+ 1809 006e 9689      		ldd r25,Z+22
+ 1810 0070 2817      		cp r18,r24
+ 1811 0072 3907      		cpc r19,r25
+ 1812 0074 01F4      		brne .L74
+ 665:usart.cpp     ****                 flags |= USART_RX_QUEUE_EMPTY;
+ 1814               	.LM152:
+ 1815 0076 868D      		ldd r24,Z+30
+ 1816 0078 8064      		ori r24,lo8(64)
+ 1817 007a 868F      		std Z+30,r24
+ 1818               	.L74:
+ 668:usart.cpp     ****         update_rts();
+ 1820               	.LM153:
+ 1821 007c CF01      		movw r24,r30
+ 1822 007e 0E94 0000 		call _ZN5Usart10update_rtsEv
+ 671:usart.cpp     ****         SREG = saved_status;
+ 1824               	.LM154:
+ 1825 0082 DFBF      		out __SREG__,r29
+ 1826 0084 00C0      		rjmp .L69
+ 1827               	.L78:
+ 1828               	.LBE44:
+ 1829               	.LBE43:
+ 1830               	.LBB45:
+ 653:usart.cpp     ****                 return 0;
+ 1832               	.LM155:
+ 1833 0086 C0E0      		ldi r28,lo8(0)
+ 1834               	.L69:
+ 1835               	.LBE45:
+ 674:usart.cpp     **** }
+ 1837               	.LM156:
+ 1838 0088 8C2F      		mov r24,r28
+ 1839               	/* epilogue start */
+ 1840 008a DF91      		pop r29
+ 1841 008c CF91      		pop r28
+ 1842 008e 0895      		ret
+ 1843               	.L70:
+ 1844               	.LBB46:
+ 640:usart.cpp     ****         if (rxbuf_size == 0)
+ 1846               	.LM157:
+ 1847 0090 8189      		ldd r24,Z+17
+ 1848 0092 9289      		ldd r25,Z+18
+ 1849 0094 0097      		sbiw r24,0
+ 1850 0096 01F4      		brne .L75
+ 643:usart.cpp     ****                 while (!(usart->STATUS & USART_RXCIF_bm)) { };
+ 1852               	.LM158:
+ 1853 0098 0480      		ldd __tmp_reg__,Z+4
+ 1854 009a F581      		ldd r31,Z+5
+ 1855 009c E02D      		mov r30,__tmp_reg__
+ 1856 009e 00C0      		rjmp .L71
+ 1857               	.LBE46:
+ 1871               	.Lscope18:
+ 1872               		.section	.text._ZN5Usart9check_ctsEv,"ax",@progbits
+ 1875               	.global	_ZN5Usart9check_ctsEv
+ 1877               	_ZN5Usart9check_ctsEv:
+ 347:usart.cpp     **** {
+ 1879               	.LM159:
+ 1880               	.LFBB19:
+ 1881               	/* prologue: function */
+ 1882               	/* frame size = 0 */
+ 1883               	/* stack size = 0 */
+ 1884               	.L__stack_usage = 0
+ 1885 0000 FC01      		movw r30,r24
+ 348:usart.cpp     ****         if (ctsport == 0)
+ 1887               	.LM160:
+ 1888 0002 A18D      		ldd r26,Z+25
+ 1889 0004 B28D      		ldd r27,Z+26
+ 1890 0006 1097      		sbiw r26,0
+ 1891 0008 01F0      		breq .L82
+ 350:usart.cpp     ****         if (ctsport->IN & ctspin_bm)
+ 1893               	.LM161:
+ 1894 000a 1896      		adiw r26,8
+ 1895 000c 8C91      		ld r24,X
+ 1896 000e 1897      		sbiw r26,8
+ 1897 0010 948D      		ldd r25,Z+28
+ 1898 0012 8923      		and r24,r25
+ 1899 0014 01F0      		breq .L84
+ 353:usart.cpp     ****                 usart->CTRLA &= ~USART_DREINTLVL_gm;
+ 1901               	.LM162:
+ 1902 0016 0480      		ldd __tmp_reg__,Z+4
+ 1903 0018 F581      		ldd r31,Z+5
+ 1904 001a E02D      		mov r30,__tmp_reg__
+ 1905 001c 8381      		ldd r24,Z+3
+ 1906 001e 8C7F      		andi r24,lo8(-4)
+ 1907 0020 8383      		std Z+3,r24
+ 1908 0022 0895      		ret
+ 1909               	.L84:
+ 358:usart.cpp     ****                 if (!(flags & USART_TX_QUEUE_EMPTY))
+ 1911               	.LM163:
+ 1912 0024 868D      		ldd r24,Z+30
+ 1913 0026 84FD      		sbrc r24,4
+ 1914 0028 00C0      		rjmp .L82
+ 359:usart.cpp     ****                         usart->CTRLA |= USART_DREINTLVL_MED_gc;
+ 1916               	.LM164:
+ 1917 002a 0480      		ldd __tmp_reg__,Z+4
+ 1918 002c F581      		ldd r31,Z+5
+ 1919 002e E02D      		mov r30,__tmp_reg__
+ 1920 0030 8381      		ldd r24,Z+3
+ 1921 0032 8260      		ori r24,lo8(2)
+ 1922 0034 8383      		std Z+3,r24
+ 1923               	.L82:
+ 1924 0036 0895      		ret
+ 1926               	.Lscope19:
+ 1927               		.section	.text._ZN5Usart5beginElcc,"ax",@progbits
+ 1933               	.global	_ZN5Usart5beginElcc
+ 1935               	_ZN5Usart5beginElcc:
+ 366:usart.cpp     **** {
+ 1937               	.LM165:
+ 1938               	.LFBB20:
+ 1939 0000 9F92      		push r9
+ 1940 0002 AF92      		push r10
+ 1941 0004 BF92      		push r11
+ 1942 0006 CF92      		push r12
+ 1943 0008 DF92      		push r13
+ 1944 000a EF92      		push r14
+ 1945 000c FF92      		push r15
+ 1946 000e 0F93      		push r16
+ 1947 0010 1F93      		push r17
+ 1948 0012 CF93      		push r28
+ 1949 0014 DF93      		push r29
+ 1950 0016 0F92      		push __tmp_reg__
+ 1951 0018 CDB7      		in r28,__SP_L__
+ 1952 001a DEB7      		in r29,__SP_H__
+ 1953               	/* prologue: function */
+ 1954               	/* frame size = 1 */
+ 1955               	/* stack size = 12 */
+ 1956               	.L__stack_usage = 12
+ 1957 001c 5C01      		movw r10,r24
+ 1958 001e 6A01      		movw r12,r20
+ 1959 0020 7B01      		movw r14,r22
+ 1960               	.LBB47:
+ 375:usart.cpp     ****         pin = get_txpin(usart_ind);
+ 1962               	.LM166:
+ 1963 0022 DC01      		movw r26,r24
+ 1964 0024 1696      		adiw r26,6
+ 1965 0026 9C90      		ld r9,X
+ 1966 0028 892D      		mov r24,r9
+ 1967 002a 2983      		std Y+1,r18
+ 1968 002c 0E94 0000 		call _ZN5Usart9get_txpinEc
+ 1969 0030 182F      		mov r17,r24
+ 376:usart.cpp     ****         port = get_port(usart_ind);
+ 1971               	.LM167:
+ 1972 0032 892D      		mov r24,r9
+ 1973 0034 0E94 0000 		call _ZN5Usart8get_portEc
+ 1974 0038 FC01      		movw r30,r24
+ 377:usart.cpp     ****         pinmask = 1 << pin;
+ 1976               	.LM168:
+ 1977 003a 81E0      		ldi r24,lo8(1)
+ 1978 003c 90E0      		ldi r25,hi8(1)
+ 1979 003e 012E      		mov r0,r17
+ 1980 0040 00C0      		rjmp 2f
+ 1981 0042 880F      	1:	lsl r24
+ 1982 0044 991F      		rol r25
+ 1983 0046 0A94      	2:	dec r0
+ 1984 0048 02F4      		brpl 1b
+ 378:usart.cpp     ****         port->DIRSET = pinmask;
+ 1986               	.LM169:
+ 1987 004a 8183      		std Z+1,r24
+ 379:usart.cpp     ****         port->DIRCLR = pinmask >> 1;
+ 1989               	.LM170:
+ 1990 004c 90E0      		ldi r25,lo8(0)
+ 1991 004e 9595      		asr r25
+ 1992 0050 8795      		ror r24
+ 1993 0052 8283      		std Z+2,r24
+ 381:usart.cpp     ****         if (puen)
+ 1995               	.LM171:
+ 1996 0054 2981      		ldd r18,Y+1
+ 1997 0056 0023      		tst r16
+ 1998 0058 01F0      		breq .L86
+ 383:usart.cpp     ****                 *(&(port->PIN0CTRL)+(pin-1)) = PORT_OPC_PULLUP_gc;
+ 2000               	.LM172:
+ 2001 005a E10F      		add r30,r17
+ 2002 005c F11D      		adc r31,__zero_reg__
+ 2003 005e 3F96      		adiw r30,15
+ 2004 0060 88E1      		ldi r24,lo8(24)
+ 2005 0062 8083      		st Z,r24
+ 2006               	.L86:
+ 410:usart.cpp     ****         else if ((F_CPU == 32000000L) && (baud == 19200))
+ 2008               	.LM173:
+ 2009 0064 B0E0      		ldi r27,lo8(19200)
+ 2010 0066 CB16      		cp r12,r27
+ 2011 0068 BBE4      		ldi r27,hi8(19200)
+ 2012 006a DB06      		cpc r13,r27
+ 2013 006c B0E0      		ldi r27,hlo8(19200)
+ 2014 006e EB06      		cpc r14,r27
+ 2015 0070 B0E0      		ldi r27,hhi8(19200)
+ 2016 0072 FB06      		cpc r15,r27
+ 2017 0074 01F4      		brne .+2
+ 2018 0076 00C0      		rjmp .L93
+ 416:usart.cpp     ****         else if ((F_CPU == 32000000L) && (baud == 38400))
+ 2020               	.LM174:
+ 2021 0078 E0E0      		ldi r30,lo8(38400)
+ 2022 007a CE16      		cp r12,r30
+ 2023 007c E6E9      		ldi r30,hi8(38400)
+ 2024 007e DE06      		cpc r13,r30
+ 2025 0080 E0E0      		ldi r30,hlo8(38400)
+ 2026 0082 EE06      		cpc r14,r30
+ 2027 0084 E0E0      		ldi r30,hhi8(38400)
+ 2028 0086 FE06      		cpc r15,r30
+ 2029 0088 01F4      		brne .+2
+ 2030 008a 00C0      		rjmp .L94
+ 422:usart.cpp     ****         else if ((F_CPU == 32000000L) && (baud == 57600))
+ 2032               	.LM175:
+ 2033 008c F0E0      		ldi r31,lo8(57600)
+ 2034 008e CF16      		cp r12,r31
+ 2035 0090 F1EE      		ldi r31,hi8(57600)
+ 2036 0092 DF06      		cpc r13,r31
+ 2037 0094 F0E0      		ldi r31,hlo8(57600)
+ 2038 0096 EF06      		cpc r14,r31
+ 2039 0098 F0E0      		ldi r31,hhi8(57600)
+ 2040 009a FF06      		cpc r15,r31
+ 2041 009c 01F0      		breq .L95
+ 428:usart.cpp     ****         else if ((F_CPU == 32000000L) && (baud == 115200))
+ 2043               	.LM176:
+ 2044 009e 80E0      		ldi r24,lo8(115200)
+ 2045 00a0 C816      		cp r12,r24
+ 2046 00a2 82EC      		ldi r24,hi8(115200)
+ 2047 00a4 D806      		cpc r13,r24
+ 2048 00a6 81E0      		ldi r24,hlo8(115200)
+ 2049 00a8 E806      		cpc r14,r24
+ 2050 00aa 80E0      		ldi r24,hhi8(115200)
+ 2051 00ac F806      		cpc r15,r24
+ 2052 00ae 01F0      		breq .L96
+ 434:usart.cpp     ****         else if (_clk2x)
+ 2054               	.LM177:
+ 2055 00b0 2223      		tst r18
+ 2056 00b2 01F0      		breq .L88
+ 436:usart.cpp     ****                 bsel = ((F_CPU) / ((uint32_t)baud * 8) - 1);
+ 2058               	.LM178:
+ 2059 00b4 A701      		movw r20,r14
+ 2060 00b6 9601      		movw r18,r12
+ 2061 00b8 F3E0      		ldi r31,3
+ 2062 00ba 220F      	1:	lsl r18
+ 2063 00bc 331F      		rol r19
+ 2064 00be 441F      		rol r20
+ 2065 00c0 551F      		rol r21
+ 2066 00c2 FA95      		dec r31
+ 2067 00c4 01F4      		brne 1b
+ 2068 00c6 60E0      		ldi r22,lo8(32000000)
+ 2069 00c8 78E4      		ldi r23,hi8(32000000)
+ 2070 00ca 88EE      		ldi r24,hlo8(32000000)
+ 2071 00cc 91E0      		ldi r25,hhi8(32000000)
+ 2072 00ce 0E94 0000 		call __udivmodsi4
+ 2073 00d2 2150      		subi r18,lo8(-(-1))
+ 2074 00d4 3040      		sbci r19,hi8(-(-1))
+ 438:usart.cpp     ****                 clk2x = 1;
+ 2076               	.LM179:
+ 2077 00d6 81E0      		ldi r24,lo8(1)
+ 2078 00d8 00C0      		rjmp .L97
+ 2079               	.L88:
+ 442:usart.cpp     ****                 bsel = ((F_CPU) / ((uint32_t)baud * 16) - 1);
+ 2081               	.LM180:
+ 2082 00da A701      		movw r20,r14
+ 2083 00dc 9601      		movw r18,r12
+ 2084 00de E4E0      		ldi r30,4
+ 2085 00e0 220F      	1:	lsl r18
+ 2086 00e2 331F      		rol r19
+ 2087 00e4 441F      		rol r20
+ 2088 00e6 551F      		rol r21
+ 2089 00e8 EA95      		dec r30
+ 2090 00ea 01F4      		brne 1b
+ 2091 00ec 60E0      		ldi r22,lo8(32000000)
+ 2092 00ee 78E4      		ldi r23,hi8(32000000)
+ 2093 00f0 88EE      		ldi r24,hlo8(32000000)
+ 2094 00f2 91E0      		ldi r25,hhi8(32000000)
+ 2095 00f4 0E94 0000 		call __udivmodsi4
+ 2096 00f8 2150      		subi r18,lo8(-(-1))
+ 2097 00fa 3040      		sbci r19,hi8(-(-1))
+ 444:usart.cpp     ****                 clk2x = 0;
+ 2099               	.LM181:
+ 2100 00fc 80E0      		ldi r24,lo8(0)
+ 2101               	.L97:
+ 443:usart.cpp     ****                 bscale = 0;
+ 2103               	.LM182:
+ 2104 00fe 90E0      		ldi r25,lo8(0)
+ 2105 0100 00C0      		rjmp .L87
+ 2106               	.L93:
+ 414:usart.cpp     ****                 clk2x = 0;
+ 2108               	.LM183:
+ 2109 0102 80E0      		ldi r24,lo8(0)
+ 413:usart.cpp     ****                 bscale = -5;
+ 2111               	.LM184:
+ 2112 0104 9BEF      		ldi r25,lo8(-5)
+ 412:usart.cpp     ****                 bsel = 3301;
+ 2114               	.LM185:
+ 2115 0106 25EE      		ldi r18,lo8(3301)
+ 2116 0108 3CE0      		ldi r19,hi8(3301)
+ 2117 010a 00C0      		rjmp .L87
+ 2118               	.L94:
+ 420:usart.cpp     ****                 clk2x = 0;
+ 2120               	.LM186:
+ 2121 010c 80E0      		ldi r24,lo8(0)
+ 419:usart.cpp     ****                 bscale = -6;
+ 2123               	.LM187:
+ 2124 010e 9AEF      		ldi r25,lo8(-6)
+ 418:usart.cpp     ****                 bsel = 3269;
+ 2126               	.LM188:
+ 2127 0110 25EC      		ldi r18,lo8(3269)
+ 2128 0112 3CE0      		ldi r19,hi8(3269)
+ 2129 0114 00C0      		rjmp .L87
+ 2130               	.L95:
+ 426:usart.cpp     ****                 clk2x = 0;
+ 2132               	.LM189:
+ 2133 0116 80E0      		ldi r24,lo8(0)
+ 425:usart.cpp     ****                 bscale = -6;
+ 2135               	.LM190:
+ 2136 0118 9AEF      		ldi r25,lo8(-6)
+ 424:usart.cpp     ****                 bsel = 2158;
+ 2138               	.LM191:
+ 2139 011a 2EE6      		ldi r18,lo8(2158)
+ 2140 011c 38E0      		ldi r19,hi8(2158)
+ 2141 011e 00C0      		rjmp .L87
+ 2142               	.L96:
+ 432:usart.cpp     ****                 clk2x = 0;
+ 2144               	.LM192:
+ 2145 0120 80E0      		ldi r24,lo8(0)
+ 431:usart.cpp     ****                 bscale = -6;
+ 2147               	.LM193:
+ 2148 0122 9AEF      		ldi r25,lo8(-6)
+ 430:usart.cpp     ****                 bsel = 1047;
+ 2150               	.LM194:
+ 2151 0124 27E1      		ldi r18,lo8(1047)
+ 2152 0126 34E0      		ldi r19,hi8(1047)
+ 2153               	.L87:
+ 447:usart.cpp     ****         usart->BAUDCTRLA = (bsel & USART_BSEL_gm);
+ 2155               	.LM195:
+ 2156 0128 D501      		movw r26,r10
+ 2157 012a 1496      		adiw r26,4
+ 2158 012c ED91      		ld r30,X+
+ 2159 012e FC91      		ld r31,X
+ 2160 0130 1597      		sbiw r26,4+1
+ 2161 0132 2683      		std Z+6,r18
+ 448:usart.cpp     ****         usart->BAUDCTRLB = ((bscale << USART_BSCALE_gp) & USART_BSCALE_gm) | ((bsel >> 8) & 0x0f);
+ 2163               	.LM196:
+ 2164 0134 1496      		adiw r26,4
+ 2165 0136 ED91      		ld r30,X+
+ 2166 0138 FC91      		ld r31,X
+ 2167 013a 1597      		sbiw r26,4+1
+ 2168 013c 232F      		mov r18,r19
+ 2169 013e 2F70      		andi r18,lo8(15)
+ 2170 0140 9295      		swap r25
+ 2171 0142 907F      		andi r25,lo8(-16)
+ 2172 0144 292B      		or r18,r25
+ 2173 0146 2783      		std Z+7,r18
+ 2174 0148 1496      		adiw r26,4
+ 2175 014a ED91      		ld r30,X+
+ 2176 014c FC91      		ld r31,X
+ 2177 014e 1597      		sbiw r26,4+1
+ 450:usart.cpp     ****         if (clk2x)
+ 2179               	.LM197:
+ 2180 0150 8823      		tst r24
+ 2181 0152 01F0      		breq .L89
+ 452:usart.cpp     ****                 usart->CTRLB = USART_RXEN_bm | USART_CLK2X_bm | USART_TXEN_bm;
+ 2183               	.LM198:
+ 2184 0154 8CE1      		ldi r24,lo8(28)
+ 2185 0156 00C0      		rjmp .L98
+ 2186               	.L89:
+ 456:usart.cpp     ****                 usart->CTRLB = USART_RXEN_bm | USART_TXEN_bm;
+ 2188               	.LM199:
+ 2189 0158 88E1      		ldi r24,lo8(24)
+ 2190               	.L98:
+ 2191 015a 8483      		std Z+4,r24
+ 459:usart.cpp     ****         if (rxbuf_size > 0)
+ 2193               	.LM200:
+ 2194 015c F501      		movw r30,r10
+ 2195 015e 8189      		ldd r24,Z+17
+ 2196 0160 9289      		ldd r25,Z+18
+ 2197 0162 0480      		ldd __tmp_reg__,Z+4
+ 2198 0164 F581      		ldd r31,Z+5
+ 2199 0166 E02D      		mov r30,__tmp_reg__
+ 2200 0168 0097      		sbiw r24,0
+ 2201 016a 01F0      		breq .L91
+ 461:usart.cpp     ****                 usart->CTRLA = USART_RXCINTLVL_MED_gc;
+ 2203               	.LM201:
+ 2204 016c 80E2      		ldi r24,lo8(32)
+ 2205 016e 8383      		std Z+3,r24
+ 2206 0170 00C0      		rjmp .L92
+ 2207               	.L91:
+ 465:usart.cpp     ****                 usart->CTRLA = 0;
+ 2209               	.LM202:
+ 2210 0172 1382      		std Z+3,__zero_reg__
+ 2211               	.L92:
+ 468:usart.cpp     ****         flags |= USART_RUNNING;
+ 2213               	.LM203:
+ 2214 0174 D501      		movw r26,r10
+ 2215 0176 5E96      		adiw r26,30
+ 2216 0178 8C91      		ld r24,X
+ 2217 017a 5E97      		sbiw r26,30
+ 2218 017c 8160      		ori r24,lo8(1)
+ 2219 017e 5E96      		adiw r26,30
+ 2220 0180 8C93      		st X,r24
+ 470:usart.cpp     ****         update_rts();
+ 2222               	.LM204:
+ 2223 0182 C501      		movw r24,r10
+ 2224 0184 0E94 0000 		call _ZN5Usart10update_rtsEv
+ 2225               	/* epilogue start */
+ 2226               	.LBE47:
+ 496:usart.cpp     **** }
+ 2228               	.LM205:
+ 2229 0188 0F90      		pop __tmp_reg__
+ 2230 018a DF91      		pop r29
+ 2231 018c CF91      		pop r28
+ 2232 018e 1F91      		pop r17
+ 2233 0190 0F91      		pop r16
+ 2234 0192 FF90      		pop r15
+ 2235 0194 EF90      		pop r14
+ 2236 0196 DF90      		pop r13
+ 2237 0198 CF90      		pop r12
+ 2238 019a BF90      		pop r11
+ 2239 019c AF90      		pop r10
+ 2240 019e 9F90      		pop r9
+ 2241 01a0 0895      		ret
+ 2250               	.Lscope20:
+ 2251               		.section	.text._ZN5Usart3endEv,"ax",@progbits
+ 2254               	.global	_ZN5Usart3endEv
+ 2256               	_ZN5Usart3endEv:
+ 500:usart.cpp     **** {
+ 2258               	.LM206:
+ 2259               	.LFBB21:
+ 2260               	/* prologue: function */
+ 2261               	/* frame size = 0 */
+ 2262               	/* stack size = 0 */
+ 2263               	.L__stack_usage = 0
+ 2264 0000 FC01      		movw r30,r24
+ 502:usart.cpp     ****         usart->CTRLA = 0;
+ 2266               	.LM207:
+ 2267 0002 A481      		ldd r26,Z+4
+ 2268 0004 B581      		ldd r27,Z+5
+ 2269 0006 1396      		adiw r26,3
+ 2270 0008 1C92      		st X,__zero_reg__
+ 503:usart.cpp     ****         usart->CTRLB = 0;
+ 2272               	.LM208:
+ 2273 000a A481      		ldd r26,Z+4
+ 2274 000c B581      		ldd r27,Z+5
+ 2275 000e 1496      		adiw r26,4
+ 2276 0010 1C92      		st X,__zero_reg__
+ 2277 0012 1497      		sbiw r26,4
+ 507:usart.cpp     ****         flags &= ~USART_RUNNING;
+ 2279               	.LM209:
+ 2280 0014 868D      		ldd r24,Z+30
+ 2281 0016 8E7F      		andi r24,lo8(-2)
+ 2282 0018 868F      		std Z+30,r24
+ 2283               	/* epilogue start */
+ 508:usart.cpp     **** }
+ 2285               	.LM210:
+ 2286 001a 0895      		ret
+ 2288               	.Lscope21:
+ 2289               		.section	.text._ZN5UsartD2Ev,"ax",@progbits
+ 2292               	.global	_ZN5UsartD2Ev
+ 2294               	_ZN5UsartD2Ev:
+ 257:usart.cpp     **** Usart::~Usart()
+ 2296               	.LM211:
+ 2297               	.LFBB22:
+ 2298 0000 CF93      		push r28
+ 2299 0002 DF93      		push r29
+ 2300               	/* prologue: function */
+ 2301               	/* frame size = 0 */
+ 2302               	/* stack size = 2 */
+ 2303               	.L__stack_usage = 2
+ 2304 0004 EC01      		movw r28,r24
+ 2305               	.LBB48:
+ 257:usart.cpp     **** Usart::~Usart()
+ 2307               	.LM212:
+ 2308 0006 80E0      		ldi r24,lo8(_ZTV5Usart+4)
+ 2309 0008 90E0      		ldi r25,hi8(_ZTV5Usart+4)
+ 2310 000a 8883      		st Y,r24
+ 2311 000c 9983      		std Y+1,r25
+ 2312 000e 4296      		adiw r24,18
+ 2313 0010 8A83      		std Y+2,r24
+ 2314 0012 9B83      		std Y+3,r25
+ 259:usart.cpp     ****         end();
+ 2316               	.LM213:
+ 2317 0014 CE01      		movw r24,r28
+ 2318 0016 0E94 0000 		call _ZN5Usart3endEv
+ 260:usart.cpp     ****         usart_list[(int)usart_ind] = 0;
+ 2320               	.LM214:
+ 2321 001a EE81      		ldd r30,Y+6
+ 2322 001c F0E0      		ldi r31,lo8(0)
+ 2323 001e EE0F      		lsl r30
+ 2324 0020 FF1F      		rol r31
+ 2325 0022 E050      		subi r30,lo8(-(_ZN5Usart10usart_listE))
+ 2326 0024 F040      		sbci r31,hi8(-(_ZN5Usart10usart_listE))
+ 2327 0026 1082      		st Z,__zero_reg__
+ 2328 0028 1182      		std Z+1,__zero_reg__
+ 2329               	/* epilogue start */
+ 2330               	.LBE48:
+ 261:usart.cpp     **** }
+ 2332               	.LM215:
+ 2333 002a DF91      		pop r29
+ 2334 002c CF91      		pop r28
+ 2335 002e 0895      		ret
+ 2337               	.Lscope22:
+ 2338               		.section	.text._ZN5Usart4recvEv,"ax",@progbits
+ 2341               	.global	_ZN5Usart4recvEv
+ 2343               	_ZN5Usart4recvEv:
+ 512:usart.cpp     **** {
+ 2345               	.LM216:
+ 2346               	.LFBB23:
+ 2347               	/* prologue: function */
+ 2348               	/* frame size = 0 */
+ 2349               	/* stack size = 0 */
+ 2350               	.L__stack_usage = 0
+ 2351 0000 FC01      		movw r30,r24
+ 2352               	.LBB49:
+ 515:usart.cpp     ****         if (usart->STATUS & USART_RXCIF_bm)
+ 2354               	.LM217:
+ 2355 0002 A481      		ldd r26,Z+4
+ 2356 0004 B581      		ldd r27,Z+5
+ 2357 0006 1196      		adiw r26,1
+ 2358 0008 8C91      		ld r24,X
+ 2359 000a 1197      		sbiw r26,1
+ 2360 000c 87FF      		sbrs r24,7
+ 2361 000e 00C0      		rjmp .L102
+ 521:usart.cpp     ****                 tmp = usart->DATA;
+ 2363               	.LM218:
+ 2364 0010 2C91      		ld r18,X
+ 525:usart.cpp     ****                 if (!(flags & USART_RX_QUEUE_FULL))
+ 2366               	.LM219:
+ 2367 0012 868D      		ldd r24,Z+30
+ 2368 0014 87FD      		sbrc r24,7
+ 2369 0016 00C0      		rjmp .L104
+ 527:usart.cpp     ****                         rxbuf[rxbuf_head++] = tmp;
+ 2371               	.LM220:
+ 2372 0018 8389      		ldd r24,Z+19
+ 2373 001a 9489      		ldd r25,Z+20
+ 2374 001c A785      		ldd r26,Z+15
+ 2375 001e B089      		ldd r27,Z+16
+ 2376 0020 A80F      		add r26,r24
+ 2377 0022 B91F      		adc r27,r25
+ 2378 0024 2C93      		st X,r18
+ 2379 0026 0196      		adiw r24,1
+ 2380 0028 838B      		std Z+19,r24
+ 2381 002a 948B      		std Z+20,r25
+ 528:usart.cpp     ****                         flags &= ~USART_RX_QUEUE_EMPTY;
+ 2383               	.LM221:
+ 2384 002c 268D      		ldd r18,Z+30
+ 2385 002e 2F7B      		andi r18,lo8(-65)
+ 2386 0030 268F      		std Z+30,r18
+ 529:usart.cpp     ****                         if (rxbuf_head >= rxbuf_size)
+ 2388               	.LM222:
+ 2389 0032 2189      		ldd r18,Z+17
+ 2390 0034 3289      		ldd r19,Z+18
+ 2391 0036 8217      		cp r24,r18
+ 2392 0038 9307      		cpc r25,r19
+ 2393 003a 00F0      		brlo .L105
+ 530:usart.cpp     ****                                 rxbuf_head = 0;
+ 2395               	.LM223:
+ 2396 003c 138A      		std Z+19,__zero_reg__
+ 2397 003e 148A      		std Z+20,__zero_reg__
+ 2398               	.L105:
+ 531:usart.cpp     ****                         if (rxbuf_head == rxbuf_tail)
+ 2400               	.LM224:
+ 2401 0040 2389      		ldd r18,Z+19
+ 2402 0042 3489      		ldd r19,Z+20
+ 2403 0044 8589      		ldd r24,Z+21
+ 2404 0046 9689      		ldd r25,Z+22
+ 2405 0048 2817      		cp r18,r24
+ 2406 004a 3907      		cpc r19,r25
+ 2407 004c 01F4      		brne .L104
+ 532:usart.cpp     ****                                 flags |= USART_RX_QUEUE_FULL;
+ 2409               	.LM225:
+ 2410 004e 868D      		ldd r24,Z+30
+ 2411 0050 8068      		ori r24,lo8(-128)
+ 2412 0052 868F      		std Z+30,r24
+ 2413               	.L104:
+ 535:usart.cpp     ****                 update_rts();
+ 2415               	.LM226:
+ 2416 0054 CF01      		movw r24,r30
+ 2417 0056 0E94 0000 		call _ZN5Usart10update_rtsEv
+ 2418               	.L102:
+ 2419 005a 0895      		ret
+ 2420               	.LBE49:
+ 2425               	.Lscope23:
+ 2426               		.section	.text._ZN5Usart4xmitEv,"ax",@progbits
+ 2429               	.global	_ZN5Usart4xmitEv
+ 2431               	_ZN5Usart4xmitEv:
+ 542:usart.cpp     **** {
+ 2433               	.LM227:
+ 2434               	.LFBB24:
+ 2435 0000 CF93      		push r28
+ 2436 0002 DF93      		push r29
+ 2437               	/* prologue: function */
+ 2438               	/* frame size = 0 */
+ 2439               	/* stack size = 2 */
+ 2440               	.L__stack_usage = 2
+ 2441 0004 FC01      		movw r30,r24
+ 543:usart.cpp     ****         if (!(flags & USART_TX_QUEUE_EMPTY))
+ 2443               	.LM228:
+ 2444 0006 868D      		ldd r24,Z+30
+ 2445 0008 84FD      		sbrc r24,4
+ 2446 000a 00C0      		rjmp .L107
+ 546:usart.cpp     ****                 usart->DATA = txbuf[txbuf_tail++];
+ 2448               	.LM229:
+ 2449 000c C481      		ldd r28,Z+4
+ 2450 000e D581      		ldd r29,Z+5
+ 2451 0010 8585      		ldd r24,Z+13
+ 2452 0012 9685      		ldd r25,Z+14
+ 2453 0014 A781      		ldd r26,Z+7
+ 2454 0016 B085      		ldd r27,Z+8
+ 2455 0018 A80F      		add r26,r24
+ 2456 001a B91F      		adc r27,r25
+ 2457 001c 2C91      		ld r18,X
+ 2458 001e 2883      		st Y,r18
+ 2459 0020 0196      		adiw r24,1
+ 2460 0022 8587      		std Z+13,r24
+ 2461 0024 9687      		std Z+14,r25
+ 550:usart.cpp     ****                 flags &= ~USART_TX_QUEUE_FULL;
+ 2463               	.LM230:
+ 2464 0026 268D      		ldd r18,Z+30
+ 2465 0028 2F7D      		andi r18,lo8(-33)
+ 2466 002a 268F      		std Z+30,r18
+ 551:usart.cpp     ****                 if (txbuf_tail >= txbuf_size)
+ 2468               	.LM231:
+ 2469 002c 2185      		ldd r18,Z+9
+ 2470 002e 3285      		ldd r19,Z+10
+ 2471 0030 8217      		cp r24,r18
+ 2472 0032 9307      		cpc r25,r19
+ 2473 0034 00F0      		brlo .L108
+ 552:usart.cpp     ****                         txbuf_tail = 0;
+ 2475               	.LM232:
+ 2476 0036 1586      		std Z+13,__zero_reg__
+ 2477 0038 1686      		std Z+14,__zero_reg__
+ 2478               	.L108:
+ 553:usart.cpp     ****                 if (txbuf_head == txbuf_tail)
+ 2480               	.LM233:
+ 2481 003a 2385      		ldd r18,Z+11
+ 2482 003c 3485      		ldd r19,Z+12
+ 2483 003e 8585      		ldd r24,Z+13
+ 2484 0040 9685      		ldd r25,Z+14
+ 2485 0042 2817      		cp r18,r24
+ 2486 0044 3907      		cpc r19,r25
+ 2487 0046 01F4      		brne .L107
+ 554:usart.cpp     ****                         flags |= USART_TX_QUEUE_EMPTY;
+ 2489               	.LM234:
+ 2490 0048 868D      		ldd r24,Z+30
+ 2491 004a 8061      		ori r24,lo8(16)
+ 2492 004c 868F      		std Z+30,r24
+ 2493               	.L107:
+ 556:usart.cpp     ****         if (flags & USART_TX_QUEUE_EMPTY)
+ 2495               	.LM235:
+ 2496 004e 868D      		ldd r24,Z+30
+ 2497 0050 84FF      		sbrs r24,4
+ 2498 0052 00C0      		rjmp .L106
+ 559:usart.cpp     ****                 usart->CTRLA &= ~USART_DREINTLVL_gm;
+ 2500               	.LM236:
+ 2501 0054 0480      		ldd __tmp_reg__,Z+4
+ 2502 0056 F581      		ldd r31,Z+5
+ 2503 0058 E02D      		mov r30,__tmp_reg__
+ 2504 005a 8381      		ldd r24,Z+3
+ 2505 005c 8C7F      		andi r24,lo8(-4)
+ 2506 005e 8383      		std Z+3,r24
+ 2507               	.L106:
+ 2508               	/* epilogue start */
+ 564:usart.cpp     **** }
+ 2510               	.LM237:
+ 2511 0060 DF91      		pop r29
+ 2512 0062 CF91      		pop r28
+ 2513 0064 0895      		ret
+ 2515               	.Lscope24:
+ 2516               		.section	.text._ZN5Usart6ungetcEi,"ax",@progbits
+ 2520               	.global	_ZN5Usart6ungetcEi
+ 2522               	_ZN5Usart6ungetcEi:
+ 705:usart.cpp     **** {
+ 2524               	.LM238:
+ 2525               	.LFBB25:
+ 2526               	/* prologue: function */
+ 2527               	/* frame size = 0 */
+ 2528               	/* stack size = 0 */
+ 2529               	.L__stack_usage = 0
+ 2530 0000 DC01      		movw r26,r24
+ 2531               	.LBB50:
+ 708:usart.cpp     ****         if (c == EOF || flags & USART_RX_QUEUE_FULL || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE
+ 2533               	.LM239:
+ 2534 0002 8FEF      		ldi r24,hi8(-1)
+ 2535 0004 6F3F      		cpi r22,lo8(-1)
+ 2536 0006 7807      		cpc r23,r24
+ 2537 0008 01F4      		brne .+2
+ 2538 000a 00C0      		rjmp .L111
+ 708:usart.cpp     ****         if (c == EOF || flags & USART_RX_QUEUE_FULL || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE
+ 2540               	.LM240:
+ 2541 000c 5E96      		adiw r26,30
+ 2542 000e 8C91      		ld r24,X
+ 2543 0010 5E97      		sbiw r26,30
+ 2544 0012 87FD      		sbrc r24,7
+ 2545 0014 00C0      		rjmp .L118
+ 708:usart.cpp     ****         if (c == EOF || flags & USART_RX_QUEUE_FULL || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE
+ 2547               	.LM241:
+ 2548 0016 8FB7      		in r24,__SREG__
+ 2549 0018 90E0      		ldi r25,lo8(0)
+ 2550 001a 8770      		andi r24,lo8(7)
+ 2551 001c 9070      		andi r25,hi8(7)
+ 2552 001e 0097      		sbiw r24,0
+ 2553 0020 01F0      		breq .+2
+ 2554 0022 00C0      		rjmp .L112
+ 708:usart.cpp     ****         if (c == EOF || flags & USART_RX_QUEUE_FULL || (!(SREG & SREG_I) && (flags & USART_RX_QUEUE
+ 2556               	.LM242:
+ 2557 0024 5E96      		adiw r26,30
+ 2558 0026 8C91      		ld r24,X
+ 2559 0028 5E97      		sbiw r26,30
+ 2560 002a 87FF      		sbrs r24,7
+ 2561 002c 00C0      		rjmp .L112
+ 2562 002e 00C0      		rjmp .L118
+ 2563               	.L119:
+ 715:usart.cpp     ****         saved_status = SREG;
+ 2565               	.LM243:
+ 2566 0030 4FB7      		in r20,__SREG__
+ 716:usart.cpp     ****         cli();
+ 2568               	.LM244:
+ 2569               	/* #APP */
+ 2570               	 ;  716 "usart.cpp" 1
+ 2571 0032 F894      		cli
+ 2572               	 ;  0 "" 2
+ 718:usart.cpp     ****         rxbuf[rxbuf_head++] = c;
+ 2574               	.LM245:
+ 2575               	/* #NOAPP */
+ 2576 0034 5396      		adiw r26,19
+ 2577 0036 8D91      		ld r24,X+
+ 2578 0038 9C91      		ld r25,X
+ 2579 003a 5497      		sbiw r26,19+1
+ 2580 003c 1F96      		adiw r26,15
+ 2581 003e ED91      		ld r30,X+
+ 2582 0040 FC91      		ld r31,X
+ 2583 0042 5097      		sbiw r26,15+1
+ 2584 0044 E80F      		add r30,r24
+ 2585 0046 F91F      		adc r31,r25
+ 2586 0048 6083      		st Z,r22
+ 2587 004a 9C01      		movw r18,r24
+ 2588 004c 2F5F      		subi r18,lo8(-(1))
+ 2589 004e 3F4F      		sbci r19,hi8(-(1))
+ 2590 0050 5396      		adiw r26,19
+ 2591 0052 2D93      		st X+,r18
+ 2592 0054 3C93      		st X,r19
+ 2593 0056 5497      		sbiw r26,19+1
+ 719:usart.cpp     ****         flags &= ~USART_RX_QUEUE_EMPTY;
+ 2595               	.LM246:
+ 2596 0058 5E96      		adiw r26,30
+ 2597 005a 8C91      		ld r24,X
+ 2598 005c 5E97      		sbiw r26,30
+ 2599 005e 8F7B      		andi r24,lo8(-65)
+ 2600 0060 5E96      		adiw r26,30
+ 2601 0062 8C93      		st X,r24
+ 2602 0064 5E97      		sbiw r26,30
+ 720:usart.cpp     ****         if (rxbuf_head >= rxbuf_size)
+ 2604               	.LM247:
+ 2605 0066 5196      		adiw r26,17
+ 2606 0068 8D91      		ld r24,X+
+ 2607 006a 9C91      		ld r25,X
+ 2608 006c 5297      		sbiw r26,17+1
+ 2609 006e 2817      		cp r18,r24
+ 2610 0070 3907      		cpc r19,r25
+ 2611 0072 00F0      		brlo .L113
+ 721:usart.cpp     ****                 rxbuf_head = 0;
+ 2613               	.LM248:
+ 2614 0074 5396      		adiw r26,19
+ 2615 0076 1D92      		st X+,__zero_reg__
+ 2616 0078 1C92      		st X,__zero_reg__
+ 2617 007a 5497      		sbiw r26,19+1
+ 2618               	.L113:
+ 722:usart.cpp     ****         if (rxbuf_head == rxbuf_tail)
+ 2620               	.LM249:
+ 2621 007c 5396      		adiw r26,19
+ 2622 007e 2D91      		ld r18,X+
+ 2623 0080 3C91      		ld r19,X
+ 2624 0082 5497      		sbiw r26,19+1
+ 2625 0084 5596      		adiw r26,21
+ 2626 0086 8D91      		ld r24,X+
+ 2627 0088 9C91      		ld r25,X
+ 2628 008a 5697      		sbiw r26,21+1
+ 2629 008c 2817      		cp r18,r24
+ 2630 008e 3907      		cpc r19,r25
+ 2631 0090 01F4      		brne .L114
+ 723:usart.cpp     ****                 flags |= USART_RX_QUEUE_FULL;
+ 2633               	.LM250:
+ 2634 0092 5E96      		adiw r26,30
+ 2635 0094 8C91      		ld r24,X
+ 2636 0096 5E97      		sbiw r26,30
+ 2637 0098 8068      		ori r24,lo8(-128)
+ 2638 009a 5E96      		adiw r26,30
+ 2639 009c 8C93      		st X,r24
+ 2640 009e 5E97      		sbiw r26,30
+ 2641               	.L114:
+ 725:usart.cpp     ****         SREG = saved_status;
+ 2643               	.LM251:
+ 2644 00a0 4FBF      		out __SREG__,r20
+ 727:usart.cpp     ****         return c;
+ 2646               	.LM252:
+ 2647 00a2 00C0      		rjmp .L111
+ 2648               	.L118:
+ 713:usart.cpp     ****                 return EOF;
+ 2650               	.LM253:
+ 2651 00a4 6FEF      		ldi r22,lo8(-1)
+ 2652 00a6 7FEF      		ldi r23,hi8(-1)
+ 2653               	.L111:
+ 2654               	.LBE50:
+ 728:usart.cpp     **** }
+ 2656               	.LM254:
+ 2657 00a8 CB01      		movw r24,r22
+ 2658               	/* epilogue start */
+ 2659 00aa 0895      		ret
+ 2660               	.L112:
+ 2661               	.LBB51:
+ 712:usart.cpp     ****         if (rxbuf_size == 0)
+ 2663               	.LM255:
+ 2664 00ac 5196      		adiw r26,17
+ 2665 00ae 8D91      		ld r24,X+
+ 2666 00b0 9C91      		ld r25,X
+ 2667 00b2 5297      		sbiw r26,17+1
+ 2668 00b4 0097      		sbiw r24,0
+ 2669 00b6 01F0      		breq .+2
+ 2670 00b8 00C0      		rjmp .L119
+ 2671 00ba 00C0      		rjmp .L118
+ 2672               	.LBE51:
+ 2680               	.Lscope25:
+ 2681               		.section	.text._ZN5Usart12setup_streamEP6__file,"ax",@progbits
+ 2685               	.global	_ZN5Usart12setup_streamEP6__file
+ 2687               	_ZN5Usart12setup_streamEP6__file:
+ 732:usart.cpp     **** {
+ 2689               	.LM256:
+ 2690               	.LFBB26:
+ 2691               	/* prologue: function */
+ 2692               	/* frame size = 0 */
+ 2693               	/* stack size = 0 */
+ 2694               	.L__stack_usage = 0
+ 2695 0000 FB01      		movw r30,r22
+ 733:usart.cpp     ****         fdev_setup_stream(stream, put, get, _FDEV_SETUP_RW);
+ 2697               	.LM257:
+ 2698 0002 20E0      		ldi r18,lo8(gs(_ZN5Usart3putEcP6__file))
+ 2699 0004 30E0      		ldi r19,hi8(gs(_ZN5Usart3putEcP6__file))
+ 2700 0006 2087      		std Z+8,r18
+ 2701 0008 3187      		std Z+9,r19
+ 2702 000a 20E0      		ldi r18,lo8(gs(_ZN5Usart3getEP6__file))
+ 2703 000c 30E0      		ldi r19,hi8(gs(_ZN5Usart3getEP6__file))
+ 2704 000e 2287      		std Z+10,r18
+ 2705 0010 3387      		std Z+11,r19
+ 2706 0012 23E0      		ldi r18,lo8(3)
+ 2707 0014 2383      		std Z+3,r18
+ 734:usart.cpp     ****         fdev_set_udata(stream, this);
+ 2709               	.LM258:
+ 2710 0016 8487      		std Z+12,r24
+ 2711 0018 9587      		std Z+13,r25
+ 2712               	/* epilogue start */
+ 735:usart.cpp     **** }
+ 2714               	.LM259:
+ 2715 001a 0895      		ret
+ 2717               	.Lscope26:
+ 2718               		.section	.text._ZN5Usart17handle_interruptsEPS_,"ax",@progbits
+ 2721               	.global	_ZN5Usart17handle_interruptsEPS_
+ 2723               	_ZN5Usart17handle_interruptsEPS_:
+ 763:usart.cpp     **** 
+ 764:usart.cpp     **** 
+ 765:usart.cpp     **** // static
+ 766:usart.cpp     **** inline void Usart::handle_interrupts(char _usart)
+ 767:usart.cpp     **** {
+ 768:usart.cpp     ****         Usart *u = usart_list[(int)_usart];
+ 769:usart.cpp     ****         if (u)
+ 770:usart.cpp     ****         {
+ 771:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 772:usart.cpp     ****                 USART_t *dev = get_usart(_usart);
+ 773:usart.cpp     ****                 if (dev->STATUS & USART_DREIF_bm)
+ 774:usart.cpp     ****                         u->xmit();
+ 775:usart.cpp     ****                 if (dev->STATUS & USART_RXCIF_bm)
+ 776:usart.cpp     ****                         u->recv();
+ 777:usart.cpp     **** #else // __AVR_XMEGA__
+ 778:usart.cpp     ****                 if (*(u->ucsra) & _BV(UDRE0))
+ 779:usart.cpp     ****                         u->xmit();
+ 780:usart.cpp     ****                 if (*(u->ucsra) & _BV(RXC0))
+ 781:usart.cpp     ****                         u->recv();
+ 782:usart.cpp     **** #endif // __AVR_XMEGA__
+ 783:usart.cpp     ****         }
+ 784:usart.cpp     **** }
+ 785:usart.cpp     **** 
+ 786:usart.cpp     **** 
+ 787:usart.cpp     **** // static
+ 788:usart.cpp     **** void Usart::handle_interrupts(Usart *_usart)
+ 789:usart.cpp     **** {
+ 2725               	.LM260:
+ 2726               	.LFBB27:
+ 2727 0000 0F93      		push r16
+ 2728 0002 1F93      		push r17
+ 2729 0004 CF93      		push r28
+ 2730 0006 DF93      		push r29
+ 2731               	/* prologue: function */
+ 2732               	/* frame size = 0 */
+ 2733               	/* stack size = 4 */
+ 2734               	.L__stack_usage = 4
+ 2735 0008 8C01      		movw r16,r24
+ 2736               	.LBB52:
+ 790:usart.cpp     ****         if (_usart)
+ 2738               	.LM261:
+ 2739 000a 0097      		sbiw r24,0
+ 2740 000c 01F0      		breq .L121
+ 2741               	.LBB53:
+ 791:usart.cpp     ****         {
+ 792:usart.cpp     **** #ifdef __AVR_XMEGA__
+ 793:usart.cpp     ****                 USART_t *dev = _usart->usart;
+ 2743               	.LM262:
+ 2744 000e FC01      		movw r30,r24
+ 2745 0010 C481      		ldd r28,Z+4
+ 2746 0012 D581      		ldd r29,Z+5
+ 794:usart.cpp     ****                 if (dev->STATUS & USART_DREIF_bm)
+ 2748               	.LM263:
+ 2749 0014 8981      		ldd r24,Y+1
+ 2750 0016 85FF      		sbrs r24,5
+ 2751 0018 00C0      		rjmp .L123
+ 795:usart.cpp     ****                         _usart->xmit();
+ 2753               	.LM264:
+ 2754 001a C801      		movw r24,r16
+ 2755 001c 0E94 0000 		call _ZN5Usart4xmitEv
+ 2756               	.L123:
+ 796:usart.cpp     ****                 if (dev->STATUS & USART_RXCIF_bm)
+ 2758               	.LM265:
+ 2759 0020 8981      		ldd r24,Y+1
+ 2760 0022 87FF      		sbrs r24,7
+ 2761 0024 00C0      		rjmp .L121
+ 797:usart.cpp     ****                         _usart->recv();
+ 2763               	.LM266:
+ 2764 0026 C801      		movw r24,r16
+ 2765 0028 0E94 0000 		call _ZN5Usart4recvEv
+ 2766               	.L121:
+ 2767               	/* epilogue start */
+ 2768               	.LBE53:
+ 2769               	.LBE52:
+ 798:usart.cpp     **** #else // __AVR_XMEGA__
+ 799:usart.cpp     ****                 if (*(_usart->ucsra) & _BV(UDRE0))
+ 800:usart.cpp     ****                         _usart->xmit();
+ 801:usart.cpp     ****                 if (*(_usart->ucsra) & _BV(RXC0))
+ 802:usart.cpp     ****                         _usart->recv();
+ 803:usart.cpp     **** #endif // __AVR_XMEGA__
+ 804:usart.cpp     ****         }
+ 805:usart.cpp     **** }
+ 2771               	.LM267:
+ 2772 002c DF91      		pop r29
+ 2773 002e CF91      		pop r28
+ 2774 0030 1F91      		pop r17
+ 2775 0032 0F91      		pop r16
+ 2776 0034 0895      		ret
+ 2781               	.Lscope27:
+ 2782               		.weak	_ZTV5Usart
+ 2783               		.section	.rodata._ZTV5Usart,"a",@progbits
+ 2786               	_ZTV5Usart:
+ 2787 0000 0000      		.word	0
+ 2788 0002 0000      		.word	0
+ 2789 0004 0000      		.word	gs(_ZN5Usart9availableEv)
+ 2790 0006 0000      		.word	gs(_ZN5Usart3getEv)
+ 2791 0008 0000      		.word	gs(_ZN5Usart4peekEj)
+ 2792 000a 0000      		.word	gs(_ZN7IStream11read_stringEPc)
+ 2793 000c 0000      		.word	gs(_ZN7IStream4readEPvj)
+ 2794 000e 0000      		.word	gs(_ZN5Usart4freeEv)
+ 2795 0010 0000      		.word	gs(_ZN5Usart3putEc)
+ 2796 0012 FEFF      		.word	-2
+ 2797 0014 0000      		.word	0
+ 2798 0016 0000      		.word	gs(_ZThn2_N5Usart4freeEv)
+ 2799 0018 0000      		.word	gs(_ZThn2_N5Usart3putEc)
+ 2800 001a 0000      		.word	gs(_ZN7OStream12write_stringEPKc)
+ 2801 001c 0000      		.word	gs(_ZN7OStream5writeEPKvj)
+ 2802               	.global	_ZN5Usart10usart_listE
+ 2803               		.section	.bss._ZN5Usart10usart_listE,"aw",@nobits
+ 2806               	_ZN5Usart10usart_listE:
+ 2807 0000 0000 0000 		.skip 16,0
+ 2807      0000 0000 
+ 2807      0000 0000 
+ 2807      0000 0000 
+ 2808               		.section	.rodata.CSWTCH.34,"a",@progbits
+ 2811               	CSWTCH.34:
+ 2812 0000 A008      		.word	2208
+ 2813 0002 A009      		.word	2464
+ 2814 0004 A00A      		.word	2720
+ 2815 0006 B008      		.word	2224
+ 2816 0008 B009      		.word	2480
+ 2817 000a B00A      		.word	2736
+ 2818 000c A00B      		.word	2976
+ 2819 000e B00B      		.word	2992
+ 2820               		.section	.rodata.CSWTCH.36,"a",@progbits
+ 2823               	CSWTCH.36:
+ 2824 0000 4006      		.word	1600
+ 2825 0002 6006      		.word	1632
+ 2826 0004 8006      		.word	1664
+ 2827 0006 4006      		.word	1600
+ 2828 0008 6006      		.word	1632
+ 2829 000a 8006      		.word	1664
+ 2830 000c A006      		.word	1696
+ 2831 000e A006      		.word	1696
+ 2832               		.section	.rodata.CSWTCH.38,"a",@progbits
+ 2835               	CSWTCH.38:
+ 2836 0000 03        		.byte	3
+ 2837 0001 03        		.byte	3
+ 2838 0002 03        		.byte	3
+ 2839 0003 07        		.byte	7
+ 2840 0004 07        		.byte	7
+ 2841 0005 07        		.byte	7
+ 2842 0006 03        		.byte	3
+ 2843 0007 07        		.byte	7
+ 2844               		.weak	_ZTV8IOStream
+ 2845               		.section	.rodata._ZTV8IOStream,"a",@progbits
+ 2848               	_ZTV8IOStream:
+ 2849 0000 0000      		.word	0
+ 2850 0002 0000      		.word	0
+ 2851 0004 0000      		.word	gs(_ZN7IStream9availableEv)
+ 2852 0006 0000      		.word	gs(_ZN7IStream3getEv)
+ 2853 0008 0000      		.word	gs(_ZN7IStream4peekEj)
+ 2854 000a 0000      		.word	gs(_ZN7IStream11read_stringEPc)
+ 2855 000c 0000      		.word	gs(_ZN7IStream4readEPvj)
+ 2856 000e FEFF      		.word	-2
+ 2857 0010 0000      		.word	0
+ 2858 0012 0000      		.word	gs(_ZN7OStream4freeEv)
+ 2859 0014 0000      		.word	gs(_ZN7OStream3putEc)
+ 2860 0016 0000      		.word	gs(_ZN7OStream12write_stringEPKc)
+ 2861 0018 0000      		.word	gs(_ZN7OStream5writeEPKvj)
+ 2863               		.set	.LTHUNK0,_ZN5Usart4freeEv
+ 2864               		.set	.LTHUNK1,_ZN5Usart3putEc
+ 2865               	.global	_ZN5UsartC1EP12USART_struct
+ 2866               		.set	_ZN5UsartC1EP12USART_struct,_ZN5UsartC2EP12USART_struct
+ 2867               	.global	_ZN5UsartD1Ev
+ 2868               		.set	_ZN5UsartD1Ev,_ZN5UsartD2Ev
+ 2869               		.text
+ 2871               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 usart.cpp
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2      *ABS*:0000003f __SREG__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:3      *ABS*:0000003e __SP_H__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:4      *ABS*:0000003d __SP_L__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:5      *ABS*:00000034 __CCP__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:6      *ABS*:00000000 __tmp_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:7      *ABS*:00000001 __zero_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:616    .text._ZThn2_N5Usart4freeEv:00000000 _ZThn2_N5Usart4freeEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:631    .text._ZN5Usart4freeEv:00000000 _ZN5Usart4freeEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:683    .text._ZN5Usart9availableEv:00000000 _ZN5Usart9availableEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:734    .text._ZN5Usart4peekEj:00000000 _ZN5Usart4peekEj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:841    .text._ZN5Usart3putEcP6__file:00000000 _ZN5Usart3putEcP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:895    .text._ZN5Usart3getEP6__file:00000000 _ZN5Usart3getEP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:943    .text._ZThn2_N5Usart3putEc:00000000 _ZThn2_N5Usart3putEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:959    .text._ZN5Usart3putEc:00000000 _ZN5Usart3putEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1117   .text._ZN5Usart11which_usartEP12USART_struct:00000000 _ZN5Usart11which_usartEP12USART_struct
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1226   .text._ZN5Usart9get_usartEc:00000000 _ZN5Usart9get_usartEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2811   .rodata.CSWTCH.34:00000000 CSWTCH.34
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1260   .text._ZN5Usart8get_portEc:00000000 _ZN5Usart8get_portEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2823   .rodata.CSWTCH.36:00000000 CSWTCH.36
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1294   .text._ZN5Usart9get_txpinEc:00000000 _ZN5Usart9get_txpinEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2835   .rodata.CSWTCH.38:00000000 CSWTCH.38
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1325   .text._ZN5UsartC2EP12USART_struct:00000000 _ZN5UsartC2EP12USART_struct
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2786   .rodata._ZTV5Usart:00000000 _ZTV5Usart
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2806   .bss._ZN5Usart10usart_listE:00000000 _ZN5Usart10usart_listE
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1405   .text._ZN5Usart13set_tx_bufferEPcj:00000000 _ZN5Usart13set_tx_bufferEPcj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1453   .text._ZN5Usart13set_rx_bufferEPcj:00000000 _ZN5Usart13set_rx_bufferEPcj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1522   .text._ZN5Usart11set_rts_pinEP11PORT_structi:00000000 _ZN5Usart11set_rts_pinEP11PORT_structi
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1561   .text._ZN5Usart11set_cts_pinEP11PORT_structi:00000000 _ZN5Usart11set_cts_pinEP11PORT_structi
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1600   .text._ZN5Usart15set_nonblockingEh:00000000 _ZN5Usart15set_nonblockingEh
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1623   .text._ZN5Usart10update_rtsEv:00000000 _ZN5Usart10update_rtsEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1704   .text._ZN5Usart3getEv:00000000 _ZN5Usart3getEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1877   .text._ZN5Usart9check_ctsEv:00000000 _ZN5Usart9check_ctsEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1935   .text._ZN5Usart5beginElcc:00000000 _ZN5Usart5beginElcc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2256   .text._ZN5Usart3endEv:00000000 _ZN5Usart3endEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2294   .text._ZN5UsartD2Ev:00000000 _ZN5UsartD2Ev
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2343   .text._ZN5Usart4recvEv:00000000 _ZN5Usart4recvEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2431   .text._ZN5Usart4xmitEv:00000000 _ZN5Usart4xmitEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2522   .text._ZN5Usart6ungetcEi:00000000 _ZN5Usart6ungetcEi
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2687   .text._ZN5Usart12setup_streamEP6__file:00000000 _ZN5Usart12setup_streamEP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2723   .text._ZN5Usart17handle_interruptsEPS_:00000000 _ZN5Usart17handle_interruptsEPS_
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2848   .rodata._ZTV8IOStream:00000000 _ZTV8IOStream
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:1325   .text._ZN5UsartC2EP12USART_struct:00000000 _ZN5UsartC1EP12USART_struct
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccMHbajF.s:2294   .text._ZN5UsartD2Ev:00000000 _ZN5UsartD1Ev
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+__udivmodsi4
+_ZN7IStream11read_stringEPc
+_ZN7IStream4readEPvj
+_ZN7OStream12write_stringEPKc
+_ZN7OStream5writeEPKvj
+_ZN7IStream9availableEv
+_ZN7IStream3getEv
+_ZN7IStream4peekEj
+_ZN7OStream4freeEv
+_ZN7OStream3putEc

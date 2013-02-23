@@ -1,0 +1,1009 @@
+   1               		.file	"i2c.cpp"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__ = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  11               		.text
+  12               	.Ltext0:
+ 613               		.section	.text._ZN3I2c3putEcP6__file,"ax",@progbits
+ 617               	.global	_ZN3I2c3putEcP6__file
+ 619               	_ZN3I2c3putEcP6__file:
+   1:i2c.cpp       **** /************************************************************************/
+   2:i2c.cpp       **** /* XMEGA I2C Driver                                                     */
+   3:i2c.cpp       **** /*                                                                      */
+   4:i2c.cpp       **** /* i2c.cpp                                                              */
+   5:i2c.cpp       **** /*                                                                      */
+   6:i2c.cpp       **** /* Alex Forencich <alex@alexforencich.com>                              */
+   7:i2c.cpp       **** /*                                                                      */
+   8:i2c.cpp       **** /* Copyright (c) 2011 Alex Forencich                                    */
+   9:i2c.cpp       **** /*                                                                      */
+  10:i2c.cpp       **** /* Permission is hereby granted, free of charge, to any person          */
+  11:i2c.cpp       **** /* obtaining a copy of this software and associated documentation       */
+  12:i2c.cpp       **** /* files(the "Software"), to deal in the Software without restriction,  */
+  13:i2c.cpp       **** /* including without limitation the rights to use, copy, modify, merge, */
+  14:i2c.cpp       **** /* publish, distribute, sublicense, and/or sell copies of the Software, */
+  15:i2c.cpp       **** /* and to permit persons to whom the Software is furnished to do so,    */
+  16:i2c.cpp       **** /* subject to the following conditions:                                 */
+  17:i2c.cpp       **** /*                                                                      */
+  18:i2c.cpp       **** /* The above copyright notice and this permission notice shall be       */
+  19:i2c.cpp       **** /* included in all copies or substantial portions of the Software.      */
+  20:i2c.cpp       **** /*                                                                      */
+  21:i2c.cpp       **** /* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,      */
+  22:i2c.cpp       **** /* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF   */
+  23:i2c.cpp       **** /* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                */
+  24:i2c.cpp       **** /* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS  */
+  25:i2c.cpp       **** /* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN   */
+  26:i2c.cpp       **** /* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN    */
+  27:i2c.cpp       **** /* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE     */
+  28:i2c.cpp       **** /* SOFTWARE.                                                            */
+  29:i2c.cpp       **** /*                                                                      */
+  30:i2c.cpp       **** /************************************************************************/
+  31:i2c.cpp       **** 
+  32:i2c.cpp       **** #include "i2c.h"
+  33:i2c.cpp       **** 
+  34:i2c.cpp       **** 
+  35:i2c.cpp       **** // Statics
+  36:i2c.cpp       **** I2c *I2c::i2c_list[MAX_TWI_IND];
+  37:i2c.cpp       **** 
+  38:i2c.cpp       **** 
+  39:i2c.cpp       **** char __attribute__ ((noinline)) I2c::which_twi(TWI_t *_twi)
+  40:i2c.cpp       **** {
+  41:i2c.cpp       **** #if MAX_TWI_IND >= TWIC_IND
+  42:i2c.cpp       ****         if ((uintptr_t)_twi == (uintptr_t)&TWIC)
+  43:i2c.cpp       ****                 return TWIC_IND;
+  44:i2c.cpp       **** #endif
+  45:i2c.cpp       **** #if MAX_TWI_IND >= TWIE_IND
+  46:i2c.cpp       ****         if ((uintptr_t)_twi == (uintptr_t)&TWIE)
+  47:i2c.cpp       ****                 return TWIE_IND;
+  48:i2c.cpp       **** #endif
+  49:i2c.cpp       **** #if MAX_TWI_IND >= TWID_IND
+  50:i2c.cpp       ****         if ((uintptr_t)_twi == (uintptr_t)&TWID)
+  51:i2c.cpp       ****                 return TWID_IND;
+  52:i2c.cpp       **** #endif
+  53:i2c.cpp       **** #if MAX_TWI_IND >= TWIF_IND
+  54:i2c.cpp       ****         if ((uintptr_t)_twi == (uintptr_t)&TWIF)
+  55:i2c.cpp       ****                 return TWIF_IND;
+  56:i2c.cpp       **** #endif
+  57:i2c.cpp       ****         return 0;
+  58:i2c.cpp       **** }
+  59:i2c.cpp       **** 
+  60:i2c.cpp       **** 
+  61:i2c.cpp       **** TWI_t * __attribute__ ((noinline)) I2c::get_twi(char _twi)
+  62:i2c.cpp       **** {
+  63:i2c.cpp       ****         switch (_twi)
+  64:i2c.cpp       ****         {
+  65:i2c.cpp       **** #if MAX_TWI_IND >= TWIC_IND
+  66:i2c.cpp       ****                 case TWIC_IND:
+  67:i2c.cpp       ****                         return &TWIC;
+  68:i2c.cpp       **** #endif
+  69:i2c.cpp       **** #if MAX_TWI_IND >= TWIE_IND
+  70:i2c.cpp       ****                 case TWIE_IND:
+  71:i2c.cpp       ****                         return &TWIE;
+  72:i2c.cpp       **** #endif
+  73:i2c.cpp       **** #if MAX_TWI_IND >= TWID_IND
+  74:i2c.cpp       ****                 case TWID_IND:
+  75:i2c.cpp       ****                         return &TWID;
+  76:i2c.cpp       **** #endif
+  77:i2c.cpp       **** #if MAX_TWI_IND >= TWIF_IND
+  78:i2c.cpp       ****                 case TWIF_IND:
+  79:i2c.cpp       ****                         return &TWIF;
+  80:i2c.cpp       **** #endif
+  81:i2c.cpp       ****                 default:
+  82:i2c.cpp       ****                         return 0;
+  83:i2c.cpp       ****         }
+  84:i2c.cpp       **** }
+  85:i2c.cpp       **** 
+  86:i2c.cpp       **** 
+  87:i2c.cpp       **** PORT_t * __attribute__ ((noinline)) I2c::get_port(char _twi)
+  88:i2c.cpp       **** {
+  89:i2c.cpp       ****         switch (_twi)
+  90:i2c.cpp       ****         {
+  91:i2c.cpp       **** #if MAX_TWI_IND >= TWIC_IND
+  92:i2c.cpp       ****                 case TWIC_IND:
+  93:i2c.cpp       ****                         return &PORTC;
+  94:i2c.cpp       **** #endif
+  95:i2c.cpp       **** #if MAX_TWI_IND >= TWIE_IND
+  96:i2c.cpp       ****                 case TWIE_IND:
+  97:i2c.cpp       ****                         return &PORTE;
+  98:i2c.cpp       **** #endif
+  99:i2c.cpp       **** #if MAX_TWI_IND >= TWID_IND
+ 100:i2c.cpp       ****                 case TWID_IND:
+ 101:i2c.cpp       ****                         return &PORTD;
+ 102:i2c.cpp       **** #endif
+ 103:i2c.cpp       **** #if MAX_TWI_IND >= TWIF_IND
+ 104:i2c.cpp       ****                 case TWIF_IND:
+ 105:i2c.cpp       ****                         return &PORTF;
+ 106:i2c.cpp       **** #endif
+ 107:i2c.cpp       ****                 default:
+ 108:i2c.cpp       ****                         return 0;
+ 109:i2c.cpp       ****         }
+ 110:i2c.cpp       **** }
+ 111:i2c.cpp       **** 
+ 112:i2c.cpp       **** I2c::I2c(TWI_t *_twi) :
+ 113:i2c.cpp       ****         twi(_twi),
+ 114:i2c.cpp       ****         flags(0)
+ 115:i2c.cpp       **** {
+ 116:i2c.cpp       ****         twi_ind = which_twi(twi);
+ 117:i2c.cpp       ****         i2c_list[twi_ind-1] = this;
+ 118:i2c.cpp       **** }
+ 119:i2c.cpp       **** 
+ 120:i2c.cpp       **** 
+ 121:i2c.cpp       **** I2c::~I2c()
+ 122:i2c.cpp       **** {
+ 123:i2c.cpp       ****         end();
+ 124:i2c.cpp       ****         i2c_list[twi_ind-1] = 0;
+ 125:i2c.cpp       **** }
+ 126:i2c.cpp       **** 
+ 127:i2c.cpp       **** 
+ 128:i2c.cpp       **** void __attribute__ ((noinline)) I2c::begin(uint32_t baud)
+ 129:i2c.cpp       **** {
+ 130:i2c.cpp       ****         flags = I2C_MODE_MASTER;
+ 131:i2c.cpp       ****         
+ 132:i2c.cpp       ****         twi->MASTER.CTRLA = TWI_MASTER_INTLVL_OFF_gc | TWI_MASTER_ENABLE_bm;
+ 133:i2c.cpp       ****         twi->MASTER.CTRLB = TWI_MASTER_TIMEOUT_DISABLED_gc;
+ 134:i2c.cpp       ****         twi->MASTER.BAUD = (F_CPU / (2 * baud)) - 5;
+ 135:i2c.cpp       ****         twi->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+ 136:i2c.cpp       **** }
+ 137:i2c.cpp       **** 
+ 138:i2c.cpp       **** 
+ 139:i2c.cpp       **** void __attribute__ ((noinline)) I2c::end()
+ 140:i2c.cpp       **** {
+ 141:i2c.cpp       ****         twi->MASTER.CTRLA = 0;
+ 142:i2c.cpp       ****         
+ 143:i2c.cpp       ****         flags = 0;
+ 144:i2c.cpp       **** }
+ 145:i2c.cpp       **** 
+ 146:i2c.cpp       **** 
+ 147:i2c.cpp       **** void I2c::start_write(uint8_t addr)
+ 148:i2c.cpp       **** {
+ 149:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 150:i2c.cpp       ****         {
+ 151:i2c.cpp       ****                 twi->MASTER.CTRLC = TWI_MASTER_CMD_REPSTART_gc;
+ 152:i2c.cpp       ****         }
+ 153:i2c.cpp       ****         
+ 154:i2c.cpp       ****         twi->MASTER.ADDR = (addr << 1) | 0x00;
+ 155:i2c.cpp       ****         
+ 156:i2c.cpp       ****         flags |= I2C_STATE_ACTIVE;
+ 157:i2c.cpp       ****         
+ 158:i2c.cpp       ****         I2C_WAIT_WRITE_MASTER();
+ 159:i2c.cpp       **** }
+ 160:i2c.cpp       **** 
+ 161:i2c.cpp       **** 
+ 162:i2c.cpp       **** void I2c::start_read(uint8_t addr)
+ 163:i2c.cpp       **** {
+ 164:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 165:i2c.cpp       ****         {
+ 166:i2c.cpp       ****                 twi->MASTER.CTRLC = TWI_MASTER_CMD_REPSTART_gc;
+ 167:i2c.cpp       ****         }
+ 168:i2c.cpp       ****         
+ 169:i2c.cpp       ****         twi->MASTER.ADDR = (addr << 1) | 0x01;
+ 170:i2c.cpp       ****         
+ 171:i2c.cpp       ****         flags |= I2C_STATE_ACTIVE;
+ 172:i2c.cpp       ****         
+ 173:i2c.cpp       ****         I2C_WAIT_READ_MASTER();
+ 174:i2c.cpp       **** }
+ 175:i2c.cpp       **** 
+ 176:i2c.cpp       **** 
+ 177:i2c.cpp       **** void I2c::stop()
+ 178:i2c.cpp       **** {
+ 179:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 180:i2c.cpp       ****         {
+ 181:i2c.cpp       ****                 twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc | TWI_MASTER_ACKACT_bm;
+ 182:i2c.cpp       ****                 flags &= ~I2C_STATE_ACTIVE;
+ 183:i2c.cpp       ****         }
+ 184:i2c.cpp       **** }
+ 185:i2c.cpp       **** 
+ 186:i2c.cpp       **** 
+ 187:i2c.cpp       **** void I2c::put(char c)
+ 188:i2c.cpp       **** {
+ 189:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 190:i2c.cpp       ****         {
+ 191:i2c.cpp       ****                 twi->MASTER.DATA = c;
+ 192:i2c.cpp       ****                 twi->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+ 193:i2c.cpp       ****                 I2C_WAIT_WRITE_MASTER();
+ 194:i2c.cpp       ****         }
+ 195:i2c.cpp       **** }
+ 196:i2c.cpp       **** 
+ 197:i2c.cpp       **** 
+ 198:i2c.cpp       **** char I2c::get()
+ 199:i2c.cpp       **** {
+ 200:i2c.cpp       ****         char c = 0;
+ 201:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 202:i2c.cpp       ****         {
+ 203:i2c.cpp       ****                 if (!(twi->MASTER.STATUS & TWI_MASTER_RIF_bm))
+ 204:i2c.cpp       ****                 {
+ 205:i2c.cpp       ****                         twi->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+ 206:i2c.cpp       ****                         I2C_WAIT_READ_MASTER();
+ 207:i2c.cpp       ****                 }
+ 208:i2c.cpp       ****                 c = twi->MASTER.DATA;
+ 209:i2c.cpp       ****         }
+ 210:i2c.cpp       ****         return c;
+ 211:i2c.cpp       **** }
+ 212:i2c.cpp       **** 
+ 213:i2c.cpp       **** 
+ 214:i2c.cpp       **** void I2c::setup_stream(FILE *stream)
+ 215:i2c.cpp       **** {
+ 216:i2c.cpp       ****         fdev_setup_stream(stream, put, get, _FDEV_SETUP_RW);
+ 217:i2c.cpp       ****         fdev_set_udata(stream, this);
+ 218:i2c.cpp       **** }
+ 219:i2c.cpp       **** 
+ 220:i2c.cpp       **** 
+ 221:i2c.cpp       **** // static
+ 222:i2c.cpp       **** int I2c::put(char c, FILE *stream)
+ 223:i2c.cpp       **** {
+ 621               	.LM0:
+ 622               	.LFBB1:
+ 623               	/* prologue: function */
+ 624               	/* frame size = 0 */
+ 625               	/* stack size = 0 */
+ 626               	.L__stack_usage = 0
+ 627 0000 282F      		mov r18,r24
+ 628 0002 FB01      		movw r30,r22
+ 629               	.LBB18:
+ 224:i2c.cpp       ****         I2c *u;
+ 225:i2c.cpp       ****         u = (I2c *)fdev_get_udata(stream);
+ 631               	.LM1:
+ 632 0004 A485      		ldd r26,Z+12
+ 633 0006 B585      		ldd r27,Z+13
+ 226:i2c.cpp       ****         if (u != 0)
+ 635               	.LM2:
+ 636 0008 1097      		sbiw r26,0
+ 637 000a 01F0      		breq .L3
+ 227:i2c.cpp       ****         {
+ 228:i2c.cpp       ****                 u->put(c);
+ 639               	.LM3:
+ 640 000c ED91      		ld r30,X+
+ 641 000e FC91      		ld r31,X
+ 642 0010 1197      		sbiw r26,1
+ 643 0012 0284      		ldd __tmp_reg__,Z+10
+ 644 0014 F385      		ldd r31,Z+11
+ 645 0016 E02D      		mov r30,__tmp_reg__
+ 646 0018 CD01      		movw r24,r26
+ 647 001a 622F      		mov r22,r18
+ 648 001c 1995      		eicall
+ 229:i2c.cpp       ****                 return 0;
+ 650               	.LM4:
+ 651 001e 80E0      		ldi r24,lo8(0)
+ 652 0020 90E0      		ldi r25,hi8(0)
+ 653 0022 0895      		ret
+ 654               	.L3:
+ 230:i2c.cpp       ****         }
+ 231:i2c.cpp       ****         return _FDEV_ERR;
+ 656               	.LM5:
+ 657 0024 8FEF      		ldi r24,lo8(-1)
+ 658 0026 9FEF      		ldi r25,hi8(-1)
+ 659               	.LBE18:
+ 232:i2c.cpp       **** }
+ 661               	.LM6:
+ 662 0028 0895      		ret
+ 667               	.Lscope1:
+ 668               		.section	.text._ZN3I2c3getEP6__file,"ax",@progbits
+ 671               	.global	_ZN3I2c3getEP6__file
+ 673               	_ZN3I2c3getEP6__file:
+ 233:i2c.cpp       **** 
+ 234:i2c.cpp       **** 
+ 235:i2c.cpp       **** // static
+ 236:i2c.cpp       **** int I2c::get(FILE *stream)
+ 237:i2c.cpp       **** {
+ 675               	.LM7:
+ 676               	.LFBB2:
+ 677               	/* prologue: function */
+ 678               	/* frame size = 0 */
+ 679               	/* stack size = 0 */
+ 680               	.L__stack_usage = 0
+ 681               	.LBB19:
+ 238:i2c.cpp       ****         I2c *u;
+ 239:i2c.cpp       ****         u = (I2c *)fdev_get_udata(stream);
+ 683               	.LM8:
+ 684 0000 DC01      		movw r26,r24
+ 685 0002 1C96      		adiw r26,12
+ 686 0004 8D91      		ld r24,X+
+ 687 0006 9C91      		ld r25,X
+ 688 0008 1D97      		sbiw r26,12+1
+ 240:i2c.cpp       ****         if (u != 0)
+ 690               	.LM9:
+ 691 000a 0097      		sbiw r24,0
+ 692 000c 01F0      		breq .L6
+ 241:i2c.cpp       ****         {
+ 242:i2c.cpp       ****                 return u->get();
+ 694               	.LM10:
+ 695 000e DC01      		movw r26,r24
+ 696 0010 ED91      		ld r30,X+
+ 697 0012 FC91      		ld r31,X
+ 698 0014 0280      		ldd __tmp_reg__,Z+2
+ 699 0016 F381      		ldd r31,Z+3
+ 700 0018 E02D      		mov r30,__tmp_reg__
+ 701 001a 1995      		eicall
+ 702 001c 90E0      		ldi r25,lo8(0)
+ 703 001e 0895      		ret
+ 704               	.L6:
+ 243:i2c.cpp       ****         }
+ 244:i2c.cpp       ****         return _FDEV_ERR;
+ 706               	.LM11:
+ 707 0020 8FEF      		ldi r24,lo8(-1)
+ 708 0022 9FEF      		ldi r25,hi8(-1)
+ 709               	.LBE19:
+ 245:i2c.cpp       **** }
+ 711               	.LM12:
+ 712 0024 0895      		ret
+ 717               	.Lscope2:
+ 718               		.section	.text._ZThn2_N3I2c3putEc,"ax",@progbits
+ 719               	.global	_ZThn2_N3I2c3putEc
+ 721               	_ZThn2_N3I2c3putEc:
+ 722               	/* prologue: function */
+ 723               	/* frame size = 0 */
+ 724               	/* stack size = 0 */
+ 725               	.L__stack_usage = 0
+ 726 0000 0297      		sbiw r24,2
+ 727 0002 0E94 0000 		call .LTHUNK0
+ 728               	/* epilogue start */
+ 729 0006 0895      		ret
+ 731               		.section	.text._ZN3I2c3putEc,"ax",@progbits
+ 735               	.global	_ZN3I2c3putEc
+ 737               	_ZN3I2c3putEc:
+ 188:i2c.cpp       **** {
+ 739               	.LM13:
+ 740               	.LFBB3:
+ 741               	/* prologue: function */
+ 742               	/* frame size = 0 */
+ 743               	/* stack size = 0 */
+ 744               	.L__stack_usage = 0
+ 188:i2c.cpp       **** {
+ 746               	.LM14:
+ 747 0000 FC01      		movw r30,r24
+ 189:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 749               	.LM15:
+ 750 0002 8085      		ldd r24,Z+8
+ 751 0004 80FF      		sbrs r24,0
+ 752 0006 00C0      		rjmp .L8
+ 753               	.LBB22:
+ 754               	.LBB23:
+ 191:i2c.cpp       ****                 twi->MASTER.DATA = c;
+ 756               	.LM16:
+ 757 0008 A481      		ldd r26,Z+4
+ 758 000a B581      		ldd r27,Z+5
+ 759 000c 1796      		adiw r26,7
+ 760 000e 6C93      		st X,r22
+ 192:i2c.cpp       ****                 twi->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+ 762               	.LM17:
+ 763 0010 A481      		ldd r26,Z+4
+ 764 0012 B581      		ldd r27,Z+5
+ 765 0014 82E0      		ldi r24,lo8(2)
+ 766 0016 1396      		adiw r26,3
+ 767 0018 8C93      		st X,r24
+ 768 001a 1397      		sbiw r26,3
+ 193:i2c.cpp       ****                 I2C_WAIT_WRITE_MASTER();
+ 770               	.LM18:
+ 771 001c 0480      		ldd __tmp_reg__,Z+4
+ 772 001e F581      		ldd r31,Z+5
+ 773 0020 E02D      		mov r30,__tmp_reg__
+ 774               	.L10:
+ 775 0022 8481      		ldd r24,Z+4
+ 776 0024 86FF      		sbrs r24,6
+ 777 0026 00C0      		rjmp .L10
+ 778               	.L8:
+ 779 0028 0895      		ret
+ 780               	.LBE23:
+ 781               	.LBE22:
+ 783               	.Lscope3:
+ 784               		.section	.text._ZN3I2c3getEv,"ax",@progbits
+ 787               	.global	_ZN3I2c3getEv
+ 789               	_ZN3I2c3getEv:
+ 199:i2c.cpp       **** {
+ 791               	.LM19:
+ 792               	.LFBB4:
+ 793               	/* prologue: function */
+ 794               	/* frame size = 0 */
+ 795               	/* stack size = 0 */
+ 796               	.L__stack_usage = 0
+ 797 0000 FC01      		movw r30,r24
+ 798               	.LBB28:
+ 201:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 800               	.LM20:
+ 801 0002 8085      		ldd r24,Z+8
+ 802 0004 80FF      		sbrs r24,0
+ 803 0006 00C0      		rjmp .L16
+ 804               	.LBE28:
+ 805               	.LBB29:
+ 806               	.LBB30:
+ 203:i2c.cpp       ****                 if (!(twi->MASTER.STATUS & TWI_MASTER_RIF_bm))
+ 808               	.LM21:
+ 809 0008 A481      		ldd r26,Z+4
+ 810 000a B581      		ldd r27,Z+5
+ 811 000c 1496      		adiw r26,4
+ 812 000e 8C91      		ld r24,X
+ 813 0010 1497      		sbiw r26,4
+ 814 0012 87FD      		sbrc r24,7
+ 815 0014 00C0      		rjmp .L14
+ 205:i2c.cpp       ****                         twi->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+ 817               	.LM22:
+ 818 0016 82E0      		ldi r24,lo8(2)
+ 819 0018 1396      		adiw r26,3
+ 820 001a 8C93      		st X,r24
+ 206:i2c.cpp       ****                         I2C_WAIT_READ_MASTER();
+ 822               	.LM23:
+ 823 001c A481      		ldd r26,Z+4
+ 824 001e B581      		ldd r27,Z+5
+ 825               	.L15:
+ 826 0020 1496      		adiw r26,4
+ 827 0022 8C91      		ld r24,X
+ 828 0024 1497      		sbiw r26,4
+ 829 0026 87FF      		sbrs r24,7
+ 830 0028 00C0      		rjmp .L15
+ 831               	.L14:
+ 208:i2c.cpp       ****                 c = twi->MASTER.DATA;
+ 833               	.LM24:
+ 834 002a 0480      		ldd __tmp_reg__,Z+4
+ 835 002c F581      		ldd r31,Z+5
+ 836 002e E02D      		mov r30,__tmp_reg__
+ 837 0030 8781      		ldd r24,Z+7
+ 838 0032 0895      		ret
+ 839               	.L16:
+ 840               	.LBE30:
+ 841               	.LBE29:
+ 842               	.LBB31:
+ 200:i2c.cpp       ****         char c = 0;
+ 844               	.LM25:
+ 845 0034 80E0      		ldi r24,lo8(0)
+ 846               	.LBE31:
+ 211:i2c.cpp       **** }
+ 848               	.LM26:
+ 849 0036 0895      		ret
+ 857               	.Lscope4:
+ 858               		.section	.text._ZN3I2c9which_twiEP10TWI_struct,"ax",@progbits
+ 861               	.global	_ZN3I2c9which_twiEP10TWI_struct
+ 863               	_ZN3I2c9which_twiEP10TWI_struct:
+  40:i2c.cpp       **** {
+ 865               	.LM27:
+ 866               	.LFBB5:
+ 867               	/* prologue: function */
+ 868               	/* frame size = 0 */
+ 869               	/* stack size = 0 */
+ 870               	.L__stack_usage = 0
+  42:i2c.cpp       ****         if ((uintptr_t)_twi == (uintptr_t)&TWIC)
+ 872               	.LM28:
+ 873 0000 24E0      		ldi r18,hi8(1152)
+ 874 0002 8038      		cpi r24,lo8(1152)
+ 875 0004 9207      		cpc r25,r18
+ 876 0006 01F0      		breq .L20
+  46:i2c.cpp       ****         if ((uintptr_t)_twi == (uintptr_t)&TWIE)
+ 878               	.LM29:
+ 879 0008 24E0      		ldi r18,hi8(1184)
+ 880 000a 803A      		cpi r24,lo8(1184)
+ 881 000c 9207      		cpc r25,r18
+ 882 000e 01F4      		brne .L21
+  47:i2c.cpp       ****                 return TWIE_IND;
+ 884               	.LM30:
+ 885 0010 82E0      		ldi r24,lo8(2)
+ 886 0012 0895      		ret
+ 887               	.L20:
+  43:i2c.cpp       ****                 return TWIC_IND;
+ 889               	.LM31:
+ 890 0014 81E0      		ldi r24,lo8(1)
+ 891 0016 0895      		ret
+ 892               	.L21:
+  57:i2c.cpp       ****         return 0;
+ 894               	.LM32:
+ 895 0018 80E0      		ldi r24,lo8(0)
+  58:i2c.cpp       **** }
+ 897               	.LM33:
+ 898 001a 0895      		ret
+ 900               	.Lscope5:
+ 901               		.section	.text._ZN3I2c7get_twiEc,"ax",@progbits
+ 904               	.global	_ZN3I2c7get_twiEc
+ 906               	_ZN3I2c7get_twiEc:
+  62:i2c.cpp       **** {
+ 908               	.LM34:
+ 909               	.LFBB6:
+ 910               	/* prologue: function */
+ 911               	/* frame size = 0 */
+ 912               	/* stack size = 0 */
+ 913               	.L__stack_usage = 0
+  62:i2c.cpp       **** {
+ 915               	.LM35:
+ 916 0000 8150      		subi r24,lo8(-(-1))
+ 917 0002 8230      		cpi r24,lo8(2)
+ 918 0004 00F4      		brsh .L24
+ 919 0006 E82F      		mov r30,r24
+ 920 0008 F0E0      		ldi r31,lo8(0)
+ 921 000a EE0F      		lsl r30
+ 922 000c FF1F      		rol r31
+ 923 000e E050      		subi r30,lo8(-(CSWTCH.6))
+ 924 0010 F040      		sbci r31,hi8(-(CSWTCH.6))
+ 925 0012 8081      		ld r24,Z
+ 926 0014 9181      		ldd r25,Z+1
+ 927 0016 0895      		ret
+ 928               	.L24:
+ 929 0018 80E0      		ldi r24,lo8(0)
+ 930 001a 90E0      		ldi r25,hi8(0)
+  84:i2c.cpp       **** }
+ 932               	.LM36:
+ 933 001c 0895      		ret
+ 935               	.Lscope6:
+ 936               		.section	.text._ZN3I2c8get_portEc,"ax",@progbits
+ 939               	.global	_ZN3I2c8get_portEc
+ 941               	_ZN3I2c8get_portEc:
+  88:i2c.cpp       **** {
+ 943               	.LM37:
+ 944               	.LFBB7:
+ 945               	/* prologue: function */
+ 946               	/* frame size = 0 */
+ 947               	/* stack size = 0 */
+ 948               	.L__stack_usage = 0
+  88:i2c.cpp       **** {
+ 950               	.LM38:
+ 951 0000 8150      		subi r24,lo8(-(-1))
+ 952 0002 8230      		cpi r24,lo8(2)
+ 953 0004 00F4      		brsh .L27
+ 954 0006 E82F      		mov r30,r24
+ 955 0008 F0E0      		ldi r31,lo8(0)
+ 956 000a EE0F      		lsl r30
+ 957 000c FF1F      		rol r31
+ 958 000e E050      		subi r30,lo8(-(CSWTCH.8))
+ 959 0010 F040      		sbci r31,hi8(-(CSWTCH.8))
+ 960 0012 8081      		ld r24,Z
+ 961 0014 9181      		ldd r25,Z+1
+ 962 0016 0895      		ret
+ 963               	.L27:
+ 964 0018 80E0      		ldi r24,lo8(0)
+ 965 001a 90E0      		ldi r25,hi8(0)
+ 110:i2c.cpp       **** }
+ 967               	.LM39:
+ 968 001c 0895      		ret
+ 970               	.Lscope7:
+ 971               		.section	.text._ZN3I2cC2EP10TWI_struct,"ax",@progbits
+ 975               	.global	_ZN3I2cC2EP10TWI_struct
+ 977               	_ZN3I2cC2EP10TWI_struct:
+ 112:i2c.cpp       **** I2c::I2c(TWI_t *_twi) :
+ 979               	.LM40:
+ 980               	.LFBB8:
+ 981 0000 CF93      		push r28
+ 982 0002 DF93      		push r29
+ 983               	/* prologue: function */
+ 984               	/* frame size = 0 */
+ 985               	/* stack size = 2 */
+ 986               	.L__stack_usage = 2
+ 987 0004 EC01      		movw r28,r24
+ 988 0006 CB01      		movw r24,r22
+ 989               	.LBB32:
+ 114:i2c.cpp       ****         flags(0)
+ 991               	.LM41:
+ 992 0008 20E0      		ldi r18,lo8(_ZTV3I2c+4)
+ 993 000a 30E0      		ldi r19,hi8(_ZTV3I2c+4)
+ 994 000c 2883      		st Y,r18
+ 995 000e 3983      		std Y+1,r19
+ 996 0010 205F      		subi r18,lo8(-(16))
+ 997 0012 3F4F      		sbci r19,hi8(-(16))
+ 998 0014 2A83      		std Y+2,r18
+ 999 0016 3B83      		std Y+3,r19
+ 1000 0018 6C83      		std Y+4,r22
+ 1001 001a 7D83      		std Y+5,r23
+ 1002 001c 1886      		std Y+8,__zero_reg__
+ 116:i2c.cpp       ****         twi_ind = which_twi(twi);
+ 1004               	.LM42:
+ 1005 001e 0E94 0000 		call _ZN3I2c9which_twiEP10TWI_struct
+ 1006 0022 90E0      		ldi r25,lo8(0)
+ 1007 0024 8E83      		std Y+6,r24
+ 1008 0026 9F83      		std Y+7,r25
+ 117:i2c.cpp       ****         i2c_list[twi_ind-1] = this;
+ 1010               	.LM43:
+ 1011 0028 FC01      		movw r30,r24
+ 1012 002a EE0F      		lsl r30
+ 1013 002c FF1F      		rol r31
+ 1014 002e E050      		subi r30,lo8(-(_ZN3I2c8i2c_listE-2))
+ 1015 0030 F040      		sbci r31,hi8(-(_ZN3I2c8i2c_listE-2))
+ 1016 0032 C083      		st Z,r28
+ 1017 0034 D183      		std Z+1,r29
+ 1018               	/* epilogue start */
+ 1019               	.LBE32:
+ 118:i2c.cpp       **** }
+ 1021               	.LM44:
+ 1022 0036 DF91      		pop r29
+ 1023 0038 CF91      		pop r28
+ 1024 003a 0895      		ret
+ 1026               	.Lscope8:
+ 1027               		.section	.text._ZN3I2c5beginEm,"ax",@progbits
+ 1031               	.global	_ZN3I2c5beginEm
+ 1033               	_ZN3I2c5beginEm:
+ 129:i2c.cpp       **** {
+ 1035               	.LM45:
+ 1036               	.LFBB9:
+ 1037 0000 0F93      		push r16
+ 1038 0002 1F93      		push r17
+ 1039 0004 CF93      		push r28
+ 1040 0006 DF93      		push r29
+ 1041               	/* prologue: function */
+ 1042               	/* frame size = 0 */
+ 1043               	/* stack size = 4 */
+ 1044               	.L__stack_usage = 4
+ 1045 0008 EC01      		movw r28,r24
+ 1046 000a 9A01      		movw r18,r20
+ 1047 000c AB01      		movw r20,r22
+ 130:i2c.cpp       ****         flags = I2C_MODE_MASTER;
+ 1049               	.LM46:
+ 1050 000e 1886      		std Y+8,__zero_reg__
+ 132:i2c.cpp       ****         twi->MASTER.CTRLA = TWI_MASTER_INTLVL_OFF_gc | TWI_MASTER_ENABLE_bm;
+ 1052               	.LM47:
+ 1053 0010 EC81      		ldd r30,Y+4
+ 1054 0012 FD81      		ldd r31,Y+5
+ 1055 0014 88E0      		ldi r24,lo8(8)
+ 1056 0016 8183      		std Z+1,r24
+ 133:i2c.cpp       ****         twi->MASTER.CTRLB = TWI_MASTER_TIMEOUT_DISABLED_gc;
+ 1058               	.LM48:
+ 1059 0018 EC81      		ldd r30,Y+4
+ 1060 001a FD81      		ldd r31,Y+5
+ 1061 001c 1282      		std Z+2,__zero_reg__
+ 134:i2c.cpp       ****         twi->MASTER.BAUD = (F_CPU / (2 * baud)) - 5;
+ 1063               	.LM49:
+ 1064 001e 0C81      		ldd r16,Y+4
+ 1065 0020 1D81      		ldd r17,Y+5
+ 1066 0022 220F      		lsl r18
+ 1067 0024 331F      		rol r19
+ 1068 0026 441F      		rol r20
+ 1069 0028 551F      		rol r21
+ 1070 002a 60E0      		ldi r22,lo8(32000000)
+ 1071 002c 78E4      		ldi r23,hi8(32000000)
+ 1072 002e 88EE      		ldi r24,hlo8(32000000)
+ 1073 0030 91E0      		ldi r25,hhi8(32000000)
+ 1074 0032 0E94 0000 		call __udivmodsi4
+ 1075 0036 2550      		subi r18,lo8(-(-5))
+ 1076 0038 F801      		movw r30,r16
+ 1077 003a 2583      		std Z+5,r18
+ 135:i2c.cpp       ****         twi->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+ 1079               	.LM50:
+ 1080 003c EC81      		ldd r30,Y+4
+ 1081 003e FD81      		ldd r31,Y+5
+ 1082 0040 81E0      		ldi r24,lo8(1)
+ 1083 0042 8483      		std Z+4,r24
+ 1084               	/* epilogue start */
+ 136:i2c.cpp       **** }
+ 1086               	.LM51:
+ 1087 0044 DF91      		pop r29
+ 1088 0046 CF91      		pop r28
+ 1089 0048 1F91      		pop r17
+ 1090 004a 0F91      		pop r16
+ 1091 004c 0895      		ret
+ 1093               	.Lscope9:
+ 1094               		.section	.text._ZN3I2c3endEv,"ax",@progbits
+ 1097               	.global	_ZN3I2c3endEv
+ 1099               	_ZN3I2c3endEv:
+ 140:i2c.cpp       **** {
+ 1101               	.LM52:
+ 1102               	.LFBB10:
+ 1103               	/* prologue: function */
+ 1104               	/* frame size = 0 */
+ 1105               	/* stack size = 0 */
+ 1106               	.L__stack_usage = 0
+ 1107 0000 FC01      		movw r30,r24
+ 141:i2c.cpp       ****         twi->MASTER.CTRLA = 0;
+ 1109               	.LM53:
+ 1110 0002 A481      		ldd r26,Z+4
+ 1111 0004 B581      		ldd r27,Z+5
+ 1112 0006 1196      		adiw r26,1
+ 1113 0008 1C92      		st X,__zero_reg__
+ 1114 000a 1197      		sbiw r26,1
+ 143:i2c.cpp       ****         flags = 0;
+ 1116               	.LM54:
+ 1117 000c 1086      		std Z+8,__zero_reg__
+ 1118               	/* epilogue start */
+ 144:i2c.cpp       **** }
+ 1120               	.LM55:
+ 1121 000e 0895      		ret
+ 1123               	.Lscope10:
+ 1124               		.section	.text._ZN3I2cD2Ev,"ax",@progbits
+ 1127               	.global	_ZN3I2cD2Ev
+ 1129               	_ZN3I2cD2Ev:
+ 121:i2c.cpp       **** I2c::~I2c()
+ 1131               	.LM56:
+ 1132               	.LFBB11:
+ 1133 0000 CF93      		push r28
+ 1134 0002 DF93      		push r29
+ 1135               	/* prologue: function */
+ 1136               	/* frame size = 0 */
+ 1137               	/* stack size = 2 */
+ 1138               	.L__stack_usage = 2
+ 1139 0004 EC01      		movw r28,r24
+ 1140               	.LBB33:
+ 121:i2c.cpp       **** I2c::~I2c()
+ 1142               	.LM57:
+ 1143 0006 80E0      		ldi r24,lo8(_ZTV3I2c+4)
+ 1144 0008 90E0      		ldi r25,hi8(_ZTV3I2c+4)
+ 1145 000a 8883      		st Y,r24
+ 1146 000c 9983      		std Y+1,r25
+ 1147 000e 4096      		adiw r24,16
+ 1148 0010 8A83      		std Y+2,r24
+ 1149 0012 9B83      		std Y+3,r25
+ 123:i2c.cpp       ****         end();
+ 1151               	.LM58:
+ 1152 0014 CE01      		movw r24,r28
+ 1153 0016 0E94 0000 		call _ZN3I2c3endEv
+ 124:i2c.cpp       ****         i2c_list[twi_ind-1] = 0;
+ 1155               	.LM59:
+ 1156 001a EE81      		ldd r30,Y+6
+ 1157 001c FF81      		ldd r31,Y+7
+ 1158 001e EE0F      		lsl r30
+ 1159 0020 FF1F      		rol r31
+ 1160 0022 E050      		subi r30,lo8(-(_ZN3I2c8i2c_listE-2))
+ 1161 0024 F040      		sbci r31,hi8(-(_ZN3I2c8i2c_listE-2))
+ 1162 0026 1082      		st Z,__zero_reg__
+ 1163 0028 1182      		std Z+1,__zero_reg__
+ 1164               	/* epilogue start */
+ 1165               	.LBE33:
+ 125:i2c.cpp       **** }
+ 1167               	.LM60:
+ 1168 002a DF91      		pop r29
+ 1169 002c CF91      		pop r28
+ 1170 002e 0895      		ret
+ 1172               	.Lscope11:
+ 1173               		.section	.text._ZN3I2c11start_writeEh,"ax",@progbits
+ 1177               	.global	_ZN3I2c11start_writeEh
+ 1179               	_ZN3I2c11start_writeEh:
+ 148:i2c.cpp       **** {
+ 1181               	.LM61:
+ 1182               	.LFBB12:
+ 1183               	/* prologue: function */
+ 1184               	/* frame size = 0 */
+ 1185               	/* stack size = 0 */
+ 1186               	.L__stack_usage = 0
+ 1187 0000 FC01      		movw r30,r24
+ 149:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 1189               	.LM62:
+ 1190 0002 8085      		ldd r24,Z+8
+ 1191 0004 80FF      		sbrs r24,0
+ 1192 0006 00C0      		rjmp .L34
+ 151:i2c.cpp       ****                 twi->MASTER.CTRLC = TWI_MASTER_CMD_REPSTART_gc;
+ 1194               	.LM63:
+ 1195 0008 A481      		ldd r26,Z+4
+ 1196 000a B581      		ldd r27,Z+5
+ 1197 000c 81E0      		ldi r24,lo8(1)
+ 1198 000e 1396      		adiw r26,3
+ 1199 0010 8C93      		st X,r24
+ 1200               	.L34:
+ 154:i2c.cpp       ****         twi->MASTER.ADDR = (addr << 1) | 0x00;
+ 1202               	.LM64:
+ 1203 0012 A481      		ldd r26,Z+4
+ 1204 0014 B581      		ldd r27,Z+5
+ 1205 0016 660F      		lsl r22
+ 1206 0018 1696      		adiw r26,6
+ 1207 001a 6C93      		st X,r22
+ 1208 001c 1697      		sbiw r26,6
+ 156:i2c.cpp       ****         flags |= I2C_STATE_ACTIVE;
+ 1210               	.LM65:
+ 1211 001e 8085      		ldd r24,Z+8
+ 1212 0020 8160      		ori r24,lo8(1)
+ 1213 0022 8087      		std Z+8,r24
+ 158:i2c.cpp       ****         I2C_WAIT_WRITE_MASTER();
+ 1215               	.LM66:
+ 1216 0024 0480      		ldd __tmp_reg__,Z+4
+ 1217 0026 F581      		ldd r31,Z+5
+ 1218 0028 E02D      		mov r30,__tmp_reg__
+ 1219               	.L35:
+ 158:i2c.cpp       ****         I2C_WAIT_WRITE_MASTER();
+ 1221               	.LM67:
+ 1222 002a 8481      		ldd r24,Z+4
+ 1223 002c 86FF      		sbrs r24,6
+ 1224 002e 00C0      		rjmp .L35
+ 1225               	/* epilogue start */
+ 159:i2c.cpp       **** }
+ 1227               	.LM68:
+ 1228 0030 0895      		ret
+ 1230               	.Lscope12:
+ 1231               		.section	.text._ZN3I2c10start_readEh,"ax",@progbits
+ 1235               	.global	_ZN3I2c10start_readEh
+ 1237               	_ZN3I2c10start_readEh:
+ 163:i2c.cpp       **** {
+ 1239               	.LM69:
+ 1240               	.LFBB13:
+ 1241               	/* prologue: function */
+ 1242               	/* frame size = 0 */
+ 1243               	/* stack size = 0 */
+ 1244               	.L__stack_usage = 0
+ 1245 0000 FC01      		movw r30,r24
+ 164:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 1247               	.LM70:
+ 1248 0002 8085      		ldd r24,Z+8
+ 1249 0004 80FF      		sbrs r24,0
+ 1250 0006 00C0      		rjmp .L38
+ 166:i2c.cpp       ****                 twi->MASTER.CTRLC = TWI_MASTER_CMD_REPSTART_gc;
+ 1252               	.LM71:
+ 1253 0008 A481      		ldd r26,Z+4
+ 1254 000a B581      		ldd r27,Z+5
+ 1255 000c 81E0      		ldi r24,lo8(1)
+ 1256 000e 1396      		adiw r26,3
+ 1257 0010 8C93      		st X,r24
+ 1258               	.L38:
+ 169:i2c.cpp       ****         twi->MASTER.ADDR = (addr << 1) | 0x01;
+ 1260               	.LM72:
+ 1261 0012 A481      		ldd r26,Z+4
+ 1262 0014 B581      		ldd r27,Z+5
+ 1263 0016 660F      		lsl r22
+ 1264 0018 6160      		ori r22,lo8(1)
+ 1265 001a 1696      		adiw r26,6
+ 1266 001c 6C93      		st X,r22
+ 1267 001e 1697      		sbiw r26,6
+ 171:i2c.cpp       ****         flags |= I2C_STATE_ACTIVE;
+ 1269               	.LM73:
+ 1270 0020 8085      		ldd r24,Z+8
+ 1271 0022 8160      		ori r24,lo8(1)
+ 1272 0024 8087      		std Z+8,r24
+ 173:i2c.cpp       ****         I2C_WAIT_READ_MASTER();
+ 1274               	.LM74:
+ 1275 0026 0480      		ldd __tmp_reg__,Z+4
+ 1276 0028 F581      		ldd r31,Z+5
+ 1277 002a E02D      		mov r30,__tmp_reg__
+ 1278               	.L39:
+ 173:i2c.cpp       ****         I2C_WAIT_READ_MASTER();
+ 1280               	.LM75:
+ 1281 002c 8481      		ldd r24,Z+4
+ 1282 002e 87FF      		sbrs r24,7
+ 1283 0030 00C0      		rjmp .L39
+ 1284               	/* epilogue start */
+ 174:i2c.cpp       **** }
+ 1286               	.LM76:
+ 1287 0032 0895      		ret
+ 1289               	.Lscope13:
+ 1290               		.section	.text._ZN3I2c4stopEv,"ax",@progbits
+ 1293               	.global	_ZN3I2c4stopEv
+ 1295               	_ZN3I2c4stopEv:
+ 178:i2c.cpp       **** {
+ 1297               	.LM77:
+ 1298               	.LFBB14:
+ 1299               	/* prologue: function */
+ 1300               	/* frame size = 0 */
+ 1301               	/* stack size = 0 */
+ 1302               	.L__stack_usage = 0
+ 1303 0000 FC01      		movw r30,r24
+ 179:i2c.cpp       ****         if (flags & I2C_STATE_ACTIVE)
+ 1305               	.LM78:
+ 1306 0002 8085      		ldd r24,Z+8
+ 1307 0004 80FF      		sbrs r24,0
+ 1308 0006 00C0      		rjmp .L41
+ 181:i2c.cpp       ****                 twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc | TWI_MASTER_ACKACT_bm;
+ 1310               	.LM79:
+ 1311 0008 A481      		ldd r26,Z+4
+ 1312 000a B581      		ldd r27,Z+5
+ 1313 000c 87E0      		ldi r24,lo8(7)
+ 1314 000e 1396      		adiw r26,3
+ 1315 0010 8C93      		st X,r24
+ 1316 0012 1397      		sbiw r26,3
+ 182:i2c.cpp       ****                 flags &= ~I2C_STATE_ACTIVE;
+ 1318               	.LM80:
+ 1319 0014 8085      		ldd r24,Z+8
+ 1320 0016 8E7F      		andi r24,lo8(-2)
+ 1321 0018 8087      		std Z+8,r24
+ 1322               	.L41:
+ 1323 001a 0895      		ret
+ 1325               	.Lscope14:
+ 1326               		.section	.text._ZN3I2c12setup_streamEP6__file,"ax",@progbits
+ 1330               	.global	_ZN3I2c12setup_streamEP6__file
+ 1332               	_ZN3I2c12setup_streamEP6__file:
+ 215:i2c.cpp       **** {
+ 1334               	.LM81:
+ 1335               	.LFBB15:
+ 1336               	/* prologue: function */
+ 1337               	/* frame size = 0 */
+ 1338               	/* stack size = 0 */
+ 1339               	.L__stack_usage = 0
+ 1340 0000 FB01      		movw r30,r22
+ 216:i2c.cpp       ****         fdev_setup_stream(stream, put, get, _FDEV_SETUP_RW);
+ 1342               	.LM82:
+ 1343 0002 20E0      		ldi r18,lo8(gs(_ZN3I2c3putEcP6__file))
+ 1344 0004 30E0      		ldi r19,hi8(gs(_ZN3I2c3putEcP6__file))
+ 1345 0006 2087      		std Z+8,r18
+ 1346 0008 3187      		std Z+9,r19
+ 1347 000a 20E0      		ldi r18,lo8(gs(_ZN3I2c3getEP6__file))
+ 1348 000c 30E0      		ldi r19,hi8(gs(_ZN3I2c3getEP6__file))
+ 1349 000e 2287      		std Z+10,r18
+ 1350 0010 3387      		std Z+11,r19
+ 1351 0012 23E0      		ldi r18,lo8(3)
+ 1352 0014 2383      		std Z+3,r18
+ 217:i2c.cpp       ****         fdev_set_udata(stream, this);
+ 1354               	.LM83:
+ 1355 0016 8487      		std Z+12,r24
+ 1356 0018 9587      		std Z+13,r25
+ 1357               	/* epilogue start */
+ 218:i2c.cpp       **** }
+ 1359               	.LM84:
+ 1360 001a 0895      		ret
+ 1362               	.Lscope15:
+ 1363               		.weak	_ZTV3I2c
+ 1364               		.section	.rodata._ZTV3I2c,"a",@progbits
+ 1367               	_ZTV3I2c:
+ 1368 0000 0000      		.word	0
+ 1369 0002 0000      		.word	0
+ 1370 0004 0000      		.word	gs(_ZN7IStream9availableEv)
+ 1371 0006 0000      		.word	gs(_ZN3I2c3getEv)
+ 1372 0008 0000      		.word	gs(_ZN7IStream4peekEj)
+ 1373 000a 0000      		.word	gs(_ZN7IStream11read_stringEPc)
+ 1374 000c 0000      		.word	gs(_ZN7IStream4readEPvj)
+ 1375 000e 0000      		.word	gs(_ZN3I2c3putEc)
+ 1376 0010 FEFF      		.word	-2
+ 1377 0012 0000      		.word	0
+ 1378 0014 0000      		.word	gs(_ZN7OStream4freeEv)
+ 1379 0016 0000      		.word	gs(_ZThn2_N3I2c3putEc)
+ 1380 0018 0000      		.word	gs(_ZN7OStream12write_stringEPKc)
+ 1381 001a 0000      		.word	gs(_ZN7OStream5writeEPKvj)
+ 1382               	.global	_ZN3I2c8i2c_listE
+ 1383               		.section	.bss._ZN3I2c8i2c_listE,"aw",@nobits
+ 1386               	_ZN3I2c8i2c_listE:
+ 1387 0000 0000 0000 		.skip 4,0
+ 1388               		.section	.rodata.CSWTCH.6,"a",@progbits
+ 1391               	CSWTCH.6:
+ 1392 0000 8004      		.word	1152
+ 1393 0002 A004      		.word	1184
+ 1394               		.section	.rodata.CSWTCH.8,"a",@progbits
+ 1397               	CSWTCH.8:
+ 1398 0000 4006      		.word	1600
+ 1399 0002 8006      		.word	1664
+ 1400               		.weak	_ZTV8IOStream
+ 1401               		.section	.rodata._ZTV8IOStream,"a",@progbits
+ 1404               	_ZTV8IOStream:
+ 1405 0000 0000      		.word	0
+ 1406 0002 0000      		.word	0
+ 1407 0004 0000      		.word	gs(_ZN7IStream9availableEv)
+ 1408 0006 0000      		.word	gs(_ZN7IStream3getEv)
+ 1409 0008 0000      		.word	gs(_ZN7IStream4peekEj)
+ 1410 000a 0000      		.word	gs(_ZN7IStream11read_stringEPc)
+ 1411 000c 0000      		.word	gs(_ZN7IStream4readEPvj)
+ 1412 000e FEFF      		.word	-2
+ 1413 0010 0000      		.word	0
+ 1414 0012 0000      		.word	gs(_ZN7OStream4freeEv)
+ 1415 0014 0000      		.word	gs(_ZN7OStream3putEc)
+ 1416 0016 0000      		.word	gs(_ZN7OStream12write_stringEPKc)
+ 1417 0018 0000      		.word	gs(_ZN7OStream5writeEPKvj)
+ 1419               		.set	.LTHUNK0,_ZN3I2c3putEc
+ 1420               	.global	_ZN3I2cC1EP10TWI_struct
+ 1421               		.set	_ZN3I2cC1EP10TWI_struct,_ZN3I2cC2EP10TWI_struct
+ 1422               	.global	_ZN3I2cD1Ev
+ 1423               		.set	_ZN3I2cD1Ev,_ZN3I2cD2Ev
+ 1424               		.text
+ 1426               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 i2c.cpp
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:2      *ABS*:0000003f __SREG__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:3      *ABS*:0000003e __SP_H__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:4      *ABS*:0000003d __SP_L__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:5      *ABS*:00000034 __CCP__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:6      *ABS*:00000000 __tmp_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:7      *ABS*:00000001 __zero_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:619    .text._ZN3I2c3putEcP6__file:00000000 _ZN3I2c3putEcP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:673    .text._ZN3I2c3getEP6__file:00000000 _ZN3I2c3getEP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:721    .text._ZThn2_N3I2c3putEc:00000000 _ZThn2_N3I2c3putEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:737    .text._ZN3I2c3putEc:00000000 _ZN3I2c3putEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:789    .text._ZN3I2c3getEv:00000000 _ZN3I2c3getEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:863    .text._ZN3I2c9which_twiEP10TWI_struct:00000000 _ZN3I2c9which_twiEP10TWI_struct
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:906    .text._ZN3I2c7get_twiEc:00000000 _ZN3I2c7get_twiEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1391   .rodata.CSWTCH.6:00000000 CSWTCH.6
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:941    .text._ZN3I2c8get_portEc:00000000 _ZN3I2c8get_portEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1397   .rodata.CSWTCH.8:00000000 CSWTCH.8
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:977    .text._ZN3I2cC2EP10TWI_struct:00000000 _ZN3I2cC2EP10TWI_struct
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1367   .rodata._ZTV3I2c:00000000 _ZTV3I2c
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1386   .bss._ZN3I2c8i2c_listE:00000000 _ZN3I2c8i2c_listE
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1033   .text._ZN3I2c5beginEm:00000000 _ZN3I2c5beginEm
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1099   .text._ZN3I2c3endEv:00000000 _ZN3I2c3endEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1129   .text._ZN3I2cD2Ev:00000000 _ZN3I2cD2Ev
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1179   .text._ZN3I2c11start_writeEh:00000000 _ZN3I2c11start_writeEh
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1237   .text._ZN3I2c10start_readEh:00000000 _ZN3I2c10start_readEh
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1295   .text._ZN3I2c4stopEv:00000000 _ZN3I2c4stopEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1332   .text._ZN3I2c12setup_streamEP6__file:00000000 _ZN3I2c12setup_streamEP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1404   .rodata._ZTV8IOStream:00000000 _ZTV8IOStream
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:977    .text._ZN3I2cC2EP10TWI_struct:00000000 _ZN3I2cC1EP10TWI_struct
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccZ0AwMF.s:1129   .text._ZN3I2cD2Ev:00000000 _ZN3I2cD1Ev
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+__udivmodsi4
+_ZN7IStream9availableEv
+_ZN7IStream4peekEj
+_ZN7IStream11read_stringEPc
+_ZN7IStream4readEPvj
+_ZN7OStream4freeEv
+_ZN7OStream12write_stringEPKc
+_ZN7OStream5writeEPKvj
+_ZN7IStream3getEv
+_ZN7OStream3putEc

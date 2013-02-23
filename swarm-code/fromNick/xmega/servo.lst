@@ -1,0 +1,552 @@
+   1               		.file	"servo.c"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__ = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  11               		.text
+  12               	.Ltext0:
+ 438               		.section	.text.init_servo,"ax",@progbits
+ 440               	.global	init_servo
+ 442               	init_servo:
+   1:servo.c       **** // servo.c
+   2:servo.c       **** 
+   3:servo.c       **** #include "avr_compiler.h"
+   4:servo.c       **** #include "servo.h"
+   5:servo.c       **** 
+   6:servo.c       **** uint8_t SERVO_MODE = QUICK_SERVO;
+   7:servo.c       **** int16_t smart_servo_pos_deg = -30;
+   8:servo.c       **** int16_t servo_current_pos_deg;
+   9:servo.c       **** 
+  10:servo.c       **** /*
+  11:servo.c       **** #define PIN1_bm		0b00000001
+  12:servo.c       **** #define PIN2_bm		0b00000010
+  13:servo.c       **** #define PIN3_bm		0b00000100
+  14:servo.c       **** #define PIN4_bm		0b00001000
+  15:servo.c       **** #define PIN5_bm		0b00010000
+  16:servo.c       **** #define PIN6_bm		0b00100000
+  17:servo.c       **** #define PIN7_bm		0b01000000
+  18:servo.c       **** #define PIN8_bm		0b10000000
+  19:servo.c       **** */
+  20:servo.c       **** 
+  21:servo.c       **** void init_servo()
+  22:servo.c       **** {
+ 444               	.LM0:
+ 445               	.LFBB1:
+ 446               	/* prologue: function */
+ 447               	/* frame size = 0 */
+ 448               	/* stack size = 0 */
+ 449               	.L__stack_usage = 0
+  23:servo.c       **** 
+  24:servo.c       **** 	/* the servo code that is written here will:
+  25:servo.c       **** 		1. choose an on-board timer/counter (we will use timer/counter E1 which will drive single-slope P
+  26:servo.c       **** 		2. supply a scaled clock source that will drive this counter (hopefully 32MHz/64 = 500 kHz)
+  27:servo.c       **** 		3. initialize single-slope PWM and output it to pin 40 (OC1A, portEpin4) and/or pin 41 (OC1B, por
+  28:servo.c       **** 	*/
+  29:servo.c       **** 	
+  30:servo.c       **** 	// initialize the two servo data-pins as output pins
+  31:servo.c       **** 	PORTE.DIRSET = PIN4_bm; // (PWM_1) make pin E4 writeable, by default all initialize as readable
+ 451               	.LM1:
+ 452 0000 E0E8      		ldi r30,lo8(1664)
+ 453 0002 F6E0      		ldi r31,hi8(1664)
+ 454 0004 80E1      		ldi r24,lo8(16)
+ 455 0006 8183      		std Z+1,r24
+  32:servo.c       **** 	PORTE.DIRSET = PIN5_bm; // (PWM_2) make pin E5 writeable, by default all initialize as readable
+ 457               	.LM2:
+ 458 0008 80E2      		ldi r24,lo8(32)
+ 459 000a 8183      		std Z+1,r24
+  33:servo.c       **** 	
+  34:servo.c       **** 	if(SERVO_MODE == QUICK_SERVO)
+ 461               	.LM3:
+ 462 000c 8091 0000 		lds r24,SERVO_MODE
+ 463 0010 8823      		tst r24
+ 464 0012 01F4      		brne .L2
+  35:servo.c       **** 	{
+  36:servo.c       **** 		// Begin a timer-counter that will reach TOP (overflow) every 20ms (servo signal is 50 Hz)
+  37:servo.c       **** 		TCE1.PER = 10126; // Set period (10126 ticks@~500KHz -> ~20.0ms) ** CALIBRATED (w/ opt.lvl -O1), 
+ 466               	.LM4:
+ 467 0014 E0E4      		ldi r30,lo8(2624)
+ 468 0016 FAE0      		ldi r31,hi8(2624)
+ 469 0018 8EE8      		ldi r24,lo8(10126)
+ 470 001a 97E2      		ldi r25,hi8(10126)
+ 471 001c 86A3      		std Z+38,r24
+ 472 001e 97A3      		std Z+39,r25
+  38:servo.c       **** 		//TC_SetPeriod( &TCE1, 9999 );  // Set period (10000 ticks@500KHz = 20ms)  ** CORRECT, but NOT CA
+  39:servo.c       **** 		
+  40:servo.c       **** 		TCE1.CCA = 785;	//initially fill the CCA register with a value that is calibrated to zero the ser
+ 474               	.LM5:
+ 475 0020 81E1      		ldi r24,lo8(785)
+ 476 0022 93E0      		ldi r25,hi8(785)
+ 477 0024 80A7      		std Z+40,r24
+ 478 0026 91A7      		std Z+41,r25
+  41:servo.c       **** 		TCE1.CCB = 785;	//initially fill the CCB register with a value that is calibrated to zero the ser
+ 480               	.LM6:
+ 481 0028 82A7      		std Z+42,r24
+ 482 002a 93A7      		std Z+43,r25
+  42:servo.c       **** 		TCE1.CTRLA |= 0b00000101;		// Set clock and prescaler, 32MHz/64 = 500KHz
+ 484               	.LM7:
+ 485 002c 8091 400A 		lds r24,2624
+ 486 0030 8560      		ori r24,lo8(5)
+ 487 0032 8093 400A 		sts 2624,r24
+  43:servo.c       **** 		TCE1.CTRLB |= 0b00000011;		// enable Single Slope PWM (Waveform Generation Mode)
+ 489               	.LM8:
+ 490 0036 8091 410A 		lds r24,2625
+ 491 003a 8360      		ori r24,lo8(3)
+ 492 003c 8183      		std Z+1,r24
+  44:servo.c       **** 		TCE1.CTRLB |= 0b00010000;		// enable waveform output on OC1A (setting this in WGM of operation ov
+ 494               	.LM9:
+ 495 003e 8091 410A 		lds r24,2625
+ 496 0042 8061      		ori r24,lo8(16)
+ 497 0044 8183      		std Z+1,r24
+  45:servo.c       **** 		TCE1.CTRLB |= 0b00100000;		// enable waveform output on OC1B (setting this in WGM of operation ov
+ 499               	.LM10:
+ 500 0046 8091 410A 		lds r24,2625
+ 501 004a 8062      		ori r24,lo8(32)
+ 502 004c 8183      		std Z+1,r24
+ 503 004e 0895      		ret
+ 504               	.L2:
+  46:servo.c       **** 	}	
+  47:servo.c       **** 	
+  48:servo.c       **** 	else if(SERVO_MODE == SMART_SERVO)
+ 506               	.LM11:
+ 507 0050 8130      		cpi r24,lo8(1)
+ 508 0052 01F4      		brne .L1
+  49:servo.c       **** 	{
+  50:servo.c       **** 		// Begin a clock counter that will trigger an overflow-interrupt (TCE1) every 20ms -> (50 Hz)
+  51:servo.c       **** 		TCE1.PER = 10126;  // Set period (10126 ticks@~500KHz -> ~20.0ms) ** CALIBRATED (w/ opt.lvl -O1),
+ 510               	.LM12:
+ 511 0054 E0E4      		ldi r30,lo8(2624)
+ 512 0056 FAE0      		ldi r31,hi8(2624)
+ 513 0058 8EE8      		ldi r24,lo8(10126)
+ 514 005a 97E2      		ldi r25,hi8(10126)
+ 515 005c 86A3      		std Z+38,r24
+ 516 005e 97A3      		std Z+39,r25
+  52:servo.c       **** 		TCE1.INTCTRLA |= 0b00000010;	// set a medium-level interrupt on overflow
+ 518               	.LM13:
+ 519 0060 2091 460A 		lds r18,2630
+ 520 0064 2260      		ori r18,lo8(2)
+ 521 0066 2683      		std Z+6,r18
+  53:servo.c       **** 		TCE1.CTRLA |= 0b00000101;		// Set clock and prescaler, 32MHz/64 = 500KHz
+ 523               	.LM14:
+ 524 0068 2091 400A 		lds r18,2624
+ 525 006c 2560      		ori r18,lo8(5)
+ 526 006e 2093 400A 		sts 2624,r18
+  54:servo.c       **** 		TCE1.PER = 10126;  // Set period (10126 ticks@~500KHz -> ~20.0ms) ** CALIBRATED (w/ opt.lvl -O1),
+ 528               	.LM15:
+ 529 0072 86A3      		std Z+38,r24
+ 530 0074 97A3      		std Z+39,r25
+  55:servo.c       **** 		TCE1.INTCTRLB |= 0b00000010;  // set a medium-level interrupt on CCA compare
+ 532               	.LM16:
+ 533 0076 8091 470A 		lds r24,2631
+ 534 007a 8260      		ori r24,lo8(2)
+ 535 007c 8783      		std Z+7,r24
+ 536               	.L1:
+ 537 007e 0895      		ret
+ 539               	.Lscope1:
+ 540               		.section	.text.disable_servo,"ax",@progbits
+ 542               	.global	disable_servo
+ 544               	disable_servo:
+  56:servo.c       **** 		
+  57:servo.c       **** 	}	
+  58:servo.c       **** }	
+  59:servo.c       **** 
+  60:servo.c       **** void disable_servo()
+  61:servo.c       **** {
+ 546               	.LM17:
+ 547               	.LFBB2:
+ 548               	/* prologue: function */
+ 549               	/* frame size = 0 */
+ 550               	/* stack size = 0 */
+ 551               	.L__stack_usage = 0
+  62:servo.c       **** 	if(SERVO_MODE == QUICK_SERVO)
+ 553               	.LM18:
+ 554 0000 8091 0000 		lds r24,SERVO_MODE
+ 555 0004 8823      		tst r24
+ 556 0006 01F4      		brne .L4
+  63:servo.c       **** 	{
+  64:servo.c       **** 		TCE1.CTRLB &= ~0b00010000;		// disable waveform output on OC1A (setting this in WGM of operation 
+ 558               	.LM19:
+ 559 0008 E0E4      		ldi r30,lo8(2624)
+ 560 000a FAE0      		ldi r31,hi8(2624)
+ 561 000c 8091 410A 		lds r24,2625
+ 562 0010 8F7E      		andi r24,lo8(-17)
+ 563 0012 8183      		std Z+1,r24
+  65:servo.c       **** 		TCE1.CTRLB &= ~0b00100000;		// disable waveform output on OC1B (setting this in WGM of operation 
+ 565               	.LM20:
+ 566 0014 8091 410A 		lds r24,2625
+ 567 0018 8F7D      		andi r24,lo8(-33)
+ 568 001a 8183      		std Z+1,r24
+ 569               	.L4:
+ 570 001c 0895      		ret
+ 572               	.Lscope2:
+ 573               		.section	.text.enable_servo,"ax",@progbits
+ 575               	.global	enable_servo
+ 577               	enable_servo:
+  66:servo.c       **** 	}
+  67:servo.c       **** }
+  68:servo.c       **** 
+  69:servo.c       **** void enable_servo()
+  70:servo.c       **** {
+ 579               	.LM21:
+ 580               	.LFBB3:
+ 581               	/* prologue: function */
+ 582               	/* frame size = 0 */
+ 583               	/* stack size = 0 */
+ 584               	.L__stack_usage = 0
+  71:servo.c       **** 	if(SERVO_MODE == QUICK_SERVO)
+ 586               	.LM22:
+ 587 0000 8091 0000 		lds r24,SERVO_MODE
+ 588 0004 8823      		tst r24
+ 589 0006 01F4      		brne .L6
+  72:servo.c       **** 	{
+  73:servo.c       **** 		TCE1.CTRLB |= 0b00010000;		// enable waveform output on OC1A (setting this in WGM of operation ov
+ 591               	.LM23:
+ 592 0008 E0E4      		ldi r30,lo8(2624)
+ 593 000a FAE0      		ldi r31,hi8(2624)
+ 594 000c 8091 410A 		lds r24,2625
+ 595 0010 8061      		ori r24,lo8(16)
+ 596 0012 8183      		std Z+1,r24
+  74:servo.c       **** 		TCE1.CTRLB |= 0b00100000;		// enable waveform output on OC1B (setting this in WGM of operation ov
+ 598               	.LM24:
+ 599 0014 8091 410A 		lds r24,2625
+ 600 0018 8062      		ori r24,lo8(32)
+ 601 001a 8183      		std Z+1,r24
+ 602               	.L6:
+ 603 001c 0895      		ret
+ 605               	.Lscope3:
+ 606               		.section	.text.servo_CNT_compare_from_postion,"ax",@progbits
+ 609               	.global	servo_CNT_compare_from_postion
+ 611               	servo_CNT_compare_from_postion:
+  75:servo.c       **** 	}
+  76:servo.c       **** }
+  77:servo.c       **** 
+  78:servo.c       **** 
+  79:servo.c       **** uint16_t servo_CNT_compare_from_postion(float degrees)
+  80:servo.c       **** {
+ 613               	.LM25:
+ 614               	.LFBB4:
+ 615               	/* prologue: function */
+ 616               	/* frame size = 0 */
+ 617               	/* stack size = 0 */
+ 618               	.L__stack_usage = 0
+  81:servo.c       **** 	uint16_t compare_value;		// this value will ultimately fill the PER register of the timer/counter
+  82:servo.c       **** 
+  83:servo.c       **** 	compare_value = 785 + degrees*5; // ** CALIBRATED (w/ opt.lvl -O1) for +/- 90 degrees and ZEROED w
+ 620               	.LM26:
+ 621 0000 20E0      		ldi r18,lo8(0x40a00000)
+ 622 0002 30E0      		ldi r19,hi8(0x40a00000)
+ 623 0004 40EA      		ldi r20,hlo8(0x40a00000)
+ 624 0006 50E4      		ldi r21,hhi8(0x40a00000)
+ 625 0008 0E94 0000 		call __mulsf3
+ 626 000c 20E0      		ldi r18,lo8(0x44444000)
+ 627 000e 30E4      		ldi r19,hi8(0x44444000)
+ 628 0010 44E4      		ldi r20,hlo8(0x44444000)
+ 629 0012 54E4      		ldi r21,hhi8(0x44444000)
+ 630 0014 0E94 0000 		call __addsf3
+ 631 0018 0E94 0000 		call __fixunssfsi
+  84:servo.c       **** 	// compare_value = 760 + (int16_t)degrees*2.7777; // ** CORRECT, but NOT CALIBRATED **
+  85:servo.c       **** 
+  86:servo.c       **** 	return compare_value;
+  87:servo.c       **** }
+ 633               	.LM27:
+ 634 001c CB01      		movw r24,r22
+ 635               	/* epilogue start */
+ 636 001e 0895      		ret
+ 638               	.Lscope4:
+ 639               		.section	.text.set_servo_position,"ax",@progbits
+ 642               	.global	set_servo_position
+ 644               	set_servo_position:
+  88:servo.c       **** 
+  89:servo.c       **** void set_servo_position(float degrees)
+  90:servo.c       **** {
+ 646               	.LM28:
+ 647               	.LFBB5:
+ 648 0000 CF92      		push r12
+ 649 0002 DF92      		push r13
+ 650 0004 EF92      		push r14
+ 651 0006 FF92      		push r15
+ 652               	/* prologue: function */
+ 653               	/* frame size = 0 */
+ 654               	/* stack size = 4 */
+ 655               	.L__stack_usage = 4
+ 656 0008 6B01      		movw r12,r22
+ 657 000a 7C01      		movw r14,r24
+  91:servo.c       **** 	if(SERVO_MODE == QUICK_SERVO)
+ 659               	.LM29:
+ 660 000c 8091 0000 		lds r24,SERVO_MODE
+ 661 0010 8823      		tst r24
+ 662 0012 01F4      		brne .L9
+  92:servo.c       **** 	{
+  93:servo.c       **** 		if(servo_current_pos_deg == degrees)
+ 664               	.LM30:
+ 665 0014 6091 0000 		lds r22,servo_current_pos_deg
+ 666 0018 7091 0000 		lds r23,servo_current_pos_deg+1
+ 667 001c 8827      		clr r24
+ 668 001e 77FD      		sbrc r23,7
+ 669 0020 8095      		com r24
+ 670 0022 982F      		mov r25,r24
+ 671 0024 0E94 0000 		call __floatsisf
+ 672 0028 A701      		movw r20,r14
+ 673 002a 9601      		movw r18,r12
+ 674 002c 0E94 0000 		call __eqsf2
+ 675 0030 8823      		tst r24
+ 676 0032 01F0      		breq .L9
+ 677               	.LBB5:
+ 678               	.LBB6:
+ 679               	.LBB7:
+  83:servo.c       **** 	compare_value = 785 + degrees*5; // ** CALIBRATED (w/ opt.lvl -O1) for +/- 90 degrees and ZEROED w
+ 681               	.LM31:
+ 682 0034 C701      		movw r24,r14
+ 683 0036 B601      		movw r22,r12
+ 684 0038 20E0      		ldi r18,lo8(0x40a00000)
+ 685 003a 30E0      		ldi r19,hi8(0x40a00000)
+ 686 003c 40EA      		ldi r20,hlo8(0x40a00000)
+ 687 003e 50E4      		ldi r21,hhi8(0x40a00000)
+ 688 0040 0E94 0000 		call __mulsf3
+ 689 0044 20E0      		ldi r18,lo8(0x44444000)
+ 690 0046 30E4      		ldi r19,hi8(0x44444000)
+ 691 0048 44E4      		ldi r20,hlo8(0x44444000)
+ 692 004a 54E4      		ldi r21,hhi8(0x44444000)
+ 693 004c 0E94 0000 		call __addsf3
+ 694 0050 0E94 0000 		call __fixunssfsi
+ 695 0054 DC01      		movw r26,r24
+ 696 0056 CB01      		movw r24,r22
+ 697               	.LBE7:
+ 698               	.LBE6:
+  94:servo.c       **** 			return;
+  95:servo.c       **** 		else
+  96:servo.c       **** 		{ 
+  97:servo.c       **** 			uint16_t compare_value = servo_CNT_compare_from_postion(degrees);		
+  98:servo.c       **** 
+  99:servo.c       **** 			TCE1.CCABUF = compare_value;	// fill the clock-compare A-buffer with the servo position val (for
+ 700               	.LM32:
+ 701 0058 E0E4      		ldi r30,lo8(2624)
+ 702 005a FAE0      		ldi r31,hi8(2624)
+ 703 005c 80AF      		std Z+56,r24
+ 704 005e 91AF      		std Z+57,r25
+ 100:servo.c       **** 											// CCABUF will be loaded into CCA on the next UPDATE event (counter value = BOTTOM)
+ 101:servo.c       **** 	
+ 102:servo.c       **** 			TCE1.CCBBUF = compare_value;	// fill the clock-compare B-buffer with the servo position val (for
+ 706               	.LM33:
+ 707 0060 82AF      		std Z+58,r24
+ 708 0062 93AF      		std Z+59,r25
+ 103:servo.c       **** 											// CCBBUF will be loaded into CCB on the next UPDATE event (counter value = BOTTOM)					
+ 104:servo.c       **** 		
+ 105:servo.c       **** 			servo_current_pos_deg = degrees;
+ 710               	.LM34:
+ 711 0064 C701      		movw r24,r14
+ 712 0066 B601      		movw r22,r12
+ 713 0068 0E94 0000 		call __fixsfsi
+ 714 006c DC01      		movw r26,r24
+ 715 006e CB01      		movw r24,r22
+ 716 0070 8093 0000 		sts servo_current_pos_deg,r24
+ 717 0074 9093 0000 		sts servo_current_pos_deg+1,r25
+ 718               	.L9:
+ 719               	/* epilogue start */
+ 720               	.LBE5:
+ 106:servo.c       **** 		}		
+ 107:servo.c       **** 	}
+ 108:servo.c       **** 	
+ 109:servo.c       **** 	else
+ 110:servo.c       **** 		/* not yet configured for SMART_SERVO */
+ 111:servo.c       **** 		return;
+ 112:servo.c       **** }	
+ 722               	.LM35:
+ 723 0078 FF90      		pop r15
+ 724 007a EF90      		pop r14
+ 725 007c DF90      		pop r13
+ 726 007e CF90      		pop r12
+ 727 0080 0895      		ret
+ 729               	.Lscope5:
+ 730               		.section	.text.__vector_53,"ax",@progbits
+ 732               	.global	__vector_53
+ 734               	__vector_53:
+ 113:servo.c       **** 
+ 114:servo.c       **** ISR(TCE1_OVF_vect)	// this interrupt is only executed in SMART_SERVO mode
+ 115:servo.c       **** {
+ 736               	.LM36:
+ 737               	.LFBB6:
+ 738 0000 1F92      		push r1
+ 739 0002 0F92      		push r0
+ 740 0004 0FB6      		in r0,__SREG__
+ 741 0006 0F92      		push r0
+ 742 0008 0BB6      		in r0,59-0
+ 743 000a 0F92      		push r0
+ 744 000c 1124      		clr __zero_reg__
+ 745 000e 2F93      		push r18
+ 746 0010 3F93      		push r19
+ 747 0012 4F93      		push r20
+ 748 0014 5F93      		push r21
+ 749 0016 6F93      		push r22
+ 750 0018 7F93      		push r23
+ 751 001a 8F93      		push r24
+ 752 001c 9F93      		push r25
+ 753 001e AF93      		push r26
+ 754 0020 BF93      		push r27
+ 755 0022 EF93      		push r30
+ 756 0024 FF93      		push r31
+ 757               	/* prologue: Signal */
+ 758               	/* frame size = 0 */
+ 759               	/* stack size = 16 */
+ 760               	.L__stack_usage = 16
+ 116:servo.c       **** 	PORTB.OUT |= PIN1_bm; //(YELLOW LED) turn the bit on (for debugging, remove this line when complet
+ 762               	.LM37:
+ 763 0026 E0E2      		ldi r30,lo8(1568)
+ 764 0028 F6E0      		ldi r31,hi8(1568)
+ 765 002a 8481      		ldd r24,Z+4
+ 766 002c 8260      		ori r24,lo8(2)
+ 767 002e 8483      		std Z+4,r24
+ 117:servo.c       **** 	
+ 118:servo.c       **** 	// begin the HIGH-pulse to the servo(s):
+ 119:servo.c       **** 	PORTE.OUT |= PIN4_bm; // (PWM_1) set pin on
+ 769               	.LM38:
+ 770 0030 E0E8      		ldi r30,lo8(1664)
+ 771 0032 F6E0      		ldi r31,hi8(1664)
+ 772 0034 8481      		ldd r24,Z+4
+ 773 0036 8061      		ori r24,lo8(16)
+ 774 0038 8483      		std Z+4,r24
+ 120:servo.c       **** 	PORTE.OUT |= PIN5_bm; // (PWM_2) set pin on
+ 776               	.LM39:
+ 777 003a 8481      		ldd r24,Z+4
+ 778 003c 8062      		ori r24,lo8(32)
+ 779 003e 8483      		std Z+4,r24
+ 121:servo.c       **** 	
+ 122:servo.c       **** 	// calculate how long the HIGH-pulse to the servo should last:
+ 123:servo.c       **** 	set_servo_position(smart_servo_pos_deg);
+ 781               	.LM40:
+ 782 0040 6091 0000 		lds r22,smart_servo_pos_deg
+ 783 0044 7091 0000 		lds r23,smart_servo_pos_deg+1
+ 784 0048 8827      		clr r24
+ 785 004a 77FD      		sbrc r23,7
+ 786 004c 8095      		com r24
+ 787 004e 982F      		mov r25,r24
+ 788 0050 0E94 0000 		call __floatsisf
+ 789 0054 0E94 0000 		call set_servo_position
+ 790               	/* epilogue start */
+ 124:servo.c       **** 	
+ 125:servo.c       **** }
+ 792               	.LM41:
+ 793 0058 FF91      		pop r31
+ 794 005a EF91      		pop r30
+ 795 005c BF91      		pop r27
+ 796 005e AF91      		pop r26
+ 797 0060 9F91      		pop r25
+ 798 0062 8F91      		pop r24
+ 799 0064 7F91      		pop r23
+ 800 0066 6F91      		pop r22
+ 801 0068 5F91      		pop r21
+ 802 006a 4F91      		pop r20
+ 803 006c 3F91      		pop r19
+ 804 006e 2F91      		pop r18
+ 805 0070 0F90      		pop r0
+ 806 0072 0BBE      		out 59-0,r0
+ 807 0074 0F90      		pop r0
+ 808 0076 0FBE      		out __SREG__,r0
+ 809 0078 0F90      		pop r0
+ 810 007a 1F90      		pop r1
+ 811 007c 1895      		reti
+ 813               	.Lscope6:
+ 814               		.section	.text.__vector_55,"ax",@progbits
+ 816               	.global	__vector_55
+ 818               	__vector_55:
+ 126:servo.c       **** 
+ 127:servo.c       **** ISR(TCE1_CCA_vect)	// this interrupt is only executed in SMART_SERVO mode
+ 128:servo.c       **** {
+ 820               	.LM42:
+ 821               	.LFBB7:
+ 822 0000 1F92      		push r1
+ 823 0002 0F92      		push r0
+ 824 0004 0FB6      		in r0,__SREG__
+ 825 0006 0F92      		push r0
+ 826 0008 0BB6      		in r0,59-0
+ 827 000a 0F92      		push r0
+ 828 000c 1124      		clr __zero_reg__
+ 829 000e 8F93      		push r24
+ 830 0010 EF93      		push r30
+ 831 0012 FF93      		push r31
+ 832               	/* prologue: Signal */
+ 833               	/* frame size = 0 */
+ 834               	/* stack size = 7 */
+ 835               	.L__stack_usage = 7
+ 129:servo.c       ****     PORTB.OUT &= ~PIN1_bm; //(YELLOW LED) turn the bit off (for debugging, remove this line when co
+ 837               	.LM43:
+ 838 0014 E0E2      		ldi r30,lo8(1568)
+ 839 0016 F6E0      		ldi r31,hi8(1568)
+ 840 0018 8481      		ldd r24,Z+4
+ 841 001a 8D7F      		andi r24,lo8(-3)
+ 842 001c 8483      		std Z+4,r24
+ 130:servo.c       **** 	
+ 131:servo.c       **** 	// end the HIGH-pulse to the servo(s):
+ 132:servo.c       **** 	PORTE.OUT &= ~PIN4_bm; // (PWM_1) set pin off
+ 844               	.LM44:
+ 845 001e E0E8      		ldi r30,lo8(1664)
+ 846 0020 F6E0      		ldi r31,hi8(1664)
+ 847 0022 8481      		ldd r24,Z+4
+ 848 0024 8F7E      		andi r24,lo8(-17)
+ 849 0026 8483      		std Z+4,r24
+ 133:servo.c       **** 	PORTE.OUT &= ~PIN5_bm; // (PWM_2) set pin off
+ 851               	.LM45:
+ 852 0028 8481      		ldd r24,Z+4
+ 853 002a 8F7D      		andi r24,lo8(-33)
+ 854 002c 8483      		std Z+4,r24
+ 855               	/* epilogue start */
+ 134:servo.c       **** 	
+ 135:servo.c       **** 	// clear the interrupt:
+ 136:servo.c       **** 	//TC1_SetOverflowIntLevel( &TCE1, TC_OVFINTLVL_OFF_gc ); // Clear Interrupt on Overflow (is this n
+ 137:servo.c       **** 	// stop counting on TCE1:
+ 138:servo.c       **** 	//TC1_ConfigClockSource( &TCE1, TC_CLKSEL_OFF_gc );      // Stop clock
+ 139:servo.c       **** }
+ 857               	.LM46:
+ 858 002e FF91      		pop r31
+ 859 0030 EF91      		pop r30
+ 860 0032 8F91      		pop r24
+ 861 0034 0F90      		pop r0
+ 862 0036 0BBE      		out 59-0,r0
+ 863 0038 0F90      		pop r0
+ 864 003a 0FBE      		out __SREG__,r0
+ 865 003c 0F90      		pop r0
+ 866 003e 1F90      		pop r1
+ 867 0040 1895      		reti
+ 869               	.Lscope7:
+ 870               		.comm servo_current_pos_deg,2,1
+ 871               	.global	smart_servo_pos_deg
+ 872               		.section	.data.smart_servo_pos_deg,"aw",@progbits
+ 875               	smart_servo_pos_deg:
+ 876 0000 E2FF      		.word	-30
+ 877               	.global	SERVO_MODE
+ 878               		.section	.bss.SERVO_MODE,"aw",@nobits
+ 881               	SERVO_MODE:
+ 882 0000 00        		.skip 1,0
+ 886               		.text
+ 888               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 servo.c
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:2      *ABS*:0000003f __SREG__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:3      *ABS*:0000003e __SP_H__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:4      *ABS*:0000003d __SP_L__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:5      *ABS*:00000034 __CCP__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:6      *ABS*:00000000 __tmp_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:7      *ABS*:00000001 __zero_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:442    .text.init_servo:00000000 init_servo
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:881    .bss.SERVO_MODE:00000000 SERVO_MODE
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:544    .text.disable_servo:00000000 disable_servo
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:577    .text.enable_servo:00000000 enable_servo
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:611    .text.servo_CNT_compare_from_postion:00000000 servo_CNT_compare_from_postion
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:644    .text.set_servo_position:00000000 set_servo_position
+                            *COM*:00000002 servo_current_pos_deg
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:734    .text.__vector_53:00000000 __vector_53
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:875    .data.smart_servo_pos_deg:00000000 smart_servo_pos_deg
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccuCWjp3.s:818    .text.__vector_55:00000000 __vector_55
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+__mulsf3
+__addsf3
+__fixunssfsi
+__floatsisf
+__eqsf2
+__fixsfsi

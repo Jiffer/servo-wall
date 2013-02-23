@@ -1,0 +1,251 @@
+   1               		.file	"ostream.cpp"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__ = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  11               		.text
+  12               	.Ltext0:
+ 109               		.section	.text._ZN7OStream4freeEv,"ax",@progbits
+ 112               	.global	_ZN7OStream4freeEv
+ 114               	_ZN7OStream4freeEv:
+   1:ostream.cpp   **** /************************************************************************/
+   2:ostream.cpp   **** /* OStream Output Stream                                                */
+   3:ostream.cpp   **** /*                                                                      */
+   4:ostream.cpp   **** /* ostream.cpp                                                          */
+   5:ostream.cpp   **** /*                                                                      */
+   6:ostream.cpp   **** /* Alex Forencich <alex@alexforencich.com>                              */
+   7:ostream.cpp   **** /*                                                                      */
+   8:ostream.cpp   **** /* Copyright (c) 2011 Alex Forencich                                    */
+   9:ostream.cpp   **** /*                                                                      */
+  10:ostream.cpp   **** /* Permission is hereby granted, free of charge, to any person          */
+  11:ostream.cpp   **** /* obtaining a copy of this software and associated documentation       */
+  12:ostream.cpp   **** /* files(the "Software"), to deal in the Software without restriction,  */
+  13:ostream.cpp   **** /* including without limitation the rights to use, copy, modify, merge, */
+  14:ostream.cpp   **** /* publish, distribute, sublicense, and/or sell copies of the Software, */
+  15:ostream.cpp   **** /* and to permit persons to whom the Software is furnished to do so,    */
+  16:ostream.cpp   **** /* subject to the following conditions:                                 */
+  17:ostream.cpp   **** /*                                                                      */
+  18:ostream.cpp   **** /* The above copyright notice and this permission notice shall be       */
+  19:ostream.cpp   **** /* included in all copies or substantial portions of the Software.      */
+  20:ostream.cpp   **** /*                                                                      */
+  21:ostream.cpp   **** /* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,      */
+  22:ostream.cpp   **** /* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF   */
+  23:ostream.cpp   **** /* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                */
+  24:ostream.cpp   **** /* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS  */
+  25:ostream.cpp   **** /* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN   */
+  26:ostream.cpp   **** /* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN    */
+  27:ostream.cpp   **** /* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE     */
+  28:ostream.cpp   **** /* SOFTWARE.                                                            */
+  29:ostream.cpp   **** /*                                                                      */
+  30:ostream.cpp   **** /************************************************************************/
+  31:ostream.cpp   **** 
+  32:ostream.cpp   **** #include "ostream.h"
+  33:ostream.cpp   **** 
+  34:ostream.cpp   **** 
+  35:ostream.cpp   **** size_t OStream::free()
+  36:ostream.cpp   **** {
+ 116               	.LM0:
+ 117               	.LFBB1:
+ 118               	/* prologue: function */
+ 119               	/* frame size = 0 */
+ 120               	/* stack size = 0 */
+ 121               	.L__stack_usage = 0
+  37:ostream.cpp   ****         return 0;
+  38:ostream.cpp   **** }
+ 123               	.LM1:
+ 124 0000 80E0      		ldi r24,lo8(0)
+ 125 0002 90E0      		ldi r25,hi8(0)
+ 126               	/* epilogue start */
+ 127 0004 0895      		ret
+ 129               	.Lscope1:
+ 130               		.section	.text._ZN7OStream3putEc,"ax",@progbits
+ 134               	.global	_ZN7OStream3putEc
+ 136               	_ZN7OStream3putEc:
+  39:ostream.cpp   **** 
+  40:ostream.cpp   **** 
+  41:ostream.cpp   **** void OStream::put(char c)
+  42:ostream.cpp   **** {
+ 138               	.LM2:
+ 139               	.LFBB2:
+ 140               	/* prologue: function */
+ 141               	/* frame size = 0 */
+ 142               	/* stack size = 0 */
+ 143               	.L__stack_usage = 0
+ 144               	/* epilogue start */
+  43:ostream.cpp   ****         
+  44:ostream.cpp   **** }
+ 146               	.LM3:
+ 147 0000 0895      		ret
+ 149               	.Lscope2:
+ 150               		.section	.text._ZN7OStream12write_stringEPKc,"ax",@progbits
+ 153               	.global	_ZN7OStream12write_stringEPKc
+ 155               	_ZN7OStream12write_stringEPKc:
+  45:ostream.cpp   **** 
+  46:ostream.cpp   **** 
+  47:ostream.cpp   **** void OStream::write_string(const char *str)
+  48:ostream.cpp   **** {
+ 157               	.LM4:
+ 158               	.LFBB3:
+ 159 0000 0F93      		push r16
+ 160 0002 1F93      		push r17
+ 161 0004 CF93      		push r28
+ 162 0006 DF93      		push r29
+ 163               	/* prologue: function */
+ 164               	/* frame size = 0 */
+ 165               	/* stack size = 4 */
+ 166               	.L__stack_usage = 4
+ 167 0008 8C01      		movw r16,r24
+ 169               	.LM5:
+ 170 000a EB01      		movw r28,r22
+  49:ostream.cpp   ****         while (*str)
+ 172               	.LM6:
+ 173 000c 00C0      		rjmp .L4
+ 174               	.L5:
+  50:ostream.cpp   ****         {
+  51:ostream.cpp   ****                 this->put(*(str++));
+ 176               	.LM7:
+ 177 000e D801      		movw r26,r16
+ 178 0010 ED91      		ld r30,X+
+ 179 0012 FC91      		ld r31,X
+ 180 0014 0280      		ldd __tmp_reg__,Z+2
+ 181 0016 F381      		ldd r31,Z+3
+ 182 0018 E02D      		mov r30,__tmp_reg__
+ 183 001a C801      		movw r24,r16
+ 184 001c 1995      		eicall
+ 185               	.L4:
+  49:ostream.cpp   ****         while (*str)
+ 187               	.LM8:
+ 188 001e 6991      		ld r22,Y+
+ 189 0020 6623      		tst r22
+ 190 0022 01F4      		brne .L5
+ 191               	/* epilogue start */
+  52:ostream.cpp   ****         }
+  53:ostream.cpp   **** }
+ 193               	.LM9:
+ 194 0024 DF91      		pop r29
+ 195 0026 CF91      		pop r28
+ 196 0028 1F91      		pop r17
+ 197 002a 0F91      		pop r16
+ 198 002c 0895      		ret
+ 200               	.Lscope3:
+ 201               		.section	.text._ZN7OStream5writeEPKvj,"ax",@progbits
+ 206               	.global	_ZN7OStream5writeEPKvj
+ 208               	_ZN7OStream5writeEPKvj:
+  54:ostream.cpp   **** 
+  55:ostream.cpp   **** 
+  56:ostream.cpp   **** size_t OStream::write(const void *ptr, size_t num)
+  57:ostream.cpp   **** {
+ 210               	.LM10:
+ 211               	.LFBB4:
+ 212 0000 CF92      		push r12
+ 213 0002 DF92      		push r13
+ 214 0004 EF92      		push r14
+ 215 0006 FF92      		push r15
+ 216 0008 0F93      		push r16
+ 217 000a 1F93      		push r17
+ 218 000c CF93      		push r28
+ 219 000e DF93      		push r29
+ 220               	/* prologue: function */
+ 221               	/* frame size = 0 */
+ 222               	/* stack size = 8 */
+ 223               	.L__stack_usage = 8
+ 224 0010 6C01      		movw r12,r24
+ 225 0012 7B01      		movw r14,r22
+ 226 0014 8A01      		movw r16,r20
+ 227               	.LBB7:
+  58:ostream.cpp   ****         size_t j = num;
+  59:ostream.cpp   ****         const char *ptr2 = (const char *)ptr;
+  60:ostream.cpp   ****         if (num == 0 || ptr2 == 0)
+ 229               	.LM11:
+ 230 0016 4115      		cp r20,__zero_reg__
+ 231 0018 5105      		cpc r21,__zero_reg__
+ 232 001a 01F0      		breq .L10
+ 234               	.LM12:
+ 235 001c 6115      		cp r22,__zero_reg__
+ 236 001e 7105      		cpc r23,__zero_reg__
+ 237 0020 01F0      		breq .L10
+ 239               	.LM13:
+ 240 0022 EA01      		movw r28,r20
+ 241               	.L8:
+ 242               	.LBE7:
+ 243               	.LBB8:
+ 244               	.LBB9:
+  61:ostream.cpp   ****                 return 0;
+  62:ostream.cpp   ****         while (num--)
+  63:ostream.cpp   ****         {
+  64:ostream.cpp   ****                 this->put(*(ptr2++));
+ 246               	.LM14:
+ 247 0024 D701      		movw r26,r14
+ 248 0026 6D91      		ld r22,X+
+ 249 0028 7D01      		movw r14,r26
+ 250 002a D601      		movw r26,r12
+ 251 002c ED91      		ld r30,X+
+ 252 002e FC91      		ld r31,X
+ 253 0030 0280      		ldd __tmp_reg__,Z+2
+ 254 0032 F381      		ldd r31,Z+3
+ 255 0034 E02D      		mov r30,__tmp_reg__
+ 256 0036 C601      		movw r24,r12
+ 257 0038 1995      		eicall
+ 258 003a 2197      		sbiw r28,1
+  62:ostream.cpp   ****         while (num--)
+ 260               	.LM15:
+ 261 003c 01F4      		brne .L8
+ 262 003e C801      		movw r24,r16
+ 263 0040 00C0      		rjmp .L7
+ 264               	.L10:
+ 265               	.LBE9:
+ 266               	.LBE8:
+ 267               	.LBB10:
+  61:ostream.cpp   ****                 return 0;
+ 269               	.LM16:
+ 270 0042 80E0      		ldi r24,lo8(0)
+ 271 0044 90E0      		ldi r25,hi8(0)
+ 272               	.L7:
+ 273               	/* epilogue start */
+ 274               	.LBE10:
+  65:ostream.cpp   ****         }
+  66:ostream.cpp   ****         return j;
+  67:ostream.cpp   **** }
+ 276               	.LM17:
+ 277 0046 DF91      		pop r29
+ 278 0048 CF91      		pop r28
+ 279 004a 1F91      		pop r17
+ 280 004c 0F91      		pop r16
+ 281 004e FF90      		pop r15
+ 282 0050 EF90      		pop r14
+ 283 0052 DF90      		pop r13
+ 284 0054 CF90      		pop r12
+ 285 0056 0895      		ret
+ 293               	.Lscope4:
+ 294               		.weak	_ZTV7OStream
+ 295               		.section	.rodata._ZTV7OStream,"a",@progbits
+ 298               	_ZTV7OStream:
+ 299 0000 0000      		.word	0
+ 300 0002 0000      		.word	0
+ 301 0004 0000      		.word	gs(_ZN7OStream4freeEv)
+ 302 0006 0000      		.word	gs(_ZN7OStream3putEc)
+ 303 0008 0000      		.word	gs(_ZN7OStream12write_stringEPKc)
+ 304 000a 0000      		.word	gs(_ZN7OStream5writeEPKvj)
+ 305               		.text
+ 307               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 ostream.cpp
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:2      *ABS*:0000003f __SREG__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:3      *ABS*:0000003e __SP_H__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:4      *ABS*:0000003d __SP_L__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:5      *ABS*:00000034 __CCP__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:6      *ABS*:00000000 __tmp_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:7      *ABS*:00000001 __zero_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:114    .text._ZN7OStream4freeEv:00000000 _ZN7OStream4freeEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:136    .text._ZN7OStream3putEc:00000000 _ZN7OStream3putEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:155    .text._ZN7OStream12write_stringEPKc:00000000 _ZN7OStream12write_stringEPKc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:208    .text._ZN7OStream5writeEPKvj:00000000 _ZN7OStream5writeEPKvj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//ccBm7bxr.s:298    .rodata._ZTV7OStream:00000000 _ZTV7OStream
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss

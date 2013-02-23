@@ -1,0 +1,295 @@
+   1               		.file	"istream.cpp"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__ = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  11               		.text
+  12               	.Ltext0:
+ 109               		.section	.text._ZN7IStream9availableEv,"ax",@progbits
+ 112               	.global	_ZN7IStream9availableEv
+ 114               	_ZN7IStream9availableEv:
+   1:istream.cpp   **** /************************************************************************/
+   2:istream.cpp   **** /* IStream Input Stream                                                 */
+   3:istream.cpp   **** /*                                                                      */
+   4:istream.cpp   **** /* istream.cpp                                                          */
+   5:istream.cpp   **** /*                                                                      */
+   6:istream.cpp   **** /* Alex Forencich <alex@alexforencich.com>                              */
+   7:istream.cpp   **** /*                                                                      */
+   8:istream.cpp   **** /* Copyright (c) 2011 Alex Forencich                                    */
+   9:istream.cpp   **** /*                                                                      */
+  10:istream.cpp   **** /* Permission is hereby granted, free of charge, to any person          */
+  11:istream.cpp   **** /* obtaining a copy of this software and associated documentation       */
+  12:istream.cpp   **** /* files(the "Software"), to deal in the Software without restriction,  */
+  13:istream.cpp   **** /* including without limitation the rights to use, copy, modify, merge, */
+  14:istream.cpp   **** /* publish, distribute, sublicense, and/or sell copies of the Software, */
+  15:istream.cpp   **** /* and to permit persons to whom the Software is furnished to do so,    */
+  16:istream.cpp   **** /* subject to the following conditions:                                 */
+  17:istream.cpp   **** /*                                                                      */
+  18:istream.cpp   **** /* The above copyright notice and this permission notice shall be       */
+  19:istream.cpp   **** /* included in all copies or substantial portions of the Software.      */
+  20:istream.cpp   **** /*                                                                      */
+  21:istream.cpp   **** /* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,      */
+  22:istream.cpp   **** /* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF   */
+  23:istream.cpp   **** /* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                */
+  24:istream.cpp   **** /* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS  */
+  25:istream.cpp   **** /* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN   */
+  26:istream.cpp   **** /* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN    */
+  27:istream.cpp   **** /* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE     */
+  28:istream.cpp   **** /* SOFTWARE.                                                            */
+  29:istream.cpp   **** /*                                                                      */
+  30:istream.cpp   **** /************************************************************************/
+  31:istream.cpp   **** 
+  32:istream.cpp   **** #include "istream.h"
+  33:istream.cpp   **** 
+  34:istream.cpp   **** 
+  35:istream.cpp   **** size_t IStream::available()
+  36:istream.cpp   **** {
+ 116               	.LM0:
+ 117               	.LFBB1:
+ 118               	/* prologue: function */
+ 119               	/* frame size = 0 */
+ 120               	/* stack size = 0 */
+ 121               	.L__stack_usage = 0
+  37:istream.cpp   ****         return 0;
+  38:istream.cpp   **** }
+ 123               	.LM1:
+ 124 0000 80E0      		ldi r24,lo8(0)
+ 125 0002 90E0      		ldi r25,hi8(0)
+ 126               	/* epilogue start */
+ 127 0004 0895      		ret
+ 129               	.Lscope1:
+ 130               		.section	.text._ZN7IStream3getEv,"ax",@progbits
+ 133               	.global	_ZN7IStream3getEv
+ 135               	_ZN7IStream3getEv:
+  39:istream.cpp   **** 
+  40:istream.cpp   **** 
+  41:istream.cpp   **** char IStream::get()
+  42:istream.cpp   **** {
+ 137               	.LM2:
+ 138               	.LFBB2:
+ 139               	/* prologue: function */
+ 140               	/* frame size = 0 */
+ 141               	/* stack size = 0 */
+ 142               	.L__stack_usage = 0
+  43:istream.cpp   ****         return 0;
+  44:istream.cpp   **** }
+ 144               	.LM3:
+ 145 0000 80E0      		ldi r24,lo8(0)
+ 146               	/* epilogue start */
+ 147 0002 0895      		ret
+ 149               	.Lscope2:
+ 150               		.section	.text._ZN7IStream4peekEj,"ax",@progbits
+ 154               	.global	_ZN7IStream4peekEj
+ 156               	_ZN7IStream4peekEj:
+  45:istream.cpp   **** 
+  46:istream.cpp   **** 
+  47:istream.cpp   **** int IStream::peek(size_t index)
+  48:istream.cpp   **** {
+ 158               	.LM4:
+ 159               	.LFBB3:
+ 160               	/* prologue: function */
+ 161               	/* frame size = 0 */
+ 162               	/* stack size = 0 */
+ 163               	.L__stack_usage = 0
+  49:istream.cpp   ****         return EOF;
+  50:istream.cpp   **** }
+ 165               	.LM5:
+ 166 0000 8FEF      		ldi r24,lo8(-1)
+ 167 0002 9FEF      		ldi r25,hi8(-1)
+ 168               	/* epilogue start */
+ 169 0004 0895      		ret
+ 171               	.Lscope3:
+ 172               		.section	.text._ZN7IStream11read_stringEPc,"ax",@progbits
+ 176               	.global	_ZN7IStream11read_stringEPc
+ 178               	_ZN7IStream11read_stringEPc:
+  51:istream.cpp   **** 
+  52:istream.cpp   **** 
+  53:istream.cpp   **** void IStream::read_string(char *dest)
+  54:istream.cpp   **** {
+ 180               	.LM6:
+ 181               	.LFBB4:
+ 182 0000 0F93      		push r16
+ 183 0002 1F93      		push r17
+ 184 0004 CF93      		push r28
+ 185 0006 DF93      		push r29
+ 186               	/* prologue: function */
+ 187               	/* frame size = 0 */
+ 188               	/* stack size = 4 */
+ 189               	.L__stack_usage = 4
+ 190 0008 8C01      		movw r16,r24
+ 191 000a EB01      		movw r28,r22
+ 192 000c 00C0      		rjmp .L6
+ 193               	.L7:
+ 194               	.LBB3:
+  55:istream.cpp   ****         char last;
+  56:istream.cpp   ****         do
+  57:istream.cpp   ****         {
+  58:istream.cpp   ****                 last = this->get();
+  59:istream.cpp   ****                 *(dest++) = last;
+ 196               	.LM7:
+ 197 000e EF01      		movw r28,r30
+ 198               	.L6:
+  58:istream.cpp   ****                 last = this->get();
+ 200               	.LM8:
+ 201 0010 D801      		movw r26,r16
+ 202 0012 ED91      		ld r30,X+
+ 203 0014 FC91      		ld r31,X
+ 204 0016 0280      		ldd __tmp_reg__,Z+2
+ 205 0018 F381      		ldd r31,Z+3
+ 206 001a E02D      		mov r30,__tmp_reg__
+ 207 001c C801      		movw r24,r16
+ 208 001e 1995      		eicall
+ 210               	.LM9:
+ 211 0020 FE01      		movw r30,r28
+ 212 0022 8193      		st Z+,r24
+  56:istream.cpp   ****         do
+ 214               	.LM10:
+ 215 0024 8823      		tst r24
+ 216 0026 01F0      		breq .L5
+  56:istream.cpp   ****         do
+ 218               	.LM11:
+ 219 0028 8D30      		cpi r24,lo8(13)
+ 220 002a 01F0      		breq .L5
+  56:istream.cpp   ****         do
+ 222               	.LM12:
+ 223 002c 8A30      		cpi r24,lo8(10)
+ 224 002e 01F4      		brne .L7
+ 225               	.L5:
+  60:istream.cpp   ****         }
+  61:istream.cpp   ****         while (last != 0 && last != '\r' && last != '\n');
+  62:istream.cpp   ****         *(dest++) = 0;
+ 227               	.LM13:
+ 228 0030 1982      		std Y+1,__zero_reg__
+ 229               	/* epilogue start */
+ 230               	.LBE3:
+  63:istream.cpp   **** }
+ 232               	.LM14:
+ 233 0032 DF91      		pop r29
+ 234 0034 CF91      		pop r28
+ 235 0036 1F91      		pop r17
+ 236 0038 0F91      		pop r16
+ 237 003a 0895      		ret
+ 242               	.Lscope4:
+ 243               		.section	.text._ZN7IStream4readEPvj,"ax",@progbits
+ 248               	.global	_ZN7IStream4readEPvj
+ 250               	_ZN7IStream4readEPvj:
+  64:istream.cpp   **** 
+  65:istream.cpp   **** 
+  66:istream.cpp   **** size_t IStream::read(void *dest, size_t num)
+  67:istream.cpp   **** {
+ 252               	.LM15:
+ 253               	.LFBB5:
+ 254 0000 CF92      		push r12
+ 255 0002 DF92      		push r13
+ 256 0004 EF92      		push r14
+ 257 0006 FF92      		push r15
+ 258 0008 0F93      		push r16
+ 259 000a 1F93      		push r17
+ 260 000c CF93      		push r28
+ 261 000e DF93      		push r29
+ 262               	/* prologue: function */
+ 263               	/* frame size = 0 */
+ 264               	/* stack size = 8 */
+ 265               	.L__stack_usage = 8
+ 266 0010 6C01      		movw r12,r24
+ 267 0012 7B01      		movw r14,r22
+ 268 0014 8A01      		movw r16,r20
+ 269               	.LBB8:
+  68:istream.cpp   ****         size_t j = num;
+  69:istream.cpp   ****         char *ptr2 = (char *)dest;
+  70:istream.cpp   ****         if (num == 0 || ptr2 == 0)
+ 271               	.LM16:
+ 272 0016 4115      		cp r20,__zero_reg__
+ 273 0018 5105      		cpc r21,__zero_reg__
+ 274 001a 01F0      		breq .L12
+ 276               	.LM17:
+ 277 001c 6115      		cp r22,__zero_reg__
+ 278 001e 7105      		cpc r23,__zero_reg__
+ 279 0020 01F0      		breq .L12
+ 281               	.LM18:
+ 282 0022 EA01      		movw r28,r20
+ 283               	.L10:
+ 284               	.LBE8:
+ 285               	.LBB9:
+ 286               	.LBB10:
+  71:istream.cpp   ****                 return 0;
+  72:istream.cpp   ****         while (num--)
+  73:istream.cpp   ****         {
+  74:istream.cpp   ****                 *(ptr2++) = this->get();
+ 288               	.LM19:
+ 289 0024 D601      		movw r26,r12
+ 290 0026 ED91      		ld r30,X+
+ 291 0028 FC91      		ld r31,X
+ 292 002a 0280      		ldd __tmp_reg__,Z+2
+ 293 002c F381      		ldd r31,Z+3
+ 294 002e E02D      		mov r30,__tmp_reg__
+ 295 0030 C601      		movw r24,r12
+ 296 0032 1995      		eicall
+ 297 0034 F701      		movw r30,r14
+ 298 0036 8193      		st Z+,r24
+ 299 0038 7F01      		movw r14,r30
+ 300 003a 2197      		sbiw r28,1
+  72:istream.cpp   ****         while (num--)
+ 302               	.LM20:
+ 303 003c 01F4      		brne .L10
+ 304 003e C801      		movw r24,r16
+ 305 0040 00C0      		rjmp .L9
+ 306               	.L12:
+ 307               	.LBE10:
+ 308               	.LBE9:
+ 309               	.LBB11:
+  71:istream.cpp   ****                 return 0;
+ 311               	.LM21:
+ 312 0042 80E0      		ldi r24,lo8(0)
+ 313 0044 90E0      		ldi r25,hi8(0)
+ 314               	.L9:
+ 315               	/* epilogue start */
+ 316               	.LBE11:
+  75:istream.cpp   ****         }
+  76:istream.cpp   ****         return j;
+  77:istream.cpp   **** }
+ 318               	.LM22:
+ 319 0046 DF91      		pop r29
+ 320 0048 CF91      		pop r28
+ 321 004a 1F91      		pop r17
+ 322 004c 0F91      		pop r16
+ 323 004e FF90      		pop r15
+ 324 0050 EF90      		pop r14
+ 325 0052 DF90      		pop r13
+ 326 0054 CF90      		pop r12
+ 327 0056 0895      		ret
+ 335               	.Lscope5:
+ 336               		.weak	_ZTV7IStream
+ 337               		.section	.rodata._ZTV7IStream,"a",@progbits
+ 340               	_ZTV7IStream:
+ 341 0000 0000      		.word	0
+ 342 0002 0000      		.word	0
+ 343 0004 0000      		.word	gs(_ZN7IStream9availableEv)
+ 344 0006 0000      		.word	gs(_ZN7IStream3getEv)
+ 345 0008 0000      		.word	gs(_ZN7IStream4peekEj)
+ 346 000a 0000      		.word	gs(_ZN7IStream11read_stringEPc)
+ 347 000c 0000      		.word	gs(_ZN7IStream4readEPvj)
+ 348               		.text
+ 350               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 istream.cpp
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:2      *ABS*:0000003f __SREG__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:3      *ABS*:0000003e __SP_H__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:4      *ABS*:0000003d __SP_L__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:5      *ABS*:00000034 __CCP__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:6      *ABS*:00000000 __tmp_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:7      *ABS*:00000001 __zero_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:114    .text._ZN7IStream9availableEv:00000000 _ZN7IStream9availableEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:135    .text._ZN7IStream3getEv:00000000 _ZN7IStream3getEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:156    .text._ZN7IStream4peekEj:00000000 _ZN7IStream4peekEj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:178    .text._ZN7IStream11read_stringEPc:00000000 _ZN7IStream11read_stringEPc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:250    .text._ZN7IStream4readEPvj:00000000 _ZN7IStream4readEPvj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cc1ikwON.s:340    .rodata._ZTV7IStream:00000000 _ZTV7IStream
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss

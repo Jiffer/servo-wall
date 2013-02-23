@@ -1,0 +1,1177 @@
+   1               		.file	"eeprom.cpp"
+   2               	__SREG__ = 0x3f
+   3               	__SP_H__ = 0x3e
+   4               	__SP_L__ = 0x3d
+   5               	__CCP__ = 0x34
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  11               		.text
+  12               	.Ltext0:
+ 611               		.section	.text._ZL8NVM_EXECv,"ax",@progbits
+ 614               	_ZL8NVM_EXECv:
+   1:eeprom.cpp    **** /************************************************************************/
+   2:eeprom.cpp    **** /* XMEGA EEPROM Driver                                                  */
+   3:eeprom.cpp    **** /*                                                                      */
+   4:eeprom.cpp    **** /* eeprom.cpp                                                           */
+   5:eeprom.cpp    **** /*                                                                      */
+   6:eeprom.cpp    **** /* Alex Forencich <alex@alexforencich.com>                              */
+   7:eeprom.cpp    **** /*                                                                      */
+   8:eeprom.cpp    **** /* Copyright (c) 2011 Alex Forencich                                    */
+   9:eeprom.cpp    **** /*                                                                      */
+  10:eeprom.cpp    **** /* Permission is hereby granted, free of charge, to any person          */
+  11:eeprom.cpp    **** /* obtaining a copy of this software and associated documentation       */
+  12:eeprom.cpp    **** /* files(the "Software"), to deal in the Software without restriction,  */
+  13:eeprom.cpp    **** /* including without limitation the rights to use, copy, modify, merge, */
+  14:eeprom.cpp    **** /* publish, distribute, sublicense, and/or sell copies of the Software, */
+  15:eeprom.cpp    **** /* and to permit persons to whom the Software is furnished to do so,    */
+  16:eeprom.cpp    **** /* subject to the following conditions:                                 */
+  17:eeprom.cpp    **** /*                                                                      */
+  18:eeprom.cpp    **** /* The above copyright notice and this permission notice shall be       */
+  19:eeprom.cpp    **** /* included in all copies or substantial portions of the Software.      */
+  20:eeprom.cpp    **** /*                                                                      */
+  21:eeprom.cpp    **** /* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,      */
+  22:eeprom.cpp    **** /* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF   */
+  23:eeprom.cpp    **** /* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                */
+  24:eeprom.cpp    **** /* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS  */
+  25:eeprom.cpp    **** /* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN   */
+  26:eeprom.cpp    **** /* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN    */
+  27:eeprom.cpp    **** /* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE     */
+  28:eeprom.cpp    **** /* SOFTWARE.                                                            */
+  29:eeprom.cpp    **** /*                                                                      */
+  30:eeprom.cpp    **** /************************************************************************/
+  31:eeprom.cpp    **** 
+  32:eeprom.cpp    **** #include "eeprom.h"
+  33:eeprom.cpp    **** #include "string.h"
+  34:eeprom.cpp    **** 
+  35:eeprom.cpp    **** 
+  36:eeprom.cpp    **** // NVM call
+  37:eeprom.cpp    **** static inline void NVM_EXEC(void)
+  38:eeprom.cpp    **** {
+ 616               	.LM0:
+ 617               	.LFBB1:
+ 618               	/* prologue: function */
+ 619               	/* frame size = 0 */
+ 620               	/* stack size = 0 */
+ 621               	.L__stack_usage = 0
+ 622               	.LBB2:
+  39:eeprom.cpp    ****         void *z = (void *)&NVM_CTRLA;
+  40:eeprom.cpp    ****         
+  41:eeprom.cpp    ****         __asm__ volatile("out %[ccp], %[ioreg]"  "\n\t"
+  42:eeprom.cpp    ****         "st z, %[cmdex]"
+  43:eeprom.cpp    ****         :
+  44:eeprom.cpp    ****         : [ccp] "I" (_SFR_IO_ADDR(CCP)),
+  45:eeprom.cpp    ****         [ioreg] "d" (CCP_IOREG_gc),
+  46:eeprom.cpp    ****                      [cmdex] "r" (NVM_CMDEX_bm),
+  47:eeprom.cpp    ****                      [z] "z" (z)
+  48:eeprom.cpp    ****                      );
+ 624               	.LM1:
+ 625 0000 EBEC      		ldi r30,lo8(459)
+ 626 0002 F1E0      		ldi r31,hi8(459)
+ 627 0004 81E0      		ldi r24,lo8(1)
+ 628 0006 90E0      		ldi r25,hi8(1)
+ 629 0008 28ED      		ldi r18,lo8(-40)
+ 630               	/* #APP */
+ 631               	 ;  48 "eeprom.cpp" 1
+ 632 000a 24BF      		out 52, r18
+ 633 000c 8083      		st z, r24
+ 634               	 ;  0 "" 2
+ 635               	/* epilogue start */
+ 636               	/* #NOAPP */
+ 637               	.LBE2:
+  49:eeprom.cpp    **** }
+ 639               	.LM2:
+ 640 000e 0895      		ret
+ 642               	.Lscope1:
+ 643               		.section	.text._Z12wait_for_nvmv,"ax",@progbits
+ 645               	.global	_Z12wait_for_nvmv
+ 647               	_Z12wait_for_nvmv:
+  50:eeprom.cpp    **** 
+  51:eeprom.cpp    **** #ifdef USE_AVR1008_EEPROM
+  52:eeprom.cpp    **** 
+  53:eeprom.cpp    **** // Interrupt handler for the EEPROM write "done" interrupt
+  54:eeprom.cpp    **** ISR(NVM_EE_vect)
+  55:eeprom.cpp    **** {
+  56:eeprom.cpp    ****         // Disable the EEPROM interrupt
+  57:eeprom.cpp    ****         NVM.INTCTRL = (NVM.INTCTRL & ~NVM_EELVL_gm);
+  58:eeprom.cpp    **** }
+  59:eeprom.cpp    **** 
+  60:eeprom.cpp    **** // AVR1008 fix
+  61:eeprom.cpp    **** static inline void NVM_EXEC_WRAPPER(void)
+  62:eeprom.cpp    **** {
+  63:eeprom.cpp    ****         // Save the Sleep register
+  64:eeprom.cpp    ****         uint8_t sleepCtr = SLEEP.CTRL;
+  65:eeprom.cpp    ****         // Set sleep mode to IDLE
+  66:eeprom.cpp    ****         SLEEP.CTRL = (SLEEP.CTRL & ~SLEEP.CTRL) | SLEEP_SMODE_IDLE_gc;
+  67:eeprom.cpp    ****         // Save the PMIC Status and control registers
+  68:eeprom.cpp    ****         uint8_t statusStore = PMIC.STATUS;
+  69:eeprom.cpp    ****         uint8_t pmicStore = PMIC.CTRL;
+  70:eeprom.cpp    ****         
+  71:eeprom.cpp    ****         // Enable only the highest level of interrupts
+  72:eeprom.cpp    ****         PMIC.CTRL = (PMIC.CTRL & ~(PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm)) | PMIC_HILVLEN_bm;
+  73:eeprom.cpp    ****         // Save SREG for later use
+  74:eeprom.cpp    ****         uint8_t globalInt = SREG;
+  75:eeprom.cpp    ****         // Enable global interrupts
+  76:eeprom.cpp    ****         sei();
+  77:eeprom.cpp    ****         // Set sleep enabled
+  78:eeprom.cpp    ****         SLEEP.CTRL |= SLEEP_SEN_bm;
+  79:eeprom.cpp    ****         // Save eeprom interrupt settings for later
+  80:eeprom.cpp    ****         uint8_t eepromintStore = NVM.INTCTRL;
+  81:eeprom.cpp    ****         NVM_EXEC();
+  82:eeprom.cpp    ****         // Enable EEPROM interrupt
+  83:eeprom.cpp    ****         NVM.INTCTRL =  NVM_EELVL0_bm | NVM_EELVL1_bm;
+  84:eeprom.cpp    ****         // Sleep before 2.5uS has passed
+  85:eeprom.cpp    ****         sleep_cpu();
+  86:eeprom.cpp    ****         // Restore sleep settings
+  87:eeprom.cpp    ****         SLEEP.CTRL = sleepCtr;
+  88:eeprom.cpp    ****         // Restore PMIC status and control registers
+  89:eeprom.cpp    ****         PMIC.STATUS = statusStore;
+  90:eeprom.cpp    ****         PMIC.CTRL = pmicStore;
+  91:eeprom.cpp    ****         // Restore EEPROM interruptsettings
+  92:eeprom.cpp    ****         NVM.INTCTRL = eepromintStore;
+  93:eeprom.cpp    ****         // Restore global interrupt settings
+  94:eeprom.cpp    ****         SREG = globalInt;
+  95:eeprom.cpp    **** }
+  96:eeprom.cpp    **** 
+  97:eeprom.cpp    **** #else
+  98:eeprom.cpp    **** 
+  99:eeprom.cpp    **** #define NVM_EXEC_WRAPPER NVM_EXEC
+ 100:eeprom.cpp    **** 
+ 101:eeprom.cpp    **** #endif // USE_AVR1008_EEPROM
+ 102:eeprom.cpp    **** 
+ 103:eeprom.cpp    **** 
+ 104:eeprom.cpp    **** void wait_for_nvm()
+ 105:eeprom.cpp    **** {
+ 649               	.LM3:
+ 650               	.LFBB2:
+ 651               	/* prologue: function */
+ 652               	/* frame size = 0 */
+ 653               	/* stack size = 0 */
+ 654               	.L__stack_usage = 0
+ 655               	.L3:
+ 106:eeprom.cpp    ****         while (NVM.STATUS & NVM_NVMBUSY_bm) { };
+ 657               	.LM4:
+ 658 0000 8091 CF01 		lds r24,463
+ 659 0004 87FD      		sbrc r24,7
+ 660 0006 00C0      		rjmp .L3
+ 661               	/* epilogue start */
+ 107:eeprom.cpp    **** }
+ 663               	.LM5:
+ 664 0008 0895      		ret
+ 666               	.Lscope2:
+ 667               		.section	.text._Z12flush_bufferv,"ax",@progbits
+ 669               	.global	_Z12flush_bufferv
+ 671               	_Z12flush_bufferv:
+ 108:eeprom.cpp    **** 
+ 109:eeprom.cpp    **** void flush_buffer()
+ 110:eeprom.cpp    **** {
+ 673               	.LM6:
+ 674               	.LFBB3:
+ 675               	/* prologue: function */
+ 676               	/* frame size = 0 */
+ 677               	/* stack size = 0 */
+ 678               	.L__stack_usage = 0
+ 111:eeprom.cpp    ****         wait_for_nvm();
+ 680               	.LM7:
+ 681 0000 0E94 0000 		call _Z12wait_for_nvmv
+ 112:eeprom.cpp    ****         
+ 113:eeprom.cpp    ****         if ((NVM.STATUS & NVM_EELOAD_bm) != 0) {
+ 683               	.LM8:
+ 684 0004 8091 CF01 		lds r24,463
+ 685 0008 81FF      		sbrs r24,1
+ 686 000a 00C0      		rjmp .L5
+ 114:eeprom.cpp    ****                 NVM.CMD = NVM_CMD_ERASE_EEPROM_BUFFER_gc;
+ 688               	.LM9:
+ 689 000c 86E3      		ldi r24,lo8(54)
+ 690 000e E0EC      		ldi r30,lo8(448)
+ 691 0010 F1E0      		ldi r31,hi8(448)
+ 692 0012 8287      		std Z+10,r24
+ 115:eeprom.cpp    ****                 NVM_EXEC();
+ 694               	.LM10:
+ 695 0014 0E94 0000 		call _ZL8NVM_EXECv
+ 696               	.L5:
+ 697 0018 0895      		ret
+ 699               	.Lscope3:
+ 700               		.section	.text._ZN6EEPROMC2Ev,"ax",@progbits
+ 703               	.global	_ZN6EEPROMC2Ev
+ 705               	_ZN6EEPROMC2Ev:
+ 116:eeprom.cpp    ****         }
+ 117:eeprom.cpp    **** }
+ 118:eeprom.cpp    **** 
+ 119:eeprom.cpp    **** 
+ 120:eeprom.cpp    **** // Statics
+ 121:eeprom.cpp    **** uint16_t EEPROM::current_address = 0;
+ 122:eeprom.cpp    **** 
+ 123:eeprom.cpp    **** 
+ 124:eeprom.cpp    **** EEPROM::EEPROM()
+ 707               	.LM11:
+ 708               	.LFBB4:
+ 709               	/* prologue: function */
+ 710               	/* frame size = 0 */
+ 711               	/* stack size = 0 */
+ 712               	.L__stack_usage = 0
+ 713               	/* epilogue start */
+ 125:eeprom.cpp    **** {
+ 126:eeprom.cpp    ****         
+ 127:eeprom.cpp    **** }
+ 715               	.LM12:
+ 716 0000 0895      		ret
+ 718               	.Lscope4:
+ 719               		.section	.text._ZN6EEPROMD2Ev,"ax",@progbits
+ 722               	.global	_ZN6EEPROMD2Ev
+ 724               	_ZN6EEPROMD2Ev:
+ 128:eeprom.cpp    **** 
+ 129:eeprom.cpp    **** 
+ 130:eeprom.cpp    **** EEPROM::~EEPROM()
+ 726               	.LM13:
+ 727               	.LFBB5:
+ 728               	/* prologue: function */
+ 729               	/* frame size = 0 */
+ 730               	/* stack size = 0 */
+ 731               	.L__stack_usage = 0
+ 732               	/* epilogue start */
+ 131:eeprom.cpp    **** {
+ 132:eeprom.cpp    ****         
+ 133:eeprom.cpp    **** }
+ 734               	.LM14:
+ 735 0000 0895      		ret
+ 737               	.Lscope5:
+ 738               		.section	.text._ZN6EEPROM9read_byteEj,"ax",@progbits
+ 740               	.global	_ZN6EEPROM9read_byteEj
+ 742               	_ZN6EEPROM9read_byteEj:
+ 134:eeprom.cpp    **** 
+ 135:eeprom.cpp    **** 
+ 136:eeprom.cpp    **** uint8_t EEPROM::read_byte(uint16_t addr)
+ 137:eeprom.cpp    **** {
+ 744               	.LM15:
+ 745               	.LFBB6:
+ 746 0000 0F93      		push r16
+ 747 0002 1F93      		push r17
+ 748 0004 CF93      		push r28
+ 749 0006 DF93      		push r29
+ 750 0008 0F92      		push __tmp_reg__
+ 751 000a 0F92      		push __tmp_reg__
+ 752 000c CDB7      		in r28,__SP_L__
+ 753 000e DEB7      		in r29,__SP_H__
+ 754               	/* prologue: function */
+ 755               	/* frame size = 2 */
+ 756               	/* stack size = 6 */
+ 757               	.L__stack_usage = 6
+ 138:eeprom.cpp    ****         wait_for_nvm();
+ 759               	.LM16:
+ 760 0010 8983      		std Y+1,r24
+ 761 0012 9A83      		std Y+2,r25
+ 762 0014 0E94 0000 		call _Z12wait_for_nvmv
+ 139:eeprom.cpp    ****         
+ 140:eeprom.cpp    ****         NVM.ADDR0 = addr & 0xFF;
+ 764               	.LM17:
+ 765 0018 00EC      		ldi r16,lo8(448)
+ 766 001a 11E0      		ldi r17,hi8(448)
+ 767 001c 8981      		ldd r24,Y+1
+ 768 001e F801      		movw r30,r16
+ 769 0020 8083      		st Z,r24
+ 141:eeprom.cpp    ****         NVM.ADDR1 = (addr >> 8) & 0x1F;
+ 771               	.LM18:
+ 772 0022 9A81      		ldd r25,Y+2
+ 773 0024 9F71      		andi r25,lo8(31)
+ 774 0026 9183      		std Z+1,r25
+ 142:eeprom.cpp    ****         NVM.ADDR2 = 0;
+ 776               	.LM19:
+ 777 0028 1282      		std Z+2,__zero_reg__
+ 143:eeprom.cpp    ****         
+ 144:eeprom.cpp    ****         NVM.CMD = NVM_CMD_READ_EEPROM_gc;
+ 779               	.LM20:
+ 780 002a 86E0      		ldi r24,lo8(6)
+ 781 002c 8287      		std Z+10,r24
+ 145:eeprom.cpp    ****         NVM_EXEC();
+ 783               	.LM21:
+ 784 002e 0E94 0000 		call _ZL8NVM_EXECv
+ 146:eeprom.cpp    ****         
+ 147:eeprom.cpp    ****         return NVM.DATA0;
+ 786               	.LM22:
+ 787 0032 F801      		movw r30,r16
+ 788 0034 8481      		ldd r24,Z+4
+ 789               	/* epilogue start */
+ 148:eeprom.cpp    **** }
+ 791               	.LM23:
+ 792 0036 0F90      		pop __tmp_reg__
+ 793 0038 0F90      		pop __tmp_reg__
+ 794 003a DF91      		pop r29
+ 795 003c CF91      		pop r28
+ 796 003e 1F91      		pop r17
+ 797 0040 0F91      		pop r16
+ 798 0042 0895      		ret
+ 800               	.Lscope6:
+ 801               		.section	.text._ZN6EEPROM10write_byteEjh,"ax",@progbits
+ 804               	.global	_ZN6EEPROM10write_byteEjh
+ 806               	_ZN6EEPROM10write_byteEjh:
+ 149:eeprom.cpp    **** 
+ 150:eeprom.cpp    **** 
+ 151:eeprom.cpp    **** void EEPROM::write_byte(uint16_t addr, uint8_t byte)
+ 152:eeprom.cpp    **** {
+ 808               	.LM24:
+ 809               	.LFBB7:
+ 810 0000 CF93      		push r28
+ 811 0002 DF93      		push r29
+ 812 0004 00D0      		rcall .
+ 813 0006 CDB7      		in r28,__SP_L__
+ 814 0008 DEB7      		in r29,__SP_H__
+ 815               	/* prologue: function */
+ 816               	/* frame size = 3 */
+ 817               	/* stack size = 5 */
+ 818               	.L__stack_usage = 5
+ 153:eeprom.cpp    ****         flush_buffer();
+ 820               	.LM25:
+ 821 000a 6983      		std Y+1,r22
+ 822 000c 8A83      		std Y+2,r24
+ 823 000e 9B83      		std Y+3,r25
+ 824 0010 0E94 0000 		call _Z12flush_bufferv
+ 154:eeprom.cpp    ****         NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc;
+ 826               	.LM26:
+ 827 0014 E0EC      		ldi r30,lo8(448)
+ 828 0016 F1E0      		ldi r31,hi8(448)
+ 829 0018 23E3      		ldi r18,lo8(51)
+ 830 001a 2287      		std Z+10,r18
+ 155:eeprom.cpp    ****         
+ 156:eeprom.cpp    ****         NVM.ADDR0 = addr & 0xFF;
+ 832               	.LM27:
+ 833 001c 8A81      		ldd r24,Y+2
+ 834 001e 8083      		st Z,r24
+ 157:eeprom.cpp    ****         NVM.ADDR1 = (addr >> 8) & 0x1F;
+ 836               	.LM28:
+ 837 0020 9B81      		ldd r25,Y+3
+ 838 0022 9F71      		andi r25,lo8(31)
+ 839 0024 9183      		std Z+1,r25
+ 158:eeprom.cpp    ****         NVM.ADDR2 = 0;
+ 841               	.LM29:
+ 842 0026 1282      		std Z+2,__zero_reg__
+ 159:eeprom.cpp    ****         
+ 160:eeprom.cpp    ****         NVM.DATA0 = byte;
+ 844               	.LM30:
+ 845 0028 6981      		ldd r22,Y+1
+ 846 002a 6483      		std Z+4,r22
+ 161:eeprom.cpp    ****         
+ 162:eeprom.cpp    ****         NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;
+ 848               	.LM31:
+ 849 002c 85E3      		ldi r24,lo8(53)
+ 850 002e 8287      		std Z+10,r24
+ 163:eeprom.cpp    ****         NVM_EXEC_WRAPPER();
+ 852               	.LM32:
+ 853 0030 0E94 0000 		call _ZL8NVM_EXECv
+ 854               	/* epilogue start */
+ 164:eeprom.cpp    **** }
+ 856               	.LM33:
+ 857 0034 2396      		adiw r28,3
+ 858 0036 CDBF      		out __SP_L__,r28
+ 859 0038 DEBF      		out __SP_H__,r29
+ 860 003a DF91      		pop r29
+ 861 003c CF91      		pop r28
+ 862 003e 0895      		ret
+ 864               	.Lscope7:
+ 865               		.section	.text._ZN6EEPROM10read_blockEjPhj,"ax",@progbits
+ 869               	.global	_ZN6EEPROM10read_blockEjPhj
+ 871               	_ZN6EEPROM10read_blockEjPhj:
+ 165:eeprom.cpp    **** 
+ 166:eeprom.cpp    **** 
+ 167:eeprom.cpp    **** uint16_t EEPROM::read_block(uint16_t addr, uint8_t *dest, uint16_t len)
+ 168:eeprom.cpp    **** {
+ 873               	.LM34:
+ 874               	.LFBB8:
+ 875 0000 9F92      		push r9
+ 876 0002 AF92      		push r10
+ 877 0004 BF92      		push r11
+ 878 0006 CF92      		push r12
+ 879 0008 DF92      		push r13
+ 880 000a EF92      		push r14
+ 881 000c FF92      		push r15
+ 882 000e 0F93      		push r16
+ 883 0010 1F93      		push r17
+ 884 0012 CF93      		push r28
+ 885 0014 DF93      		push r29
+ 886               	/* prologue: function */
+ 887               	/* frame size = 0 */
+ 888               	/* stack size = 11 */
+ 889               	.L__stack_usage = 11
+ 890 0016 7C01      		movw r14,r24
+ 891 0018 5B01      		movw r10,r22
+ 892 001a 6A01      		movw r12,r20
+ 893               	.LBB3:
+ 169:eeprom.cpp    ****         uint16_t cnt = 0;
+ 170:eeprom.cpp    ****         
+ 171:eeprom.cpp    ****         NVM.ADDR2 = 0;
+ 895               	.LM35:
+ 896 001c E0EC      		ldi r30,lo8(448)
+ 897 001e F1E0      		ldi r31,hi8(448)
+ 898 0020 1282      		std Z+2,__zero_reg__
+ 172:eeprom.cpp    ****         
+ 173:eeprom.cpp    ****         wait_for_nvm();
+ 900               	.LM36:
+ 901 0022 0E94 0000 		call _Z12wait_for_nvmv
+ 174:eeprom.cpp    ****         
+ 175:eeprom.cpp    ****         while (len > 0)
+ 903               	.LM37:
+ 904 0026 CC2D      		mov r28,r12
+ 905 0028 DD2D      		mov r29,r13
+ 176:eeprom.cpp    ****         {
+ 177:eeprom.cpp    ****                 NVM.ADDR0 = addr & 0xFF;
+ 907               	.LM38:
+ 908 002a 00EC      		ldi r16,lo8(448)
+ 909 002c 11E0      		ldi r17,hi8(448)
+ 178:eeprom.cpp    ****                 NVM.ADDR1 = (addr >> 8) & 0x1F;
+ 179:eeprom.cpp    ****                 
+ 180:eeprom.cpp    ****                 NVM.CMD = NVM_CMD_READ_EEPROM_gc;
+ 911               	.LM39:
+ 912 002e 86E0      		ldi r24,lo8(6)
+ 913 0030 982E      		mov r9,r24
+ 175:eeprom.cpp    ****         while (len > 0)
+ 915               	.LM40:
+ 916 0032 00C0      		rjmp .L13
+ 917               	.L14:
+ 177:eeprom.cpp    ****                 NVM.ADDR0 = addr & 0xFF;
+ 919               	.LM41:
+ 920 0034 E092 C001 		sts 448,r14
+ 178:eeprom.cpp    ****                 NVM.ADDR1 = (addr >> 8) & 0x1F;
+ 922               	.LM42:
+ 923 0038 8F2D      		mov r24,r15
+ 924 003a 8F71      		andi r24,lo8(31)
+ 925 003c F801      		movw r30,r16
+ 926 003e 8183      		std Z+1,r24
+ 928               	.LM43:
+ 929 0040 9286      		std Z+10,r9
+ 181:eeprom.cpp    ****                 NVM_EXEC();
+ 931               	.LM44:
+ 932 0042 0E94 0000 		call _ZL8NVM_EXECv
+ 182:eeprom.cpp    ****                 
+ 183:eeprom.cpp    ****                 *(dest++) = NVM.DATA0; addr++;
+ 934               	.LM45:
+ 935 0046 8091 C401 		lds r24,452
+ 936 004a F501      		movw r30,r10
+ 937 004c 8193      		st Z+,r24
+ 938 004e 5F01      		movw r10,r30
+ 939 0050 0894      		sec
+ 940 0052 E11C      		adc r14,__zero_reg__
+ 941 0054 F11C      		adc r15,__zero_reg__
+ 184:eeprom.cpp    ****                 
+ 185:eeprom.cpp    ****                 len--; cnt++;
+ 943               	.LM46:
+ 944 0056 2197      		sbiw r28,1
+ 945               	.L13:
+ 175:eeprom.cpp    ****         while (len > 0)
+ 947               	.LM47:
+ 948 0058 2097      		sbiw r28,0
+ 949 005a 01F4      		brne .L14
+ 950               	.LBE3:
+ 186:eeprom.cpp    ****         }
+ 187:eeprom.cpp    ****         return cnt;
+ 188:eeprom.cpp    **** }
+ 952               	.LM48:
+ 953 005c C601      		movw r24,r12
+ 954               	/* epilogue start */
+ 955 005e DF91      		pop r29
+ 956 0060 CF91      		pop r28
+ 957 0062 1F91      		pop r17
+ 958 0064 0F91      		pop r16
+ 959 0066 FF90      		pop r15
+ 960 0068 EF90      		pop r14
+ 961 006a DF90      		pop r13
+ 962 006c CF90      		pop r12
+ 963 006e BF90      		pop r11
+ 964 0070 AF90      		pop r10
+ 965 0072 9F90      		pop r9
+ 966 0074 0895      		ret
+ 968               	.Lscope8:
+ 969               		.section	.text._ZN6EEPROM11write_blockEjPKhj,"ax",@progbits
+ 973               	.global	_ZN6EEPROM11write_blockEjPKhj
+ 975               	_ZN6EEPROM11write_blockEjPKhj:
+ 189:eeprom.cpp    **** 
+ 190:eeprom.cpp    **** 
+ 191:eeprom.cpp    **** uint16_t EEPROM::write_block(uint16_t addr, const uint8_t *src, uint16_t len)
+ 192:eeprom.cpp    **** {
+ 977               	.LM49:
+ 978               	.LFBB9:
+ 979 0000 6F92      		push r6
+ 980 0002 7F92      		push r7
+ 981 0004 8F92      		push r8
+ 982 0006 9F92      		push r9
+ 983 0008 AF92      		push r10
+ 984 000a BF92      		push r11
+ 985 000c CF92      		push r12
+ 986 000e DF92      		push r13
+ 987 0010 EF92      		push r14
+ 988 0012 FF92      		push r15
+ 989 0014 0F93      		push r16
+ 990 0016 1F93      		push r17
+ 991 0018 CF93      		push r28
+ 992 001a DF93      		push r29
+ 993 001c 0F92      		push __tmp_reg__
+ 994 001e CDB7      		in r28,__SP_L__
+ 995 0020 DEB7      		in r29,__SP_H__
+ 996               	/* prologue: function */
+ 997               	/* frame size = 1 */
+ 998               	/* stack size = 15 */
+ 999               	.L__stack_usage = 15
+ 1000 0022 5B01      		movw r10,r22
+ 1001 0024 D42E      		mov r13,r20
+ 1002 0026 C52E      		mov r12,r21
+ 1003               	.LBB4:
+ 193:eeprom.cpp    ****         uint8_t byte_addr = addr % EEPROM_PAGE_SIZE;
+ 1005               	.LM50:
+ 1006 0028 282F      		mov r18,r24
+ 1007 002a 2F71      		andi r18,lo8(31)
+ 194:eeprom.cpp    ****         uint16_t page_addr = addr - byte_addr;
+ 1009               	.LM51:
+ 1010 002c 7C01      		movw r14,r24
+ 1011 002e E21A      		sub r14,r18
+ 1012 0030 F108      		sbc r15,__zero_reg__
+ 195:eeprom.cpp    ****         uint16_t cnt = 0;
+ 196:eeprom.cpp    ****         
+ 197:eeprom.cpp    ****         flush_buffer();
+ 1014               	.LM52:
+ 1015 0032 2983      		std Y+1,r18
+ 1016 0034 0E94 0000 		call _Z12flush_bufferv
+ 198:eeprom.cpp    ****         wait_for_nvm();
+ 1018               	.LM53:
+ 1019 0038 0E94 0000 		call _Z12wait_for_nvmv
+ 199:eeprom.cpp    ****         NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc;
+ 1021               	.LM54:
+ 1022 003c E0EC      		ldi r30,lo8(448)
+ 1023 003e F1E0      		ldi r31,hi8(448)
+ 1024 0040 83E3      		ldi r24,lo8(51)
+ 1025 0042 8287      		std Z+10,r24
+ 200:eeprom.cpp    ****         
+ 201:eeprom.cpp    ****         NVM.ADDR1 = 0;
+ 1027               	.LM55:
+ 1028 0044 1182      		std Z+1,__zero_reg__
+ 202:eeprom.cpp    ****         NVM.ADDR2 = 0;
+ 1030               	.LM56:
+ 1031 0046 1282      		std Z+2,__zero_reg__
+ 203:eeprom.cpp    ****         
+ 204:eeprom.cpp    ****         while (len > 0)
+ 1033               	.LM57:
+ 1034 0048 6D2C      		mov r6,r13
+ 1035 004a 7C2C      		mov r7,r12
+ 205:eeprom.cpp    ****         {
+ 206:eeprom.cpp    ****                 NVM.ADDR0 = byte_addr;
+ 1037               	.LM58:
+ 1038 004c 00EC      		ldi r16,lo8(448)
+ 1039 004e 11E0      		ldi r17,hi8(448)
+ 207:eeprom.cpp    ****                 
+ 208:eeprom.cpp    ****                 NVM.DATA0 = *(src++);
+ 209:eeprom.cpp    ****                 
+ 210:eeprom.cpp    ****                 byte_addr++;
+ 211:eeprom.cpp    ****                 len--;
+ 212:eeprom.cpp    ****                 
+ 213:eeprom.cpp    ****                 if (len == 0 || byte_addr >= EEPROM_PAGE_SIZE)
+ 214:eeprom.cpp    ****                 {
+ 215:eeprom.cpp    ****                         NVM.ADDR0 = page_addr & 0xFF;
+ 216:eeprom.cpp    ****                         NVM.ADDR1 = (page_addr >> 8) & 0x1F;
+ 217:eeprom.cpp    ****                         
+ 218:eeprom.cpp    ****                         NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;
+ 1041               	.LM59:
+ 1042 0050 25E3      		ldi r18,lo8(53)
+ 1043 0052 822E      		mov r8,r18
+ 219:eeprom.cpp    ****                         NVM_EXEC();
+ 220:eeprom.cpp    ****                         
+ 221:eeprom.cpp    ****                         page_addr += EEPROM_PAGE_SIZE;
+ 222:eeprom.cpp    ****                         byte_addr = 0;
+ 223:eeprom.cpp    ****                         
+ 224:eeprom.cpp    ****                         wait_for_nvm();
+ 225:eeprom.cpp    ****                         
+ 226:eeprom.cpp    ****                         NVM.CMD = NVM_CMD_LOAD_EEPROM_BUFFER_gc;
+ 1045               	.LM60:
+ 1046 0054 33E3      		ldi r19,lo8(51)
+ 1047 0056 932E      		mov r9,r19
+ 204:eeprom.cpp    ****         while (len > 0)
+ 1049               	.LM61:
+ 1050 0058 2981      		ldd r18,Y+1
+ 1051 005a 00C0      		rjmp .L22
+ 1052               	.L19:
+ 206:eeprom.cpp    ****                 NVM.ADDR0 = byte_addr;
+ 1054               	.LM62:
+ 1055 005c 2093 C001 		sts 448,r18
+ 208:eeprom.cpp    ****                 NVM.DATA0 = *(src++);
+ 1057               	.LM63:
+ 1058 0060 F501      		movw r30,r10
+ 1059 0062 8191      		ld r24,Z+
+ 1060 0064 5F01      		movw r10,r30
+ 1061 0066 F801      		movw r30,r16
+ 1062 0068 8483      		std Z+4,r24
+ 211:eeprom.cpp    ****                 len--;
+ 1064               	.LM64:
+ 1065 006a 0894      		sec
+ 1066 006c 6108      		sbc r6,__zero_reg__
+ 1067 006e 7108      		sbc r7,__zero_reg__
+ 213:eeprom.cpp    ****                 if (len == 0 || byte_addr >= EEPROM_PAGE_SIZE)
+ 1069               	.LM65:
+ 1070 0070 6114      		cp r6,__zero_reg__
+ 1071 0072 7104      		cpc r7,__zero_reg__
+ 1072 0074 01F0      		breq .L17
+ 210:eeprom.cpp    ****                 byte_addr++;
+ 1074               	.LM66:
+ 1075 0076 2F5F      		subi r18,lo8(-(1))
+ 213:eeprom.cpp    ****                 if (len == 0 || byte_addr >= EEPROM_PAGE_SIZE)
+ 1077               	.LM67:
+ 1078 0078 2032      		cpi r18,lo8(32)
+ 1079 007a 01F4      		brne .L22
+ 1080               	.L17:
+ 215:eeprom.cpp    ****                         NVM.ADDR0 = page_addr & 0xFF;
+ 1082               	.LM68:
+ 1083 007c E092 C001 		sts 448,r14
+ 216:eeprom.cpp    ****                         NVM.ADDR1 = (page_addr >> 8) & 0x1F;
+ 1085               	.LM69:
+ 1086 0080 8F2D      		mov r24,r15
+ 1087 0082 8F71      		andi r24,lo8(31)
+ 1088 0084 F801      		movw r30,r16
+ 1089 0086 8183      		std Z+1,r24
+ 218:eeprom.cpp    ****                         NVM.CMD = NVM_CMD_ERASE_WRITE_EEPROM_PAGE_gc;
+ 1091               	.LM70:
+ 1092 0088 8286      		std Z+10,r8
+ 219:eeprom.cpp    ****                         NVM_EXEC();
+ 1094               	.LM71:
+ 1095 008a 0E94 0000 		call _ZL8NVM_EXECv
+ 221:eeprom.cpp    ****                         page_addr += EEPROM_PAGE_SIZE;
+ 1097               	.LM72:
+ 1098 008e 80E2      		ldi r24,lo8(32)
+ 1099 0090 90E0      		ldi r25,hi8(32)
+ 1100 0092 E80E      		add r14,r24
+ 1101 0094 F91E      		adc r15,r25
+ 224:eeprom.cpp    ****                         wait_for_nvm();
+ 1103               	.LM73:
+ 1104 0096 0E94 0000 		call _Z12wait_for_nvmv
+ 1106               	.LM74:
+ 1107 009a F801      		movw r30,r16
+ 1108 009c 9286      		std Z+10,r9
+ 222:eeprom.cpp    ****                         byte_addr = 0;
+ 1110               	.LM75:
+ 1111 009e 20E0      		ldi r18,lo8(0)
+ 1112               	.L22:
+ 204:eeprom.cpp    ****         while (len > 0)
+ 1114               	.LM76:
+ 1115 00a0 6114      		cp r6,__zero_reg__
+ 1116 00a2 7104      		cpc r7,__zero_reg__
+ 1117 00a4 01F4      		brne .L19
+ 1118               	.LBE4:
+ 227:eeprom.cpp    ****                 }
+ 228:eeprom.cpp    ****                 
+ 229:eeprom.cpp    ****                 cnt++;
+ 230:eeprom.cpp    ****         }
+ 231:eeprom.cpp    ****         
+ 232:eeprom.cpp    ****         return cnt;
+ 233:eeprom.cpp    **** }
+ 1120               	.LM77:
+ 1121 00a6 8D2D      		mov r24,r13
+ 1122 00a8 9C2D      		mov r25,r12
+ 1123               	/* epilogue start */
+ 1124 00aa 0F90      		pop __tmp_reg__
+ 1125 00ac DF91      		pop r29
+ 1126 00ae CF91      		pop r28
+ 1127 00b0 1F91      		pop r17
+ 1128 00b2 0F91      		pop r16
+ 1129 00b4 FF90      		pop r15
+ 1130 00b6 EF90      		pop r14
+ 1131 00b8 DF90      		pop r13
+ 1132 00ba CF90      		pop r12
+ 1133 00bc BF90      		pop r11
+ 1134 00be AF90      		pop r10
+ 1135 00c0 9F90      		pop r9
+ 1136 00c2 8F90      		pop r8
+ 1137 00c4 7F90      		pop r7
+ 1138 00c6 6F90      		pop r6
+ 1139 00c8 0895      		ret
+ 1145               	.Lscope9:
+ 1146               		.section	.text._ZN6EEPROM10erase_pageEj,"ax",@progbits
+ 1148               	.global	_ZN6EEPROM10erase_pageEj
+ 1150               	_ZN6EEPROM10erase_pageEj:
+ 234:eeprom.cpp    **** 
+ 235:eeprom.cpp    **** 
+ 236:eeprom.cpp    **** void EEPROM::erase_page(uint16_t addr)
+ 237:eeprom.cpp    **** {
+ 1152               	.LM78:
+ 1153               	.LFBB10:
+ 1154 0000 CF93      		push r28
+ 1155 0002 DF93      		push r29
+ 1156               	/* prologue: function */
+ 1157               	/* frame size = 0 */
+ 1158               	/* stack size = 2 */
+ 1159               	.L__stack_usage = 2
+ 238:eeprom.cpp    ****         NVM.ADDR0 = addr & 0xFF;
+ 1161               	.LM79:
+ 1162 0004 C0EC      		ldi r28,lo8(448)
+ 1163 0006 D1E0      		ldi r29,hi8(448)
+ 1164 0008 8883      		st Y,r24
+ 239:eeprom.cpp    ****         NVM.ADDR1 = (addr >> 8) & 0x1F;
+ 1166               	.LM80:
+ 1167 000a 9F71      		andi r25,lo8(31)
+ 1168 000c 9983      		std Y+1,r25
+ 240:eeprom.cpp    ****         NVM.ADDR2 = 0;
+ 1170               	.LM81:
+ 1171 000e 1A82      		std Y+2,__zero_reg__
+ 241:eeprom.cpp    ****         
+ 242:eeprom.cpp    ****         wait_for_nvm();
+ 1173               	.LM82:
+ 1174 0010 0E94 0000 		call _Z12wait_for_nvmv
+ 243:eeprom.cpp    ****         
+ 244:eeprom.cpp    ****         NVM.CMD = NVM_CMD_ERASE_EEPROM_PAGE_gc;
+ 1176               	.LM83:
+ 1177 0014 82E3      		ldi r24,lo8(50)
+ 1178 0016 8A87      		std Y+10,r24
+ 245:eeprom.cpp    ****         NVM_EXEC_WRAPPER();
+ 1180               	.LM84:
+ 1181 0018 0E94 0000 		call _ZL8NVM_EXECv
+ 1182               	/* epilogue start */
+ 246:eeprom.cpp    **** }
+ 1184               	.LM85:
+ 1185 001c DF91      		pop r29
+ 1186 001e CF91      		pop r28
+ 1187 0020 0895      		ret
+ 1189               	.Lscope10:
+ 1190               		.section	.text._ZN6EEPROM9erase_allEv,"ax",@progbits
+ 1192               	.global	_ZN6EEPROM9erase_allEv
+ 1194               	_ZN6EEPROM9erase_allEv:
+ 247:eeprom.cpp    **** 
+ 248:eeprom.cpp    **** 
+ 249:eeprom.cpp    **** void EEPROM::erase_all()
+ 250:eeprom.cpp    **** {
+ 1196               	.LM86:
+ 1197               	.LFBB11:
+ 1198               	/* prologue: function */
+ 1199               	/* frame size = 0 */
+ 1200               	/* stack size = 0 */
+ 1201               	.L__stack_usage = 0
+ 251:eeprom.cpp    ****         wait_for_nvm();
+ 1203               	.LM87:
+ 1204 0000 0E94 0000 		call _Z12wait_for_nvmv
+ 252:eeprom.cpp    ****         
+ 253:eeprom.cpp    ****         NVM.CMD = NVM_CMD_ERASE_EEPROM_gc;
+ 1206               	.LM88:
+ 1207 0004 80E3      		ldi r24,lo8(48)
+ 1208 0006 E0EC      		ldi r30,lo8(448)
+ 1209 0008 F1E0      		ldi r31,hi8(448)
+ 1210 000a 8287      		std Z+10,r24
+ 254:eeprom.cpp    ****         NVM_EXEC_WRAPPER();
+ 1212               	.LM89:
+ 1213 000c 0E94 0000 		call _ZL8NVM_EXECv
+ 1214               	/* epilogue start */
+ 255:eeprom.cpp    **** }
+ 1216               	.LM90:
+ 1217 0010 0895      		ret
+ 1219               	.Lscope11:
+ 1220               		.section	.text._ZN6EEPROM4putcEc,"ax",@progbits
+ 1223               	.global	_ZN6EEPROM4putcEc
+ 1225               	_ZN6EEPROM4putcEc:
+ 256:eeprom.cpp    **** 
+ 257:eeprom.cpp    **** 
+ 258:eeprom.cpp    **** void (EEPROM::putc)(char c)
+ 259:eeprom.cpp    **** {
+ 1227               	.LM91:
+ 1228               	.LFBB12:
+ 1229               	/* prologue: function */
+ 1230               	/* frame size = 0 */
+ 1231               	/* stack size = 0 */
+ 1232               	.L__stack_usage = 0
+ 1233 0000 682F      		mov r22,r24
+ 260:eeprom.cpp    ****         write_byte(current_address++, c);
+ 1235               	.LM92:
+ 1236 0002 2091 0000 		lds r18,_ZN6EEPROM15current_addressE
+ 1237 0006 3091 0000 		lds r19,_ZN6EEPROM15current_addressE+1
+ 1238 000a A901      		movw r20,r18
+ 1239 000c 4F5F      		subi r20,lo8(-(1))
+ 1240 000e 5F4F      		sbci r21,hi8(-(1))
+ 1241 0010 4093 0000 		sts _ZN6EEPROM15current_addressE,r20
+ 1242 0014 5093 0000 		sts _ZN6EEPROM15current_addressE+1,r21
+ 1243 0018 C901      		movw r24,r18
+ 1244 001a 0E94 0000 		call _ZN6EEPROM10write_byteEjh
+ 1245               	/* epilogue start */
+ 261:eeprom.cpp    **** }
+ 1247               	.LM93:
+ 1248 001e 0895      		ret
+ 1250               	.Lscope12:
+ 1251               		.section	.text._ZN6EEPROM3putEcP6__file,"ax",@progbits
+ 1255               	.global	_ZN6EEPROM3putEcP6__file
+ 1257               	_ZN6EEPROM3putEcP6__file:
+ 262:eeprom.cpp    **** 
+ 263:eeprom.cpp    **** 
+ 264:eeprom.cpp    **** void EEPROM::puts(const char *str)
+ 265:eeprom.cpp    **** {
+ 266:eeprom.cpp    ****         uint16_t len = strlen(str);
+ 267:eeprom.cpp    ****         write_block(current_address, (uint8_t *)str, len);
+ 268:eeprom.cpp    ****         current_address += len;
+ 269:eeprom.cpp    **** }
+ 270:eeprom.cpp    **** 
+ 271:eeprom.cpp    **** 
+ 272:eeprom.cpp    **** int EEPROM::write(const void *ptr, int num)
+ 273:eeprom.cpp    **** {
+ 274:eeprom.cpp    ****         uint16_t len = write_block(current_address, (uint8_t *)ptr, num);
+ 275:eeprom.cpp    ****         current_address += len;
+ 276:eeprom.cpp    ****         return len;
+ 277:eeprom.cpp    **** }
+ 278:eeprom.cpp    **** 
+ 279:eeprom.cpp    **** 
+ 280:eeprom.cpp    **** char (EEPROM::getc)()
+ 281:eeprom.cpp    **** {
+ 282:eeprom.cpp    ****         return read_byte(current_address++);
+ 283:eeprom.cpp    **** }
+ 284:eeprom.cpp    **** 
+ 285:eeprom.cpp    **** 
+ 286:eeprom.cpp    **** void EEPROM::gets(char *dest)
+ 287:eeprom.cpp    **** {
+ 288:eeprom.cpp    ****         do
+ 289:eeprom.cpp    ****         {
+ 290:eeprom.cpp    ****                 *(dest++) = (getc)();
+ 291:eeprom.cpp    ****         }
+ 292:eeprom.cpp    ****         while (*(dest-1) != 0 && *(dest-1) != '\n');
+ 293:eeprom.cpp    **** }
+ 294:eeprom.cpp    **** 
+ 295:eeprom.cpp    **** 
+ 296:eeprom.cpp    **** int EEPROM::read(void *dest, int num)
+ 297:eeprom.cpp    **** {
+ 298:eeprom.cpp    ****         uint16_t len = read_block(current_address, (uint8_t *)dest, num);
+ 299:eeprom.cpp    ****         current_address += len;
+ 300:eeprom.cpp    ****         return len;
+ 301:eeprom.cpp    **** }
+ 302:eeprom.cpp    **** 
+ 303:eeprom.cpp    **** void EEPROM::seek(uint16_t addr)
+ 304:eeprom.cpp    **** {
+ 305:eeprom.cpp    ****         current_address = addr;
+ 306:eeprom.cpp    **** }
+ 307:eeprom.cpp    **** 
+ 308:eeprom.cpp    **** 
+ 309:eeprom.cpp    **** uint16_t EEPROM::getpos()
+ 310:eeprom.cpp    **** {
+ 311:eeprom.cpp    ****         return current_address;
+ 312:eeprom.cpp    **** }
+ 313:eeprom.cpp    **** 
+ 314:eeprom.cpp    **** 
+ 315:eeprom.cpp    **** void EEPROM::setup_stream(FILE *stream)
+ 316:eeprom.cpp    **** {
+ 317:eeprom.cpp    ****         fdev_setup_stream(stream, put, get, _FDEV_SETUP_RW);
+ 318:eeprom.cpp    **** }
+ 319:eeprom.cpp    **** 
+ 320:eeprom.cpp    **** 
+ 321:eeprom.cpp    **** // static
+ 322:eeprom.cpp    **** int EEPROM::put(char c, FILE *stream)
+ 323:eeprom.cpp    **** {
+ 1259               	.LM94:
+ 1260               	.LFBB13:
+ 1261               	/* prologue: function */
+ 1262               	/* frame size = 0 */
+ 1263               	/* stack size = 0 */
+ 1264               	.L__stack_usage = 0
+ 324:eeprom.cpp    ****         (EEPROM::putc)(c);
+ 1266               	.LM95:
+ 1267 0000 0E94 0000 		call _ZN6EEPROM4putcEc
+ 325:eeprom.cpp    ****         return 0;
+ 326:eeprom.cpp    **** }
+ 1269               	.LM96:
+ 1270 0004 80E0      		ldi r24,lo8(0)
+ 1271 0006 90E0      		ldi r25,hi8(0)
+ 1272               	/* epilogue start */
+ 1273 0008 0895      		ret
+ 1275               	.Lscope13:
+ 1276               		.section	.text._ZN6EEPROM4putsEPKc,"ax",@progbits
+ 1278               	.global	_ZN6EEPROM4putsEPKc
+ 1280               	_ZN6EEPROM4putsEPKc:
+ 265:eeprom.cpp    **** {
+ 1282               	.LM97:
+ 1283               	.LFBB14:
+ 1284 0000 CF93      		push r28
+ 1285 0002 DF93      		push r29
+ 1286               	/* prologue: function */
+ 1287               	/* frame size = 0 */
+ 1288               	/* stack size = 2 */
+ 1289               	.L__stack_usage = 2
+ 1290 0004 BC01      		movw r22,r24
+ 1291               	.LBB5:
+ 266:eeprom.cpp    ****         uint16_t len = strlen(str);
+ 1293               	.LM98:
+ 1294 0006 EC01      		movw r28,r24
+ 1295 0008 0990      		ld __tmp_reg__,Y+
+ 1296 000a 0020      		tst __tmp_reg__
+ 1297 000c 01F4      		brne .-6
+ 1298 000e 2197      		sbiw r28,1
+ 1299 0010 C81B      		sub r28,r24
+ 1300 0012 D90B      		sbc r29,r25
+ 267:eeprom.cpp    ****         write_block(current_address, (uint8_t *)str, len);
+ 1302               	.LM99:
+ 1303 0014 8091 0000 		lds r24,_ZN6EEPROM15current_addressE
+ 1304 0018 9091 0000 		lds r25,_ZN6EEPROM15current_addressE+1
+ 1305 001c AE01      		movw r20,r28
+ 1306 001e 0E94 0000 		call _ZN6EEPROM11write_blockEjPKhj
+ 268:eeprom.cpp    ****         current_address += len;
+ 1308               	.LM100:
+ 1309 0022 8091 0000 		lds r24,_ZN6EEPROM15current_addressE
+ 1310 0026 9091 0000 		lds r25,_ZN6EEPROM15current_addressE+1
+ 1311 002a 8C0F      		add r24,r28
+ 1312 002c 9D1F      		adc r25,r29
+ 1313 002e 8093 0000 		sts _ZN6EEPROM15current_addressE,r24
+ 1314 0032 9093 0000 		sts _ZN6EEPROM15current_addressE+1,r25
+ 1315               	/* epilogue start */
+ 1316               	.LBE5:
+ 269:eeprom.cpp    **** }
+ 1318               	.LM101:
+ 1319 0036 DF91      		pop r29
+ 1320 0038 CF91      		pop r28
+ 1321 003a 0895      		ret
+ 1326               	.Lscope14:
+ 1327               		.section	.text._ZN6EEPROM5writeEPKvi,"ax",@progbits
+ 1331               	.global	_ZN6EEPROM5writeEPKvi
+ 1333               	_ZN6EEPROM5writeEPKvi:
+ 273:eeprom.cpp    **** {
+ 1335               	.LM102:
+ 1336               	.LFBB15:
+ 1337               	/* prologue: function */
+ 1338               	/* frame size = 0 */
+ 1339               	/* stack size = 0 */
+ 1340               	.L__stack_usage = 0
+ 1341 0000 9C01      		movw r18,r24
+ 1342 0002 AB01      		movw r20,r22
+ 1343               	.LBB6:
+ 274:eeprom.cpp    ****         uint16_t len = write_block(current_address, (uint8_t *)ptr, num);
+ 1345               	.LM103:
+ 1346 0004 8091 0000 		lds r24,_ZN6EEPROM15current_addressE
+ 1347 0008 9091 0000 		lds r25,_ZN6EEPROM15current_addressE+1
+ 1348 000c B901      		movw r22,r18
+ 1349 000e 0E94 0000 		call _ZN6EEPROM11write_blockEjPKhj
+ 275:eeprom.cpp    ****         current_address += len;
+ 1351               	.LM104:
+ 1352 0012 2091 0000 		lds r18,_ZN6EEPROM15current_addressE
+ 1353 0016 3091 0000 		lds r19,_ZN6EEPROM15current_addressE+1
+ 1354 001a 280F      		add r18,r24
+ 1355 001c 391F      		adc r19,r25
+ 1356 001e 2093 0000 		sts _ZN6EEPROM15current_addressE,r18
+ 1357 0022 3093 0000 		sts _ZN6EEPROM15current_addressE+1,r19
+ 1358               	/* epilogue start */
+ 1359               	.LBE6:
+ 277:eeprom.cpp    **** }
+ 1361               	.LM105:
+ 1362 0026 0895      		ret
+ 1367               	.Lscope15:
+ 1368               		.section	.text._ZN6EEPROM4getcEv,"ax",@progbits
+ 1370               	.global	_ZN6EEPROM4getcEv
+ 1372               	_ZN6EEPROM4getcEv:
+ 281:eeprom.cpp    **** {
+ 1374               	.LM106:
+ 1375               	.LFBB16:
+ 1376               	/* prologue: function */
+ 1377               	/* frame size = 0 */
+ 1378               	/* stack size = 0 */
+ 1379               	.L__stack_usage = 0
+ 282:eeprom.cpp    ****         return read_byte(current_address++);
+ 1381               	.LM107:
+ 1382 0000 8091 0000 		lds r24,_ZN6EEPROM15current_addressE
+ 1383 0004 9091 0000 		lds r25,_ZN6EEPROM15current_addressE+1
+ 1384 0008 9C01      		movw r18,r24
+ 1385 000a 2F5F      		subi r18,lo8(-(1))
+ 1386 000c 3F4F      		sbci r19,hi8(-(1))
+ 1387 000e 2093 0000 		sts _ZN6EEPROM15current_addressE,r18
+ 1388 0012 3093 0000 		sts _ZN6EEPROM15current_addressE+1,r19
+ 1389 0016 0E94 0000 		call _ZN6EEPROM9read_byteEj
+ 1390               	/* epilogue start */
+ 283:eeprom.cpp    **** }
+ 1392               	.LM108:
+ 1393 001a 0895      		ret
+ 1395               	.Lscope16:
+ 1396               		.section	.text._ZN6EEPROM3getEP6__file,"ax",@progbits
+ 1399               	.global	_ZN6EEPROM3getEP6__file
+ 1401               	_ZN6EEPROM3getEP6__file:
+ 327:eeprom.cpp    **** 
+ 328:eeprom.cpp    **** 
+ 329:eeprom.cpp    **** // static
+ 330:eeprom.cpp    **** int EEPROM::get(FILE *stream)
+ 331:eeprom.cpp    **** {
+ 1403               	.LM109:
+ 1404               	.LFBB17:
+ 1405               	/* prologue: function */
+ 1406               	/* frame size = 0 */
+ 1407               	/* stack size = 0 */
+ 1408               	.L__stack_usage = 0
+ 332:eeprom.cpp    ****         return (EEPROM::getc)();
+ 1410               	.LM110:
+ 1411 0000 0E94 0000 		call _ZN6EEPROM4getcEv
+ 333:eeprom.cpp    **** }
+ 1413               	.LM111:
+ 1414 0004 90E0      		ldi r25,lo8(0)
+ 1415               	/* epilogue start */
+ 1416 0006 0895      		ret
+ 1418               	.Lscope17:
+ 1419               		.section	.text._ZN6EEPROM4getsEPc,"ax",@progbits
+ 1422               	.global	_ZN6EEPROM4getsEPc
+ 1424               	_ZN6EEPROM4getsEPc:
+ 287:eeprom.cpp    **** {
+ 1426               	.LM112:
+ 1427               	.LFBB18:
+ 1428 0000 CF93      		push r28
+ 1429 0002 DF93      		push r29
+ 1430               	/* prologue: function */
+ 1431               	/* frame size = 0 */
+ 1432               	/* stack size = 2 */
+ 1433               	.L__stack_usage = 2
+ 1434 0004 EC01      		movw r28,r24
+ 1435               	.L33:
+ 290:eeprom.cpp    ****                 *(dest++) = (getc)();
+ 1437               	.LM113:
+ 1438 0006 0E94 0000 		call _ZN6EEPROM4getcEv
+ 1439 000a 8993      		st Y+,r24
+ 288:eeprom.cpp    ****         do
+ 1441               	.LM114:
+ 1442 000c 8823      		tst r24
+ 1443 000e 01F0      		breq .L31
+ 288:eeprom.cpp    ****         do
+ 1445               	.LM115:
+ 1446 0010 8A30      		cpi r24,lo8(10)
+ 1447 0012 01F4      		brne .L33
+ 1448               	.L31:
+ 1449               	/* epilogue start */
+ 293:eeprom.cpp    **** }
+ 1451               	.LM116:
+ 1452 0014 DF91      		pop r29
+ 1453 0016 CF91      		pop r28
+ 1454 0018 0895      		ret
+ 1456               	.Lscope18:
+ 1457               		.section	.text._ZN6EEPROM4readEPvi,"ax",@progbits
+ 1461               	.global	_ZN6EEPROM4readEPvi
+ 1463               	_ZN6EEPROM4readEPvi:
+ 297:eeprom.cpp    **** {
+ 1465               	.LM117:
+ 1466               	.LFBB19:
+ 1467               	/* prologue: function */
+ 1468               	/* frame size = 0 */
+ 1469               	/* stack size = 0 */
+ 1470               	.L__stack_usage = 0
+ 1471 0000 9C01      		movw r18,r24
+ 1472 0002 AB01      		movw r20,r22
+ 1473               	.LBB7:
+ 298:eeprom.cpp    ****         uint16_t len = read_block(current_address, (uint8_t *)dest, num);
+ 1475               	.LM118:
+ 1476 0004 8091 0000 		lds r24,_ZN6EEPROM15current_addressE
+ 1477 0008 9091 0000 		lds r25,_ZN6EEPROM15current_addressE+1
+ 1478 000c B901      		movw r22,r18
+ 1479 000e 0E94 0000 		call _ZN6EEPROM10read_blockEjPhj
+ 299:eeprom.cpp    ****         current_address += len;
+ 1481               	.LM119:
+ 1482 0012 2091 0000 		lds r18,_ZN6EEPROM15current_addressE
+ 1483 0016 3091 0000 		lds r19,_ZN6EEPROM15current_addressE+1
+ 1484 001a 280F      		add r18,r24
+ 1485 001c 391F      		adc r19,r25
+ 1486 001e 2093 0000 		sts _ZN6EEPROM15current_addressE,r18
+ 1487 0022 3093 0000 		sts _ZN6EEPROM15current_addressE+1,r19
+ 1488               	/* epilogue start */
+ 1489               	.LBE7:
+ 301:eeprom.cpp    **** }
+ 1491               	.LM120:
+ 1492 0026 0895      		ret
+ 1497               	.Lscope19:
+ 1498               		.section	.text._ZN6EEPROM4seekEj,"ax",@progbits
+ 1501               	.global	_ZN6EEPROM4seekEj
+ 1503               	_ZN6EEPROM4seekEj:
+ 304:eeprom.cpp    **** {
+ 1505               	.LM121:
+ 1506               	.LFBB20:
+ 1507               	/* prologue: function */
+ 1508               	/* frame size = 0 */
+ 1509               	/* stack size = 0 */
+ 1510               	.L__stack_usage = 0
+ 305:eeprom.cpp    ****         current_address = addr;
+ 1512               	.LM122:
+ 1513 0000 8093 0000 		sts _ZN6EEPROM15current_addressE,r24
+ 1514 0004 9093 0000 		sts _ZN6EEPROM15current_addressE+1,r25
+ 1515               	/* epilogue start */
+ 306:eeprom.cpp    **** }
+ 1517               	.LM123:
+ 1518 0008 0895      		ret
+ 1520               	.Lscope20:
+ 1521               		.section	.text._ZN6EEPROM6getposEv,"ax",@progbits
+ 1523               	.global	_ZN6EEPROM6getposEv
+ 1525               	_ZN6EEPROM6getposEv:
+ 310:eeprom.cpp    **** {
+ 1527               	.LM124:
+ 1528               	.LFBB21:
+ 1529               	/* prologue: function */
+ 1530               	/* frame size = 0 */
+ 1531               	/* stack size = 0 */
+ 1532               	.L__stack_usage = 0
+ 312:eeprom.cpp    **** }
+ 1534               	.LM125:
+ 1535 0000 8091 0000 		lds r24,_ZN6EEPROM15current_addressE
+ 1536 0004 9091 0000 		lds r25,_ZN6EEPROM15current_addressE+1
+ 1537               	/* epilogue start */
+ 1538 0008 0895      		ret
+ 1540               	.Lscope21:
+ 1541               		.section	.text._ZN6EEPROM12setup_streamEP6__file,"ax",@progbits
+ 1544               	.global	_ZN6EEPROM12setup_streamEP6__file
+ 1546               	_ZN6EEPROM12setup_streamEP6__file:
+ 316:eeprom.cpp    **** {
+ 1548               	.LM126:
+ 1549               	.LFBB22:
+ 1550               	/* prologue: function */
+ 1551               	/* frame size = 0 */
+ 1552               	/* stack size = 0 */
+ 1553               	.L__stack_usage = 0
+ 1554 0000 FC01      		movw r30,r24
+ 317:eeprom.cpp    ****         fdev_setup_stream(stream, put, get, _FDEV_SETUP_RW);
+ 1556               	.LM127:
+ 1557 0002 80E0      		ldi r24,lo8(gs(_ZN6EEPROM3putEcP6__file))
+ 1558 0004 90E0      		ldi r25,hi8(gs(_ZN6EEPROM3putEcP6__file))
+ 1559 0006 8087      		std Z+8,r24
+ 1560 0008 9187      		std Z+9,r25
+ 1561 000a 80E0      		ldi r24,lo8(gs(_ZN6EEPROM3getEP6__file))
+ 1562 000c 90E0      		ldi r25,hi8(gs(_ZN6EEPROM3getEP6__file))
+ 1563 000e 8287      		std Z+10,r24
+ 1564 0010 9387      		std Z+11,r25
+ 1565 0012 83E0      		ldi r24,lo8(3)
+ 1566 0014 8383      		std Z+3,r24
+ 1567 0016 1486      		std Z+12,__zero_reg__
+ 1568 0018 1586      		std Z+13,__zero_reg__
+ 1569               	/* epilogue start */
+ 318:eeprom.cpp    **** }
+ 1571               	.LM128:
+ 1572 001a 0895      		ret
+ 1574               	.Lscope22:
+ 1575               	.global	_ZN6EEPROM15current_addressE
+ 1576               		.section	.bss._ZN6EEPROM15current_addressE,"aw",@nobits
+ 1579               	_ZN6EEPROM15current_addressE:
+ 1580 0000 0000      		.skip 2,0
+ 1582               	.global	_ZN6EEPROMC1Ev
+ 1583               		.set	_ZN6EEPROMC1Ev,_ZN6EEPROMC2Ev
+ 1584               	.global	_ZN6EEPROMD1Ev
+ 1585               		.set	_ZN6EEPROMD1Ev,_ZN6EEPROMD2Ev
+ 1586               		.text
+ 1588               	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 eeprom.cpp
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:2      *ABS*:0000003f __SREG__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:3      *ABS*:0000003e __SP_H__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:4      *ABS*:0000003d __SP_L__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:5      *ABS*:00000034 __CCP__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:6      *ABS*:00000000 __tmp_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:7      *ABS*:00000001 __zero_reg__
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:614    .text._ZL8NVM_EXECv:00000000 _ZL8NVM_EXECv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:647    .text._Z12wait_for_nvmv:00000000 _Z12wait_for_nvmv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:671    .text._Z12flush_bufferv:00000000 _Z12flush_bufferv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:705    .text._ZN6EEPROMC2Ev:00000000 _ZN6EEPROMC2Ev
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:724    .text._ZN6EEPROMD2Ev:00000000 _ZN6EEPROMD2Ev
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:742    .text._ZN6EEPROM9read_byteEj:00000000 _ZN6EEPROM9read_byteEj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:806    .text._ZN6EEPROM10write_byteEjh:00000000 _ZN6EEPROM10write_byteEjh
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:871    .text._ZN6EEPROM10read_blockEjPhj:00000000 _ZN6EEPROM10read_blockEjPhj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:975    .text._ZN6EEPROM11write_blockEjPKhj:00000000 _ZN6EEPROM11write_blockEjPKhj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1150   .text._ZN6EEPROM10erase_pageEj:00000000 _ZN6EEPROM10erase_pageEj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1194   .text._ZN6EEPROM9erase_allEv:00000000 _ZN6EEPROM9erase_allEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1225   .text._ZN6EEPROM4putcEc:00000000 _ZN6EEPROM4putcEc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1579   .bss._ZN6EEPROM15current_addressE:00000000 _ZN6EEPROM15current_addressE
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1257   .text._ZN6EEPROM3putEcP6__file:00000000 _ZN6EEPROM3putEcP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1280   .text._ZN6EEPROM4putsEPKc:00000000 _ZN6EEPROM4putsEPKc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1333   .text._ZN6EEPROM5writeEPKvi:00000000 _ZN6EEPROM5writeEPKvi
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1372   .text._ZN6EEPROM4getcEv:00000000 _ZN6EEPROM4getcEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1401   .text._ZN6EEPROM3getEP6__file:00000000 _ZN6EEPROM3getEP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1424   .text._ZN6EEPROM4getsEPc:00000000 _ZN6EEPROM4getsEPc
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1463   .text._ZN6EEPROM4readEPvi:00000000 _ZN6EEPROM4readEPvi
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1503   .text._ZN6EEPROM4seekEj:00000000 _ZN6EEPROM4seekEj
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1525   .text._ZN6EEPROM6getposEv:00000000 _ZN6EEPROM6getposEv
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:1546   .text._ZN6EEPROM12setup_streamEP6__file:00000000 _ZN6EEPROM12setup_streamEP6__file
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:705    .text._ZN6EEPROMC2Ev:00000000 _ZN6EEPROMC1Ev
+/var/folders/4b/hs9cfcm15yl1b5_6khhnhq140000gn/T//cctTsoZb.s:724    .text._ZN6EEPROMD2Ev:00000000 _ZN6EEPROMD1Ev
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
