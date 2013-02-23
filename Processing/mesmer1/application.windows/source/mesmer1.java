@@ -1,8 +1,32 @@
+import processing.core.*; 
+import processing.xml.*; 
 
-import java.util.ArrayList;
-import java.util.Collections;
-import oscP5.*;
-import netP5.*;
+import java.util.ArrayList; 
+import java.util.Collections; 
+import oscP5.*; 
+import netP5.*; 
+
+import java.applet.*; 
+import java.awt.Dimension; 
+import java.awt.Frame; 
+import java.awt.event.MouseEvent; 
+import java.awt.event.KeyEvent; 
+import java.awt.event.FocusEvent; 
+import java.awt.Image; 
+import java.io.*; 
+import java.net.*; 
+import java.text.*; 
+import java.util.*; 
+import java.util.zip.*; 
+import java.util.regex.*; 
+
+public class mesmer1 extends PApplet {
+
+
+
+
+
+
 
 OscP5 oscP5;
 NetAddress myRemoteLocation;
@@ -21,20 +45,20 @@ int cellX =  xDim / _numX;
 int cellY =  yDim / _numY;
 int cellOffX =  cellX / 2;
 int cellOffY =  cellY / 2;
-float noisePnt = 0.0;
-float noiseInc = 0.01;
+float noisePnt = 0.0f;
+float noiseInc = 0.01f;
 float sinPnt = 0;
 float sinInc = TWO_PI / (3 * 30);
 
 int myFps = 60;
 float period = 3 * myFps;
 float _LocInc = TWO_PI / period;
-float periodMin = 2.0;
-float periodMax = 20.0;
+float periodMin = 2.0f;
+float periodMax = 20.0f;
 
-float gAGain = 5.0;
+float gAGain = 5.0f;
 float nPtr = 0;
-float nInc = 0.01;
+float nInc = 0.01f;
 
 float gPeriod = 15;
 float gPhase = 0;
@@ -42,7 +66,7 @@ float phaseInc = 0;
 
 
 
-void setup(){
+public void setup(){
   size(xDim, yDim);
   oscP5 = new OscP5(this, 7400);
   myRemoteLocation = new NetAddress("127.0.0.1", 7400);
@@ -52,18 +76,18 @@ void setup(){
   restart();
 }
 
-void restart(){
+public void restart(){
   _cellArray = new Cell[_numX][_numY];
   for (int x = 0; x<_numX; x++){
       for (int y = 0; y<_numY; y++){
         Cell newCell = new Cell(x, y);
         //_cellArray[x][y] = newCell;
         _cellArray[x][y] = new Cell(x, y);
-        _cellArray[x][y].setRotation(random(0.0, 1.0));
+        _cellArray[x][y].setRotation(random(0.0f, 1.0f));
         _cellArray[x][y].setInc(TWO_PI / (random(periodMin, periodMax) * myFps));
 //        _cellArray[x][y].setInc(TWO_PI / ( map(x * y, 0, _numX*_numY, periodMin, periodMax) * myFps));
 
-        _cellArray[x][y].setPhase(random(0.0, TWO_PI));
+        _cellArray[x][y].setPhase(random(0.0f, TWO_PI));
         
       }
   }
@@ -95,7 +119,7 @@ for (int x = 0; x < _numX; x++){
 }
 
 
-void draw(){
+public void draw(){
   background(173, 184, 234);
   noisePnt += noiseInc;
   drawConduit();
@@ -110,7 +134,7 @@ void draw(){
     }
   }
   
-  translate((int) cellX / 2.0, (int) cellY / 2.0 );
+  translate((int) cellX / 2.0f, (int) cellY / 2.0f );
   
   for (int x = 0; x < _numX; x++){
     for (int y = 0; y < _numY; y++){
@@ -119,12 +143,12 @@ void draw(){
   }
 }
 
-void mousePressed(){
+public void mousePressed(){
   restart();
 }
 
 
-void drawConduit(){
+public void drawConduit(){
   stroke(0, 0, 0, 120);
   int offset = cellOffY;
   for (int i = 0; i < _numY; i++){
@@ -145,7 +169,7 @@ void drawConduit(){
       pushMatrix();
       translate(xLoc, yLoc + ( cellY/2));
       noFill();
-      arc(cellX/2, 0, cellX, cellY/1.2, 0, PI);
+      arc(cellX/2, 0, cellX, cellY/1.2f, 0, PI);
       popMatrix();
      noFill();
     }
@@ -187,7 +211,7 @@ class Cell{
   float rotation = 0;
   float finRot = 0;
   float locInc;
-  float phasePosition = 0.0;
+  float phasePosition = 0.0f;
 
   
   Cell(float ex, float why){
@@ -202,33 +226,33 @@ class Cell{
   }
   
   
-  void addNeighbor(Cell cell){
+  public void addNeighbor(Cell cell){
     neighbors = (Cell[])append(neighbors, cell);
   }
   
-  void setRotation(float _rot){
+  public void setRotation(float _rot){
     rotation = _rot;
   }
 
- void setInc(float _inc){
+ public void setInc(float _inc){
     locInc = _inc;
     //println(locInc);  
 }
   
-  void setPhase(float _phase){
+  public void setPhase(float _phase){
     phasePosition = _phase;
     //println(phasePosition);
   }
 
 
-void calcNextState(){
+public void calcNextState(){
   phasePosition += locInc;
   
   float sum = 0;
-  float selfGain = 1.0;
-  float aGain = 5.0;
+  float selfGain = 1.0f;
+  float aGain = 5.0f;
   float theNoise = noise(pX, pY, noisePnt);
-  float rotGain = 4.0;
+  float rotGain = 4.0f;
   
   aGain = gAGain;
 
@@ -243,13 +267,13 @@ void calcNextState(){
   
   float average = sum / neighbors.length;
   rotation = ((selfGain * result) + (aGain * average)) / (selfGain + aGain);
-  finRot = map(rotation, -1.0, 1.0, -80, 80);
+  finRot = map(rotation, -1.0f, 1.0f, -80, 80);
   finRot *= rotGain; // this amplifies the resulting rotation
   finRot = constrain(finRot, -80, 80); 
 }
  
  
- void drawMe(){
+ public void drawMe(){
    state = nextState;
    fill(255);
   ellipse(x, y, 5, 5);
@@ -270,4 +294,8 @@ void calcNextState(){
    popMatrix();
  }
  
+}
+  static public void main(String args[]) {
+    PApplet.main(new String[] { "--present", "--bgcolor=#666666", "--stop-color=#cccccc", "mesmer1" });
+  }
 }

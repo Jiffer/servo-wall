@@ -1,4 +1,4 @@
-
+import toxi.math.noise;
 import java.util.ArrayList;
 import java.util.Collections;
 import oscP5.*;
@@ -21,12 +21,13 @@ int cellX =  xDim / _numX;
 int cellY =  yDim / _numY;
 int cellOffX =  cellX / 2;
 int cellOffY =  cellY / 2;
-float noisePnt = 0.0;
-float noiseInc = 0.01;
+float noisePtr = 0.0;
+float noiseInc = 0.002;
+float noiseTimeInc = 0.02;
 float sinPnt = 0;
 float sinInc = TWO_PI / (3 * 30);
 
-int myFps = 60;
+int myFps = 30;
 float period = 3 * myFps;
 float _LocInc = TWO_PI / period;
 float periodMin = 2.0;
@@ -97,11 +98,10 @@ for (int x = 0; x < _numX; x++){
 
 void draw(){
   background(173, 184, 234);
-  noisePnt += noiseInc;
+  noisePtr += noiseTimeInc;
   drawConduit();
   gPhase += (phaseInc % TWO_PI);
-//  gAGain = map(sin(gPhase), -1, 1.0, 20, 20.0);
-  gAGain = 20; // controls extent of correlation between neighbors
+  gAGain = map(sin(gPhase), -1, 1.0, 20, 20.0);
 
 
   for (int x = 0; x < _numX; x++){
@@ -188,6 +188,8 @@ class Cell{
   float finRot = 0;
   float locInc;
   float phasePosition = 0.0;
+  float nTimePtr;
+  float nodeNum;
 
   
   Cell(float ex, float why){
@@ -195,6 +197,7 @@ class Cell{
     pY = why;
     x = ex * cellX;
     y = why * cellY;
+    nodeNum = (pX * _numX) + pY;
 
  
     neighbors = new Cell[0];
@@ -222,30 +225,8 @@ class Cell{
 
 
 void calcNextState(){
-  phasePosition += locInc;
-  
-  float sum = 0;
-  float selfGain = 1.0;
-  float aGain = 5.0;
-  float theNoise = noise(pX, pY, noisePnt);
-  float rotGain = 4.0;
-  
-  aGain = gAGain;
+  finRot = map(noise(x*noiseInc, y*noiseInc, noisePtr), 0.1, 0.9, -90, 90);
 
-  
-   for (int i = 0; i < neighbors.length; i++){
-      sum += neighbors[i].rotation;
-    }
-
- 
-  float result = sin(phasePosition); 
-  //rotation = result;
-  
-  float average = sum / neighbors.length;
-  rotation = ((selfGain * result) + (aGain * average)) / (selfGain + aGain);
-  finRot = map(rotation, -1.0, 1.0, -80, 80);
-  finRot *= rotGain; // this amplifies the resulting rotation
-  finRot = constrain(finRot, -80, 80); 
 }
  
  
@@ -257,8 +238,7 @@ void calcNextState(){
    translate(x, y);
    //rotate(rotation);
    //rotate(PI * 1.75);
-//   float cRot = constrain(finRot, -90, 90);
-   float cRot = finRot;
+   float cRot = constrain(finRot, -90, 90);
    rotate(radians(cRot));
    line(0, -(cellY/2), 0, cellY/2);
 //   line(0, 0, 0, 70);

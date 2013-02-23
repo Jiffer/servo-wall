@@ -1,0 +1,3 @@
+
+mesmerSimplex1
+mesmerSimplex1.jar,core.jar,toxiclibscore.jar,toxiclibs_p5.jar,oscP5.jar

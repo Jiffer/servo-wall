@@ -26,13 +26,13 @@ float noiseInc = 0.01;
 float sinPnt = 0;
 float sinInc = TWO_PI / (3 * 30);
 
-int myFps = 60;
+int myFps = 30;
 float period = 3 * myFps;
 float _LocInc = TWO_PI / period;
-float periodMin = 2.0;
-float periodMax = 20.0;
+float periodMin = 10;
+float periodMax = 10;
 
-float gAGain = 5.0;
+float gAGain = 0.0;
 float nPtr = 0;
 float nInc = 0.01;
 
@@ -62,8 +62,12 @@ void restart(){
         _cellArray[x][y].setRotation(random(0.0, 1.0));
         _cellArray[x][y].setInc(TWO_PI / (random(periodMin, periodMax) * myFps));
 //        _cellArray[x][y].setInc(TWO_PI / ( map(x * y, 0, _numX*_numY, periodMin, periodMax) * myFps));
-
-        _cellArray[x][y].setPhase(random(0.0, TWO_PI));
+        int steps = 4;
+        int scaler = int(random(steps));
+        float p = scaler * (TWO_PI / steps);
+        _cellArray[x][y].setPhase(p);
+//        _cellArray[x][y].setPhase(random(0.0, TWO_PI));
+//         _cellArray[x][y].setPhase(0);
         
       }
   }
@@ -99,9 +103,9 @@ void draw(){
   background(173, 184, 234);
   noisePnt += noiseInc;
   drawConduit();
+//  nPtr += nInc;
   gPhase += (phaseInc % TWO_PI);
 //  gAGain = map(sin(gPhase), -1, 1.0, 20, 20.0);
-  gAGain = 20; // controls extent of correlation between neighbors
 
 
   for (int x = 0; x < _numX; x++){
@@ -226,11 +230,11 @@ void calcNextState(){
   
   float sum = 0;
   float selfGain = 1.0;
-  float aGain = 5.0;
+  float aGain = 1.0;
   float theNoise = noise(pX, pY, noisePnt);
   float rotGain = 4.0;
   
-  aGain = gAGain;
+// aGain = gAGain;
 
   
    for (int i = 0; i < neighbors.length; i++){
@@ -242,10 +246,11 @@ void calcNextState(){
   //rotation = result;
   
   float average = sum / neighbors.length;
-  rotation = ((selfGain * result) + (aGain * average)) / (selfGain + aGain);
-  finRot = map(rotation, -1.0, 1.0, -80, 80);
-  finRot *= rotGain; // this amplifies the resulting rotation
-  finRot = constrain(finRot, -80, 80); 
+//  rotation = ((selfGain * result) + (aGain * average)) / (selfGain + aGain);
+  rotation = result;
+  finRot = map(rotation, -1.0, 1.0, -90, 90);
+//  finRot *= rotGain;
+//  finRot = constrain(finRot, -90, 90);
 }
  
  
@@ -257,13 +262,12 @@ void calcNextState(){
    translate(x, y);
    //rotate(rotation);
    //rotate(PI * 1.75);
-//   float cRot = constrain(finRot, -90, 90);
-   float cRot = finRot;
+   float cRot = constrain(finRot, -90, 90);
    rotate(radians(cRot));
    line(0, -(cellY/2), 0, cellY/2);
 //   line(0, 0, 0, 70);
    int nodeNum = round((pX * _numY) + pY + 1) ;
-   float curAng = map(cRot, -90, 90, 40, 130);
+   float curAng = map(cRot, -90, 90, 40, 140);
    myMessage = new OscMessage(str(nodeNum));
    myMessage.add(curAng); // add an int to the osc message
    oscP5.send(myMessage, myRemoteLocation);

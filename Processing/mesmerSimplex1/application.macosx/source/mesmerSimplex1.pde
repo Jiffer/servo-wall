@@ -1,4 +1,5 @@
-
+import toxi.math.noise.*;
+import toxi.processing.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import oscP5.*;
@@ -21,12 +22,10 @@ int cellX =  xDim / _numX;
 int cellY =  yDim / _numY;
 int cellOffX =  cellX / 2;
 int cellOffY =  cellY / 2;
-float noisePnt = 0.0;
-float noiseInc = 0.01;
 float sinPnt = 0;
 float sinInc = TWO_PI / (3 * 30);
 
-int myFps = 60;
+int myFps = 30;
 float period = 3 * myFps;
 float _LocInc = TWO_PI / period;
 float periodMin = 2.0;
@@ -40,6 +39,11 @@ float gPeriod = 15;
 float gPhase = 0;
 float phaseInc = 0;
 
+///STUFF FOR SIMPLEX NOISE
+float noisePtr = 0.0;
+float noiseInc = 0.0008; //adust correlation between neighbors
+float noiseTimeInc = 0.01; //adjusts speed of sim
+
 
 
 void setup(){
@@ -52,20 +56,118 @@ void setup(){
   restart();
 }
 
+
+
+void draw(){
+  background(173, 184, 234);
+  noisePtr += noiseTimeInc;
+  drawConduit();
+  //update the state of each node
+  for (int x = 0; x < _numX; x++){
+    for (int y = 0; y < _numY; y++){
+      _cellArray[x][y].calcNextState();
+    }
+  }
+  
+  //draw eac node
+  translate((int) cellX / 2.0, (int) cellY / 2.0 );
+  for (int x = 0; x < _numX; x++){
+    for (int y = 0; y < _numY; y++){
+      _cellArray[x][y].drawMe();
+    }
+  }
+}
+
+void mousePressed(){
+  restart();
+}
+
+
+
+    
+
+
+class Cell{
+  float x, y;
+  float pX, pY;
+  boolean state;
+  boolean nextState;
+  Cell[] neighbors;
+  float rotation = 0;
+  float finRot = 0;
+  float locInc;
+  float phasePosition = 0.0;
+  float nTimePtr;
+  float nodeNum;
+
+  
+  Cell(float ex, float why){
+    pX = ex;
+    pY = why;
+    x = ex * cellX;
+    y = why * cellY;
+    nodeNum = (pX * _numX) + pY;
+    neighbors = new Cell[0];
+    
+  }
+  
+  void calcNextState(){
+  finRot = map((float)SimplexNoise.noise(x*noiseInc, y*noiseInc, noisePtr), -1, 1, -80, 80);
+
+}
+ 
+ 
+ void drawMe(){
+   state = nextState;
+   fill(255);
+  ellipse(x, y, 5, 5);
+   pushMatrix();
+   translate(x, y);
+   float cRot = finRot;
+   rotate(radians(cRot));
+   line(0, -(cellY/2), 0, cellY/2);
+   int nodeNum = round((pX * _numY) + pY + 1) ;
+   float curAng = map(cRot, -90, 90, 40, 130);
+   myMessage = new OscMessage(str(nodeNum));
+   myMessage.add(curAng); // add an int to the osc message
+   oscP5.send(myMessage, myRemoteLocation);
+   popMatrix();
+ }
+  
+  
+  
+  void addNeighbor(Cell cell){
+    neighbors = (Cell[])append(neighbors, cell);
+  }
+  
+  void setRotation(float _rot){
+    rotation = _rot;
+  }
+
+ void setInc(float _inc){
+    locInc = _inc;
+    //println(locInc);  
+}
+  
+  void setPhase(float _phase){
+    phasePosition = _phase;
+    //println(phasePosition);
+  }
+
+
+
+ 
+}
+
+
+
 void restart(){
   _cellArray = new Cell[_numX][_numY];
   for (int x = 0; x<_numX; x++){
       for (int y = 0; y<_numY; y++){
         Cell newCell = new Cell(x, y);
-        //_cellArray[x][y] = newCell;
         _cellArray[x][y] = new Cell(x, y);
-        _cellArray[x][y].setRotation(random(0.0, 1.0));
-        _cellArray[x][y].setInc(TWO_PI / (random(periodMin, periodMax) * myFps));
-//        _cellArray[x][y].setInc(TWO_PI / ( map(x * y, 0, _numX*_numY, periodMin, periodMax) * myFps));
-
-        _cellArray[x][y].setPhase(random(0.0, TWO_PI));
-        
-      }
+       }
   }
 
 for (int x = 0; x < _numX; x++){
@@ -94,34 +196,6 @@ for (int x = 0; x < _numX; x++){
 }
 }
 
-
-void draw(){
-  background(173, 184, 234);
-  noisePnt += noiseInc;
-  drawConduit();
-  gPhase += (phaseInc % TWO_PI);
-//  gAGain = map(sin(gPhase), -1, 1.0, 20, 20.0);
-  gAGain = 20; // controls extent of correlation between neighbors
-
-
-  for (int x = 0; x < _numX; x++){
-    for (int y = 0; y < _numY; y++){
-      _cellArray[x][y].calcNextState();
-    }
-  }
-  
-  translate((int) cellX / 2.0, (int) cellY / 2.0 );
-  
-  for (int x = 0; x < _numX; x++){
-    for (int y = 0; y < _numY; y++){
-      _cellArray[x][y].drawMe();
-    }
-  }
-}
-
-void mousePressed(){
-  restart();
-}
 
 
 void drawConduit(){
@@ -174,100 +248,4 @@ void drawConduit(){
   
   
   stroke(0);
-}
-    
-
-
-class Cell{
-  float x, y;
-  float pX, pY;
-  boolean state;
-  boolean nextState;
-  Cell[] neighbors;
-  float rotation = 0;
-  float finRot = 0;
-  float locInc;
-  float phasePosition = 0.0;
-
-  
-  Cell(float ex, float why){
-    pX = ex;
-    pY = why;
-    x = ex * cellX;
-    y = why * cellY;
-
- 
-    neighbors = new Cell[0];
-    
-  }
-  
-  
-  void addNeighbor(Cell cell){
-    neighbors = (Cell[])append(neighbors, cell);
-  }
-  
-  void setRotation(float _rot){
-    rotation = _rot;
-  }
-
- void setInc(float _inc){
-    locInc = _inc;
-    //println(locInc);  
-}
-  
-  void setPhase(float _phase){
-    phasePosition = _phase;
-    //println(phasePosition);
-  }
-
-
-void calcNextState(){
-  phasePosition += locInc;
-  
-  float sum = 0;
-  float selfGain = 1.0;
-  float aGain = 5.0;
-  float theNoise = noise(pX, pY, noisePnt);
-  float rotGain = 4.0;
-  
-  aGain = gAGain;
-
-  
-   for (int i = 0; i < neighbors.length; i++){
-      sum += neighbors[i].rotation;
-    }
-
- 
-  float result = sin(phasePosition); 
-  //rotation = result;
-  
-  float average = sum / neighbors.length;
-  rotation = ((selfGain * result) + (aGain * average)) / (selfGain + aGain);
-  finRot = map(rotation, -1.0, 1.0, -80, 80);
-  finRot *= rotGain; // this amplifies the resulting rotation
-  finRot = constrain(finRot, -80, 80); 
-}
- 
- 
- void drawMe(){
-   state = nextState;
-   fill(255);
-  ellipse(x, y, 5, 5);
-   pushMatrix();
-   translate(x, y);
-   //rotate(rotation);
-   //rotate(PI * 1.75);
-//   float cRot = constrain(finRot, -90, 90);
-   float cRot = finRot;
-   rotate(radians(cRot));
-   line(0, -(cellY/2), 0, cellY/2);
-//   line(0, 0, 0, 70);
-   int nodeNum = round((pX * _numY) + pY + 1) ;
-   float curAng = map(cRot, -90, 90, 40, 130);
-   myMessage = new OscMessage(str(nodeNum));
-   myMessage.add(curAng); // add an int to the osc message
-   oscP5.send(myMessage, myRemoteLocation);
-   popMatrix();
- }
- 
 }

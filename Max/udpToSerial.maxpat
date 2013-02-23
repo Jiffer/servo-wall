@@ -1627,16 +1627,16 @@
 ,
 					"patching_rect" : [ 100.0, 101.0, 126.0, 20.0 ],
 					"saved_object_attributes" : 					{
-						"fontname" : "Arial",
-						"tags" : "",
-						"default_fontface" : 0,
 						"digest" : "",
-						"globalpatchername" : "",
 						"default_fontname" : "Arial",
+						"fontname" : "Arial",
+						"default_fontsize" : 12.0,
+						"description" : "",
+						"globalpatchername" : "",
 						"fontface" : 0,
 						"fontsize" : 12.0,
-						"default_fontsize" : 12.0,
-						"description" : ""
+						"tags" : "",
+						"default_fontface" : 0
 					}
 ,
 					"text" : "p"
