@@ -1,0 +1,303 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1CC32E7116DFAD3A00668506 /* simple.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 1CC32E7016DFAD3A00668506 /* simple.1 */; };
+		1CC32E9616DFAD8000668506 /* board_init.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E7816DFAD8000668506 /* board_init.c */; };
+		1CC32E9716DFAD8000668506 /* communication.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E7B16DFAD8000668506 /* communication.c */; };
+		1CC32E9816DFAD8000668506 /* eeprom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E7C16DFAD8000668506 /* eeprom.cpp */; };
+		1CC32E9916DFAD8000668506 /* i2c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E7E16DFAD8000668506 /* i2c.cpp */; };
+		1CC32E9A16DFAD8000668506 /* iostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E8016DFAD8000668506 /* iostream.cpp */; };
+		1CC32E9B16DFAD8000668506 /* istream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E8216DFAD8000668506 /* istream.cpp */; };
+		1CC32E9C16DFAD8000668506 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E8416DFAD8000668506 /* main.cpp */; };
+		1CC32E9D16DFAD8000668506 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E8616DFAD8000668506 /* Makefile */; };
+		1CC32E9E16DFAD8000668506 /* ostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E8816DFAD8000668506 /* ostream.cpp */; };
+		1CC32E9F16DFAD8000668506 /* servo.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E8A16DFAD8000668506 /* servo.c */; };
+		1CC32EA016DFAD8000668506 /* sonar.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E8C16DFAD8000668506 /* sonar.c */; };
+		1CC32EA116DFAD8000668506 /* spi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E8E16DFAD8000668506 /* spi.cpp */; };
+		1CC32EA216DFAD8000668506 /* swarmfunctions.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E9016DFAD8000668506 /* swarmfunctions.c */; };
+		1CC32EA316DFAD8000668506 /* usart.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E9116DFAD8000668506 /* usart.cpp */; };
+		1CC32EA416DFAD8000668506 /* xgrid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E9416DFAD8000668506 /* xgrid.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1CC32E6816DFAD3A00668506 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				1CC32E7116DFAD3A00668506 /* simple.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1CC32E6A16DFAD3A00668506 /* simple */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = simple; sourceTree = BUILT_PRODUCTS_DIR; };
+		1CC32E7016DFAD3A00668506 /* simple.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = simple.1; sourceTree = "<group>"; };
+		1CC32E7716DFAD8000668506 /* avr_compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = avr_compiler.h; sourceTree = "<group>"; };
+		1CC32E7816DFAD8000668506 /* board_init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = board_init.c; sourceTree = "<group>"; };
+		1CC32E7916DFAD8000668506 /* board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = board.h; sourceTree = "<group>"; };
+		1CC32E7A16DFAD8000668506 /* buildnum.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = buildnum.txt; sourceTree = "<group>"; };
+		1CC32E7B16DFAD8000668506 /* communication.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = communication.c; sourceTree = "<group>"; };
+		1CC32E7C16DFAD8000668506 /* eeprom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = eeprom.cpp; sourceTree = "<group>"; };
+		1CC32E7D16DFAD8000668506 /* eeprom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = eeprom.h; sourceTree = "<group>"; };
+		1CC32E7E16DFAD8000668506 /* i2c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = i2c.cpp; sourceTree = "<group>"; };
+		1CC32E7F16DFAD8000668506 /* i2c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = i2c.h; sourceTree = "<group>"; };
+		1CC32E8016DFAD8000668506 /* iostream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = iostream.cpp; sourceTree = "<group>"; };
+		1CC32E8116DFAD8000668506 /* iostream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iostream.h; sourceTree = "<group>"; };
+		1CC32E8216DFAD8000668506 /* istream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = istream.cpp; sourceTree = "<group>"; };
+		1CC32E8316DFAD8000668506 /* istream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = istream.h; sourceTree = "<group>"; };
+		1CC32E8416DFAD8000668506 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		1CC32E8516DFAD8000668506 /* main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
+		1CC32E8616DFAD8000668506 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		1CC32E8716DFAD8000668506 /* monitor.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = monitor.py; sourceTree = "<group>"; };
+		1CC32E8816DFAD8000668506 /* ostream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ostream.cpp; sourceTree = "<group>"; };
+		1CC32E8916DFAD8000668506 /* ostream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ostream.h; sourceTree = "<group>"; };
+		1CC32E8A16DFAD8000668506 /* servo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = servo.c; sourceTree = "<group>"; };
+		1CC32E8B16DFAD8000668506 /* servo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = servo.h; sourceTree = "<group>"; };
+		1CC32E8C16DFAD8000668506 /* sonar.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sonar.c; sourceTree = "<group>"; };
+		1CC32E8D16DFAD8000668506 /* sonar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sonar.h; sourceTree = "<group>"; };
+		1CC32E8E16DFAD8000668506 /* spi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = spi.cpp; sourceTree = "<group>"; };
+		1CC32E8F16DFAD8000668506 /* spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = spi.h; sourceTree = "<group>"; };
+		1CC32E9016DFAD8000668506 /* swarmfunctions.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = swarmfunctions.c; sourceTree = "<group>"; };
+		1CC32E9116DFAD8000668506 /* usart.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = usart.cpp; sourceTree = "<group>"; };
+		1CC32E9216DFAD8000668506 /* usart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = usart.h; sourceTree = "<group>"; };
+		1CC32E9316DFAD8000668506 /* xgrid_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xgrid_types.h; sourceTree = "<group>"; };
+		1CC32E9416DFAD8000668506 /* xgrid.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = xgrid.cpp; sourceTree = "<group>"; };
+		1CC32E9516DFAD8000668506 /* xgrid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xgrid.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1CC32E6716DFAD3A00668506 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1CC32E5F16DFAD3A00668506 = {
+			isa = PBXGroup;
+			children = (
+				1CC32E7716DFAD8000668506 /* avr_compiler.h */,
+				1CC32E7816DFAD8000668506 /* board_init.c */,
+				1CC32E7916DFAD8000668506 /* board.h */,
+				1CC32E7A16DFAD8000668506 /* buildnum.txt */,
+				1CC32E7B16DFAD8000668506 /* communication.c */,
+				1CC32E7C16DFAD8000668506 /* eeprom.cpp */,
+				1CC32E7D16DFAD8000668506 /* eeprom.h */,
+				1CC32E7E16DFAD8000668506 /* i2c.cpp */,
+				1CC32E7F16DFAD8000668506 /* i2c.h */,
+				1CC32E8016DFAD8000668506 /* iostream.cpp */,
+				1CC32E8116DFAD8000668506 /* iostream.h */,
+				1CC32E8216DFAD8000668506 /* istream.cpp */,
+				1CC32E8316DFAD8000668506 /* istream.h */,
+				1CC32E8416DFAD8000668506 /* main.cpp */,
+				1CC32E8516DFAD8000668506 /* main.h */,
+				1CC32E8616DFAD8000668506 /* Makefile */,
+				1CC32E8716DFAD8000668506 /* monitor.py */,
+				1CC32E8816DFAD8000668506 /* ostream.cpp */,
+				1CC32E8916DFAD8000668506 /* ostream.h */,
+				1CC32E8A16DFAD8000668506 /* servo.c */,
+				1CC32E8B16DFAD8000668506 /* servo.h */,
+				1CC32E8C16DFAD8000668506 /* sonar.c */,
+				1CC32E8D16DFAD8000668506 /* sonar.h */,
+				1CC32E8E16DFAD8000668506 /* spi.cpp */,
+				1CC32E8F16DFAD8000668506 /* spi.h */,
+				1CC32E9016DFAD8000668506 /* swarmfunctions.c */,
+				1CC32E9116DFAD8000668506 /* usart.cpp */,
+				1CC32E9216DFAD8000668506 /* usart.h */,
+				1CC32E9316DFAD8000668506 /* xgrid_types.h */,
+				1CC32E9416DFAD8000668506 /* xgrid.cpp */,
+				1CC32E9516DFAD8000668506 /* xgrid.h */,
+				1CC32E6D16DFAD3A00668506 /* simple */,
+				1CC32E6B16DFAD3A00668506 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1CC32E6B16DFAD3A00668506 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1CC32E6A16DFAD3A00668506 /* simple */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1CC32E6D16DFAD3A00668506 /* simple */ = {
+			isa = PBXGroup;
+			children = (
+				1CC32E7016DFAD3A00668506 /* simple.1 */,
+			);
+			path = simple;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1CC32E6916DFAD3A00668506 /* simple */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1CC32E7416DFAD3A00668506 /* Build configuration list for PBXNativeTarget "simple" */;
+			buildPhases = (
+				1CC32E6616DFAD3A00668506 /* Sources */,
+				1CC32E6716DFAD3A00668506 /* Frameworks */,
+				1CC32E6816DFAD3A00668506 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = simple;
+			productName = simple;
+			productReference = 1CC32E6A16DFAD3A00668506 /* simple */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1CC32E6116DFAD3A00668506 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0450;
+				ORGANIZATIONNAME = "Jiffer Harriman";
+			};
+			buildConfigurationList = 1CC32E6416DFAD3A00668506 /* Build configuration list for PBXProject "simple" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 1CC32E5F16DFAD3A00668506;
+			productRefGroup = 1CC32E6B16DFAD3A00668506 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1CC32E6916DFAD3A00668506 /* simple */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1CC32E6616DFAD3A00668506 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1CC32E9616DFAD8000668506 /* board_init.c in Sources */,
+				1CC32E9716DFAD8000668506 /* communication.c in Sources */,
+				1CC32E9816DFAD8000668506 /* eeprom.cpp in Sources */,
+				1CC32E9916DFAD8000668506 /* i2c.cpp in Sources */,
+				1CC32E9A16DFAD8000668506 /* iostream.cpp in Sources */,
+				1CC32E9B16DFAD8000668506 /* istream.cpp in Sources */,
+				1CC32E9C16DFAD8000668506 /* main.cpp in Sources */,
+				1CC32E9D16DFAD8000668506 /* Makefile in Sources */,
+				1CC32E9E16DFAD8000668506 /* ostream.cpp in Sources */,
+				1CC32E9F16DFAD8000668506 /* servo.c in Sources */,
+				1CC32EA016DFAD8000668506 /* sonar.c in Sources */,
+				1CC32EA116DFAD8000668506 /* spi.cpp in Sources */,
+				1CC32EA216DFAD8000668506 /* swarmfunctions.c in Sources */,
+				1CC32EA316DFAD8000668506 /* usart.cpp in Sources */,
+				1CC32EA416DFAD8000668506 /* xgrid.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1CC32E7216DFAD3A00668506 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		1CC32E7316DFAD3A00668506 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		1CC32E7516DFAD3A00668506 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		1CC32E7616DFAD3A00668506 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1CC32E6416DFAD3A00668506 /* Build configuration list for PBXProject "simple" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1CC32E7216DFAD3A00668506 /* Debug */,
+				1CC32E7316DFAD3A00668506 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1CC32E7416DFAD3A00668506 /* Build configuration list for PBXNativeTarget "simple" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1CC32E7516DFAD3A00668506 /* Debug */,
+				1CC32E7616DFAD3A00668506 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1CC32E6116DFAD3A00668506 /* Project object */;
+}
