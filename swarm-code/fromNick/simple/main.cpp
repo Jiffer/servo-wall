@@ -9,6 +9,11 @@ long gHundredth = 0; // increment every 1/100th of a second
 int gAngle = 0; // from -90 to 90
 bool gDirection = 0; // to or fro...
 int gNeighborAngles[6];
+
+#define gBufferSize 3
+int gAngleBuffer[gBufferSize];
+int gPtr = 0;
+
 // \jif's globals //
 
 #include "main.h"
@@ -24,7 +29,7 @@ int ms_sensor_value = 0;
 int periodicMotion(int range, float period){
     int angle;
     gAngle = range * sin(gHundredth * 2.0 * PI /(period * 100)); //
-    //return angle;
+    return angle;
 }
 
 // ============================================================================================
@@ -41,13 +46,16 @@ ISR(TCC0_OVF_vect)
         
         int range = 45;
         int period = 3;
-        gAngle = range * sin(gHundredth * 2.0 * PI /(period * 100)); //
-        fprintf_P(&usart_stream, PSTR("angle: %i \n"), gAngle);
+        
+        // sweep sine wave
+        //gAngle = range * sin(gHundredth * 2.0 * PI /(period * 100)); //
+        
+        //fprintf_P(&usart_stream, PSTR("angle: %i \n"), gAngle);
         //gAngle = periodicMotion(45, 8);
         
         // Linear sweep:
-        /*// sweep between -90 and 90
-        if(gAngle < -90 || gAngle > 90){
+        // sweep between -90 and 90
+       /* if(gAngle < -90 || gAngle > 90){
             gDirection = !gDirection;
         }
         if (gDirection){
@@ -57,44 +65,60 @@ ISR(TCC0_OVF_vect)
             gAngle--;
         */
         
+       
+        
         // update the servo on this cycle
 		servo_motor_on   = true;
 		sendmessage_fast = true;	
 	}
 
+    // 10 Hz
+//    if(jiffies%100 == 0){
+//        if (gAngle < 0)
+//            gAngle = 70;
+//        else
+//            gAngle--;
+//    }
+    
+    // check every 5 seconds if it has recieved messages
+    if(jiffies%5000){
+        if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
+        if(!connected[1] && connected[2]) bottom = true;
+    }
+    
 	if(jiffies%200 == 0)
 	{
+        //////////////////////////
+        // Read analog input
+        //////////////////////////
+        
+        if (ADCB.CH0.INTFLAGS) {
+            //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
+            ADCB.CH0.INTFLAGS = 0x01;
+            ms_sensor_value = ADCB_CH0_RES;
+            // print it to serial port
+            // range of 200 -> 1900
+            
+            // if bottom left set angle based on sensor
+            if(special){
+                // scale sensor value and set angle
+                ms_sensor_value = ms_sensor_value - 200;
+                float scaled_sensor = (float)ms_sensor_value * 0.2 - 90;
+                gAngle = (int)scaled_sensor;
+            }
+            
+            gAngleBuffer[gPtr++] = gAngle;
+            gPtr %= gBufferSize;
+            
+            //fprintf_P(&usart_stream, PSTR("Sensor Value : %i)\r\n"), ms_sensor_value);
+            
+        }
+        //////////////////////////
+        
 		use_sensor_data_on = true;
 		cnt4sensor++;
 		
-		if(sonar_attached)
-		{
-			sensor_value = get_sonar_value();
-			
-			if(sensor_value != 0 && sensor_value < RANGE3)
-			{
-				sensor_value_now = sensor_value;
-				if(dblchk) sum_dbl += sensor_value_now;
-				if(trichk) sum_tri += sensor_value_now;
-			}
-			else {dblchk = false; trichk = false;}
-
-			if(cnt4sensor%2 == 0)
-			{ 
-				if(dblchk) 	sensor_value_dblchk = sum_dbl / 2;
-				else 		sensor_value_dblchk = 0;
-				sum_dbl = 0;
-				dblchk = true;
-			}
-			
-			if(cnt4sensor%3 == 0)
-			{
-				if(trichk) 	sensor_value_trichk = sum_tri / 3;
-				else 		sensor_value_trichk = 0;
-				sum_tri = 0;
-				trichk = true;
-			}
-		}
+		
 			
 		display_on = true;
 
@@ -147,6 +171,8 @@ int main(void)
 	init_sonar();		//for sensor
 
 	fprintf_P(&usart_stream, PSTR("START (build number : %ld)\r\n"), (unsigned long) &__BUILD_NUMBER);
+    fprintf_P(&usart_stream, PSTR("Board ID %i\r\n"), swarm_id);
+    
 
 	// ===== SONAR CHECK & Indicated by LED (attached/not = GREEN/RED) =====
 	sonar_attached = check_sonar_attached();	//1:attached, 0:no
@@ -168,8 +194,9 @@ int main(void)
 			sendmessage_fast = false;
 		}
 	}
-	if(!connected[0] && connected[2] && connected[3] && !connected[4]) special = true;
-	
+	//if(!connected[0] && connected[2] && connected[3] && !connected[4]) special = true;
+	if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
+
 	// #################### MAIN LOOP ####################
 
 	while (1)
@@ -197,25 +224,23 @@ int main(void)
 			}
 		}
         
-        //////////////////////////
-        // Read analog input
-        //////////////////////////
-
-        if (ADCB.CH0.INTFLAGS) {
-            //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
-            ADCB.CH0.INTFLAGS = 0x01;
-            ms_sensor_value = ADCB_CH0_RES;
-            // print it to serial port
-            fprintf_P(&usart_stream, PSTR("Sensor Value : %i)\r\n"), ms_sensor_value);
-            
-        }
-        //////////////////////////
+        
  ////////////////////////////////////////////////////        
         if(servo_motor_on)
         {
-            // set the servo position 
-            set_servo_position(gAngle);
-            send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngle);
+            // set the servo position
+            if (special){
+                set_servo_position(gAngle);
+                send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngle);
+            }
+            else{ // use delayed value
+                set_servo_position(gAngleBuffer[gPtr]);
+                send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngleBuffer[gPtr]);
+            }
+            
+            
+            
+
             LED_PORT.OUTTGL = LED_USR_2_PIN_bm;
 
             servo_motor_on = false;

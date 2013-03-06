@@ -67,12 +67,23 @@ void rx_pkt(Xgrid::Packet *pkt)
         
         if (pkt->type == MOTOR_ANGLE) {
 
-            LED_PORT.OUTTGL = LED_USR_1_PIN_bm;
+            //LED_PORT.OUTTGL = LED_USR_1_PIN_bm;
             InforSent*  lg_ptr = (InforSent*) pkt->data;
             
-            //gNeighborAngles[pkt->rx_node] = i;
-            fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), pkt->rx_node, lg_ptr->angle_value);
-            //fprintf_P(&usart_stream, PSTR("Some different radixes: %d %x %o %#x %#o \n"), 100, 100, 100, 100, 100);
+            int fromNode = pkt->rx_node;
+            
+            fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
+            if (bottom && fromNode == LEFT_BOTTOM){
+                // store angle value into buffer
+                // increment pointer to point at oldest value
+                gAngle = lg_ptr->angle_value;
+                
+            }
+            else if (!bottom && fromNode == BOTTOM_LEFT){
+                // store angle value into buffer
+                // increment pointer to point at oldest value
+                gAngle = lg_ptr->angle_value;
+            }
             
         }
 

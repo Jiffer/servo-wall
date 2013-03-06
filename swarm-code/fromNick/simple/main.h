@@ -94,6 +94,10 @@ uint8_t SP_ReadUserSigRow( uint8_t index );
 #define MESSAGE_NUMDATA 0
 #define MESSAGE_COMMAND 1
 #define ALL_DIRECTION 0x3F
+
+// for sending to specific ports
+#define ABOVE 0b00010000
+
 #define ALL 20
 #define MOTOR_ANGLE 10
 //##########################################################################
@@ -147,6 +151,7 @@ bool speedup_on = false;
 bool use_sensor_data_on = false;
 
 bool special = false;	//marker of "Bottom-Left" module
+bool bottom = false;
 
 //===== for "Ken's model" =====
 bool sync = true;

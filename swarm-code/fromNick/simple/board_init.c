@@ -27,6 +27,9 @@ char usart_n5_txbuf[NODE_TX_BUF_SIZE];
 char usart_n5_rxbuf[NODE_RX_BUF_SIZE];
 CREATE_USART(usart_n5, USART_N5_DEVICE_PORT);
 
+// Board ID
+int swarm_id = 0;
+
 Xgrid xgrid;
 
 // SPI
@@ -167,6 +170,29 @@ void init(void)
         TCC0.INTCTRLB = 0;
         TCC0.CNT = 0;
         TCC0.PER = 125;
+    
+    
+    //// Get board ID
+    
+    uint32_t b = 0;
+    uint32_t crc = 0;
+    
+    NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc;
+	
+    for (uint32_t i = 0x08; i <= 0x15; i++)
+    {
+        b = PGM_READ_BYTE(i);
+        //fprintf_P(&usart_stream, PSTR("%i:%i\r\n"),i,b);
+        crc = _crc16_update(crc, b);
+    }
+	
+    NVM_CMD = NVM_CMD_NO_OPERATION_gc;
+    
+    swarm_id = crc;
+    if(swarm_id < 0)
+        swarm_id*=-1;
+    
+    ///////////  \ board ID
         
         // ADC trigger on TCC0 overflow
         //EVSYS.CH0MUX = EVSYS_CHMUX_TCC0_OVF_gc;
