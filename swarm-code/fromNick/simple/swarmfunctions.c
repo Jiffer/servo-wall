@@ -54,6 +54,38 @@ void init_variables()
 }
 
 // ============================================================================================
+// simple Periodic Motion returns angle based on sinusoidal period (in seconds)
+// and angle range (+/- range in degrees)
+float cycle(float period, float range, float offset){
+    float angle;
+    angle = range * sin(jiffies * 2.0 * PI /(period * 1000.0)) + offset; //
+    return angle;
+}
+
+
+// ============================================================================================
+// average the neighbors
+void mesmer(){
+    float myAngle = cycle((float)randomPeriod, 1.0, 0.0);
+    float weight = 10.0;
+    float average = 0.0;
+    for(int i = 0; i < 6; i++){
+        average += neighborAngles[i];
+    }
+    if (numConnected != 0){
+        average = average / numConnected;
+        //gAngle = 10. * weight * average + (1-weight) * myAngle;
+        float tempAngle = 4.0 * ((myAngle + weight * average) / (weight + 1));
+        
+        gAngle = tempAngle * 80.0;
+    }
+    else
+        gAngle = myAngle * 80.0;
+    
+}
+
+
+// ============================================================================================
 // ============================================================================================
 // SWARM DYNAMICS 5 --- rhythm ---
 // ============================================================================================

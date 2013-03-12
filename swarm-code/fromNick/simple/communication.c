@@ -57,7 +57,8 @@ void send_new_message(uint8_t MessageType, uint8_t direction, int _radius, int a
 // ============================================================================================
 void rx_pkt(Xgrid::Packet *pkt)
 {
-	uint8_t port = pkt->rx_node;	//pkt->rx_node // where did the packet come from
+	// where did the packet come from
+    uint8_t port = pkt->rx_node;
 	char command;
 
 	if(port >= 0 && port < NUM_NEIGHBORS){
@@ -72,17 +73,26 @@ void rx_pkt(Xgrid::Packet *pkt)
             
             int fromNode = pkt->rx_node;
             
+            // store angle in array
+            neighborAngles[fromNode] = lg_ptr->angle_value;
+            
             fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
+            
+            //fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
             if (bottom && fromNode == LEFT_BOTTOM){
                 // store angle value into buffer
                 // increment pointer to point at oldest value
                 gAngle = lg_ptr->angle_value;
+                fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
+
                 
             }
             else if (!bottom && fromNode == BOTTOM_LEFT){
                 // store angle value into buffer
                 // increment pointer to point at oldest value
                 gAngle = lg_ptr->angle_value;
+                fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
+
             }
             
         }
@@ -122,6 +132,10 @@ void rx_pkt(Xgrid::Packet *pkt)
 				case '8':	sec_counter = STGtime8;	init_variables();	break;
 				case '9':	sec_counter = STGtime9;	init_variables();	break;
 				case '0':	sec_counter = LASTtime;	init_variables();	break;
+                    
+                // jif
+                case 's':   updateRate = SMOOTH; break;
+                case 'h':   updateRate = TWO_HUNDRED; break;
 
 			}
 		}
@@ -277,4 +291,10 @@ void key_input()
 		init_variables();
 		sec_counter = LASTtime;
 	}
+    
+    if(input_char == 's')
+        updateRate = SMOOTH;
+    if(input_char == 'h')
+        updateRate = TWO_HUNDRED;
+
 }

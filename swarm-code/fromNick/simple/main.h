@@ -39,6 +39,7 @@
 #include <avr/interrupt.h>
 
 #include <stdio.h>
+//#include <time.h>
 
 #include "board.h"
 #include "usart.h"
@@ -185,3 +186,49 @@ void servo_motor_control(float);
 #define STGtime8 480	//avalanche
 #define STGtime9 570	//break
 #define LASTtime 630
+
+// jif's globals //
+float gAngle = 0.0; // from -90 to 90
+bool gDirection = 0; // to or fro...
+int neighborAngles[6];
+float randomPeriod = 0.0;
+int numConnected = 0;
+
+#define gBufferSize 3
+int gAngleBuffer[gBufferSize];
+int gPtr = 0;
+
+enum updateInterval {
+    SMOOTH,
+    ONE_HUNDRED,
+    TWO_HUNDRED
+    };
+
+int updateRate = TWO_HUNDRED;
+
+enum algorithm {
+    sweep,
+    periodic,
+    average
+    };
+
+int currentMode = average;
+
+// \jif's globals //
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

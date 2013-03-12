@@ -118,7 +118,6 @@ void init(void)
         usart_n5.begin(NODE_BAUD_RATE);
         xgrid.add_node(&usart_n5);
         
-		
         // ADC setup
         ADCA.CTRLA = ADC_DMASEL_OFF_gc | ADC_FLUSH_bm;
         ADCA.CTRLB = ADC_CONMODE_bm | ADC_RESOLUTION_12BIT_gc;
@@ -151,7 +150,6 @@ void init(void)
         //ADCA.CTRLA |= ADC_ENABLE_bm;
         //ADCA.CTRLB |= ADC_FREERUN_bm;
     
-    
     PORTB.DIR &= ~(1 << 4);
     ADCB.CTRLA = ADC_ENABLE_bm;
     ADCB.CTRLB = ADC_RESOLUTION_12BIT_gc | ADC_FREERUN_bm ;
@@ -161,7 +159,7 @@ void init(void)
     ADCB.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
     ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
     
-/*    /// Set up for ADC PA0
+ /*   /// Set up for ADC PA0
     fprintf_P(&usart_stream, PSTR("initializing sensor PA0 \r\n"));
 
     PORTA.DIR &= ~(1 << 0);
@@ -174,7 +172,7 @@ void init(void)
     ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc;
     
     fprintf_P(&usart_stream, PSTR("done initializing sensor PA0 \r\n"));
-  */ 
+*/    
     
         // TCC
         TCC0.CTRLA = TC_CLKSEL_DIV256_gc;

@@ -4,18 +4,6 @@
 #define PGM_READ_BYTE pgm_read_byte_near
 #endif
 
-// jif's globals //
-long gHundredth = 0; // increment every 1/100th of a second
-int gAngle = 0; // from -90 to 90
-bool gDirection = 0; // to or fro...
-int gNeighborAngles[6];
-
-#define gBufferSize 3
-int gAngleBuffer[gBufferSize];
-int gPtr = 0;
-
-// \jif's globals //
-
 #include "main.h"
 #include "board_init.c"
 #include "sonar.c"
@@ -24,13 +12,7 @@ int gPtr = 0;
 
 int ms_sensor_value = 0;
 
-// simple Periodic Motion returns angle based on sinusoidal period (in seconds)
-// and angle range (+/- range in degrees)
-int periodicMotion(int range, float period){
-    int angle;
-    gAngle = range * sin(gHundredth * 2.0 * PI /(period * 100)); //
-    return angle;
-}
+
 
 // ============================================================================================
 // Timer tick ISR (1 kHz)
@@ -41,18 +23,9 @@ ISR(TCC0_OVF_vect)
 
 	if(jiffies%10 == 0) // update every 1/100th of a second
 	{
-        // counter
-        gHundredth++;
-        
-        int range = 45;
-        int period = 3;
-        
+    
         // sweep sine wave
-        //gAngle = range * sin(gHundredth * 2.0 * PI /(period * 100)); //
-        
-        //fprintf_P(&usart_stream, PSTR("angle: %i \n"), gAngle);
-        //gAngle = periodicMotion(45, 8);
-        
+                
         // Linear sweep:
         // sweep between -90 and 90
        /* if(gAngle < -90 || gAngle > 90){
@@ -65,11 +38,12 @@ ISR(TCC0_OVF_vect)
             gAngle--;
         */
         
-       
         
         // update the servo on this cycle
-		servo_motor_on   = true;
-		sendmessage_fast = true;	
+        if (updateRate == SMOOTH){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
 	}
 
     // 10 Hz
@@ -84,49 +58,70 @@ ISR(TCC0_OVF_vect)
     if(jiffies%5000){
         if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
         if(!connected[1] && connected[2]) bottom = true;
+        
+        numConnected = 0;
+        for(int i = 0; i < 6; i++){
+            if (connected[i])
+                numConnected++;
+        }
     }
     
 	if(jiffies%200 == 0)
 	{
-        //////////////////////////
-        // Read analog input
-        //////////////////////////
-        
-        if (ADCB.CH0.INTFLAGS) {
-            //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
-            ADCB.CH0.INTFLAGS = 0x01;
-            ms_sensor_value = ADCB_CH0_RES;
-            // print it to serial port
-            // range of 200 -> 1900
+        fprintf_P(&usart_stream, PSTR("current Angle : %i\r\n"), (int)gAngle);
+
+        ////////////////////////////////////////////////////
+        // Read analog input every 200 ms
+        ////////////////////////////////////////////////////
+        if(1){
+            //bottom || special
+            if (ADCB.CH0.INTFLAGS) {
+                //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
+                ADCB.CH0.INTFLAGS = 0x01;
+                ms_sensor_value = ADCB_CH0_RES;
+                
+                // print it to serial port
+                // range of 200 -> 1900
             
-            // if bottom left set angle based on sensor
-            if(special){
-                // scale sensor value and set angle
-                ms_sensor_value = ms_sensor_value - 200;
-                float scaled_sensor = (float)ms_sensor_value * 0.2 - 90;
-                gAngle = (int)scaled_sensor;
+                // if bottom left set angle based on sensor
+                if(special){
+                    // scale sensor value and set angle
+                    //ms_sensor_value = ms_sensor_value - 200;
+                    //float scaled_sensor = (float)ms_sensor_value * 0.2 - 90;
+                    //gAngle = (int)scaled_sensor;
+                }
+
             }
             
+            if (ADCA.CH0.INTFLAGS){
+                ADCA.CH0.INTFLAGS = 0x01;
+                ms_sensor_value  = ADCA.CH0RESL;
+                fprintf_P(&usart_stream, PSTR("Sensor Value : %i\r\n"), ms_sensor_value);
+            }
+
             gAngleBuffer[gPtr++] = gAngle;
             gPtr %= gBufferSize;
             
-            //fprintf_P(&usart_stream, PSTR("Sensor Value : %i)\r\n"), ms_sensor_value);
+           /*
+            if(ms_sensor_value > 800){
+                updateRate = TWO_HUNDRED;
+            }
+            else
+                updateRate = SMOOTH;*/
             
+            updateRate = SMOOTH;
         }
-        //////////////////////////
-        
+
 		use_sensor_data_on = true;
 		cnt4sensor++;
 		
-		
-			
 		display_on = true;
-
-
-//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR
-//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR
-//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR//INDICATOR
-
+        
+        // update the servo on this cycle
+        if (updateRate == TWO_HUNDRED){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
 //LED_PORT.OUTTGL = LED_USR_1_PIN_bm;	
 //LED_PORT.OUTTGL = LED_USR_2_PIN_bm;	
 	}
@@ -173,6 +168,9 @@ int main(void)
 	fprintf_P(&usart_stream, PSTR("START (build number : %ld)\r\n"), (unsigned long) &__BUILD_NUMBER);
     fprintf_P(&usart_stream, PSTR("Board ID %i\r\n"), swarm_id);
     
+    srand(swarm_id);
+    randomPeriod = (18.0 * rand() / RAND_MAX)+ 2.0;
+    //fprintf_P(&usart_stream, PSTR("random %f\r\n"), randomish);
 
 	// ===== SONAR CHECK & Indicated by LED (attached/not = GREEN/RED) =====
 	sonar_attached = check_sonar_attached();	//1:attached, 0:no
@@ -194,9 +192,16 @@ int main(void)
 			sendmessage_fast = false;
 		}
 	}
-	//if(!connected[0] && connected[2] && connected[3] && !connected[4]) special = true;
+
 	if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
 
+    //
+    for(int i; i < 6; i++){
+        neighborAngles[i] = 0;
+    }
+    // start ADC
+    ADCA.CTRLA |= ADC_CH0START_bm;
+    ADCA.CH0.INTFLAGS = ADC_CH_CHIF_bm;
 	// #################### MAIN LOOP ####################
 
 	while (1)
@@ -225,20 +230,33 @@ int main(void)
 		}
         
         
- ////////////////////////////////////////////////////        
+ ////////////////////////////////////////////////////
+        // if angle is being updated
         if(servo_motor_on)
         {
             // set the servo position
-            if (special){
-                set_servo_position(gAngle);
-                send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngle);
-            }
-            else{ // use delayed value
-                set_servo_position(gAngleBuffer[gPtr]);
-                send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngleBuffer[gPtr]);
-            }
+//            if (special){
+//                set_servo_position(gAngle);
+//                send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngle);
+//                fprintf_P(&usart_stream, PSTR("Current angle:%i \n"), gAngleBuffer[gPtr]);
+//            }
+//            else{ // use delayed value
+//                set_servo_position(gAngleBuffer[gPtr]);
+//                send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngleBuffer[gPtr]);
+//                fprintf_P(&usart_stream, PSTR("current angle:%i \n"), gAngleBuffer[gPtr]);
+//            }
             
             
+            if (currentMode == periodic){
+                //periodicMotion(45, randomPeriod);
+                gAngle = cycle(randomPeriod, 45, 0);
+            }
+            
+            if (currentMode == average){
+                mesmer();
+            }
+            
+            set_servo_position(gAngle);
             
 
             LED_PORT.OUTTGL = LED_USR_2_PIN_bm;
