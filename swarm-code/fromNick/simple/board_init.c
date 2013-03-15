@@ -120,6 +120,7 @@ void init(void)
         
 		
         // ADC setup
+        // TODO: not working...
         ADCA.CTRLA = ADC_DMASEL_OFF_gc | ADC_FLUSH_bm;
         ADCA.CTRLB = ADC_CONMODE_bm | ADC_RESOLUTION_12BIT_gc;
         ADCA.REFCTRL = ADC_REFSEL_INT1V_gc | ADC_BANDGAP_bm;
@@ -147,6 +148,10 @@ void init(void)
         ADCA.CH3.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
         ADCA.CH3.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
         ADCA.CH3.RES = 0;
+    
+    // TODO: start ADC ?? not working
+    ADCA.CTRLA |= ADC_CH0START_bm;
+    ADCA.CH0.INTFLAGS = ADC_CH_CHIF_bm;
         
         //ADCA.CTRLA |= ADC_ENABLE_bm;
         //ADCA.CTRLB |= ADC_FREERUN_bm;

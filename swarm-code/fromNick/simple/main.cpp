@@ -46,14 +46,6 @@ ISR(TCC0_OVF_vect)
         }
 	}
 
-    // 10 Hz
-//    if(jiffies%100 == 0){
-//        if (gAngle < 0)
-//            gAngle = 70;
-//        else
-//            gAngle--;
-//    }
-    
     // check every 5 seconds if it has recieved messages
     if(jiffies%5000){
         if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
@@ -77,11 +69,8 @@ ISR(TCC0_OVF_vect)
                 //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
                 ADCB.CH0.INTFLAGS = 0x01;
                 ms_sensor_value = ADCB_CH0_RES;
-                
-                // print it to serial port
-                // range of 200 -> 1900
             
-                // if bottom left set angle based on sensor
+                // if bottom left set angle based on sensor?
                 if(special){
                     // scale sensor value and set angle
                     //ms_sensor_value = ms_sensor_value - 200;
@@ -91,10 +80,12 @@ ISR(TCC0_OVF_vect)
 
             }
             
+            // TODO: not working...
+            // attempting to read analog port PA0
             if (ADCA.CH0.INTFLAGS){
                 ADCA.CH0.INTFLAGS = 0x01;
                 ms_sensor_value  = ADCA.CH0RESL;
-                fprintf_P(&usart_stream, PSTR("Sensor Value : %i\r\n"), ms_sensor_value);
+                fprintf_P(&usart_stream, PSTR("PA0 Sensor Value : %i\r\n"), ms_sensor_value);
             }
 
             gAngleBuffer[gPtr++] = gAngle;
@@ -190,10 +181,6 @@ int main(void)
 			sendmessage_fast = false;
 		}
 	}
-
-    // start ADC ??
-    ADCA.CTRLA |= ADC_CH0START_bm;
-    ADCA.CH0.INTFLAGS = ADC_CH_CHIF_bm;
     
 	// #################### MAIN LOOP ####################
 
