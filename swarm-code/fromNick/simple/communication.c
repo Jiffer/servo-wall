@@ -35,6 +35,11 @@ struct InforSent {
     int times;
 } inforSent;
 
+struct AngleData {
+    float angleValue;
+    float strength; // TODO: use to impart influence on neighbors
+} angleData;
+
 void send_new_message(uint8_t MessageType, uint8_t direction, int _radius, int angle)
 {
 	Xgrid::Packet pkt;
@@ -51,6 +56,21 @@ void send_new_message(uint8_t MessageType, uint8_t direction, int _radius, int a
 	
 	xgrid.send_packet(&pkt,direction);
 }
+void send_angle(float angle)
+{
+	Xgrid::Packet pkt;
+	pkt.type = MOTOR_ANGLE;
+	pkt.flags = 0;
+	pkt.radius = 1;
+	
+    angleData.angleValue = angle;
+    
+	pkt.data = (uint8_t *)&angleData;
+    
+	pkt.data_len = sizeof(AngleData);
+	
+	xgrid.send_packet(&pkt, ALL_DIRECTION);
+}
 
 // ============================================================================================
 // receive packet
@@ -62,41 +82,24 @@ void rx_pkt(Xgrid::Packet *pkt)
 	char command;
 
 	if(port >= 0 && port < NUM_NEIGHBORS){
-        // keep track of who is sending messages
-        // TODO: maybe only do this if pkt->type is in the list?
+        // keep track of who I have recieved messages from
         connected[port] = true;
         
         if (pkt->type == MOTOR_ANGLE) {
-
-            //LED_PORT.OUTTGL = LED_USR_1_PIN_bm;
-            InforSent*  lg_ptr = (InforSent*) pkt->data;
             
-            int fromNode = pkt->rx_node;
+            AngleData* recvAnglPtr = (AngleData*) pkt->data;
+            float angleIn = recvAnglPtr->angleValue;
+            neighborAngles[port] = angleIn;
             
-            // store angle in array
-            neighborAngles[fromNode] = lg_ptr->angle_value;
-            
-            fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
-            
-            //fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
-            if (bottom && fromNode == LEFT_BOTTOM){
-                // store angle value into buffer
-                // increment pointer to point at oldest value
-                gAngle = lg_ptr->angle_value;
-                fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
-
-                
+            if(debugPrint) {
+                fprintf_P(&usart_stream, PSTR("neighbors: %f, %f, %f, %f, %f, %f\r\n"), neighborAngles[0], neighborAngles[1], neighborAngles[2], neighborAngles[3], neighborAngles[4], neighborAngles[5]);
             }
-            else if (!bottom && fromNode == BOTTOM_LEFT){
-                // store angle value into buffer
-                // increment pointer to point at oldest value
-                gAngle = lg_ptr->angle_value;
-                fprintf_P(&usart_stream, PSTR("node: %d, angle: %i \n"), fromNode, lg_ptr->angle_value);
-
-            }
-            
         }
 
+        
+
+        /// parsing broadcast commands from neighbors
+        // ============================================================================================
 		if(pkt->type == MESSAGE_COMMAND)
 		{
 			char* char_ptr = (char*) pkt->data;
@@ -107,55 +110,23 @@ void rx_pkt(Xgrid::Packet *pkt)
 			switch(command)
 			{
 				case 'Z': reboot_on = true;
-
-				case 'D':	speedup_on = false;	communication_on = false;	
-							disable_servo();	break;
-				case 'R':	speedup_on = true;	communication_on = true;
-							enable_servo();		break;
-
-				case 'i':	init_variables();	break;
-				case 'r':	sec_counter = 0;	break;
-				case 'I':	init_variables();	sec_counter = 0;	break;
-
-				case 'a':	wave_flg = true;	wave_port = port;	break;
-				case 'b':	column_flg = true;	break;
-
-				case 'c':	sync = false;		break;
-
-				case '1':	sec_counter = STGtime1;	init_variables();	break;
-				case '2':	sec_counter = STGtime2;	init_variables();	break;
-				case '3':	sec_counter = STGtime3;	init_variables();	break;
-				case '4':	sec_counter = STGtime4;	init_variables();	break;
-				case '5':	sec_counter = STGtime5;	init_variables();	break;
-				case '6':	sec_counter = STGtime6;	init_variables();	break;
-				case '7':	sec_counter = STGtime7;	init_variables();	break;
-				case '8':	sec_counter = STGtime8;	init_variables();	break;
-				case '9':	sec_counter = STGtime9;	init_variables();	break;
-				case '0':	sec_counter = LASTtime;	init_variables();	break;
+				case 'r':
+                    sec_counter = 0;
+                    jiffies = 0;    break;
                     
                 // jif
+                case 'd':   debugPrint = !debugPrint; break;
+                case 'n':   updateRate = NONE; break;
                 case 's':   updateRate = SMOOTH; break;
                 case 'h':   updateRate = TWO_HUNDRED; break;
+                case 'p':   currentMode = PERIODIC; break;
+                case 'V':   currentMode = AVERAGE; break;
 
+                
 			}
 		}
 		
-		if(pkt->type == MESSAGE_NUMDATA)
-		{
-			connected[port] = true;
-
-			point* pt_ptr = (point*) pkt->data;
-
-			agent0.neix[port] = pt_ptr->x0;
-			agent0.neiy[port] = pt_ptr->y0;
-			
-			agent1.neix[port] = pt_ptr->x1;
-			agent1.neiy[port] = pt_ptr->y1;
-		}
-        
-		
-		//LED_PORT.OUTTGL = LED_USR_2_PIN_bm;	//green LED
-	}
+    }
 }
 
 // ============================================================================================
@@ -180,20 +151,8 @@ void key_input()
 		xboot_reset();
 	}
 
-	if(input_char == 'D')	//Debug Mode
-	{
-		speedup_on = false;
-		communication_on = false;
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "D");
-	}
 
-	if(input_char == 'R')	//Run Mode
-	{
-		speedup_on = true;
-		communication_on = true;
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "R");
-	}
-
+    // print version number
 	if(input_char == 'v')
 		fprintf_P(&usart_stream, PSTR("build number = %ld\r\n"), (unsigned long) &__BUILD_NUMBER);
 
@@ -203,98 +162,54 @@ void key_input()
 		else		display = true;
 	}
 
-	if(input_char == 'I')	//initialization
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "I");	
-		init_variables();
-		sec_counter = 0;
-	}
-
-	if(input_char == 'i')	//reset variables
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "i");	
-		init_variables();
-	}
-
 	if(input_char == 'r')	//set sec_counter as 0
 	{
 		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "r");	
 		sec_counter = 0;
 	}
 
-	if(input_char == '1')
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "1");	
-		init_variables();
-		sec_counter = STGtime1;
-	}
-
-	if(input_char == '2')
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "2");	
-		init_variables();
-		sec_counter = STGtime2;
-	}
-
-	if(input_char == '3')
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "3");	
-		init_variables();
-		sec_counter = STGtime3;
-	}
-
-	if(input_char == '4')	//initialization
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "4");	
-		init_variables();
-		sec_counter = STGtime4;
-	}
-
-	if(input_char == '5')	//initialization
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "5");	
-		init_variables();
-		sec_counter = STGtime5;
-	}
-
-	if(input_char == '6')	//initialization
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "6");	
-		init_variables();
-		sec_counter = STGtime6;
-	}
-
-	if(input_char == '7')	//initialization
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "7");	
-		init_variables();
-		sec_counter = STGtime7;
-	}
-
-	if(input_char == '8')	//initialization
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "8");	
-		init_variables();
-		sec_counter = STGtime8;
-	}
-
-	if(input_char == '9')	//initialization
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "9");	
-		init_variables();
-		sec_counter = STGtime9;
-	}
-
-	if(input_char == '0')	//initialization
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "0");	
-		init_variables();
-		sec_counter = LASTtime;
-	}
     
-    if(input_char == 's')
+    // ============================================================================================
+    /// updateRate commands 
+    // ============================================================================================
+
+	// Hold Current Servo Position
+    if(input_char == 'n'){
+        fprintf_P(&usart_stream, PSTR("setting updateRate to NONE\n"));
+        updateRate = NONE;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "n");
+    }
+    if(input_char == 's'){
+        fprintf_P(&usart_stream, PSTR("setting updateRate to 10ms\n"));
         updateRate = SMOOTH;
-    if(input_char == 'h')
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "s");	
+    }
+    if(input_char == 'h'){
+        fprintf_P(&usart_stream, PSTR("setting updateRate to 200ms\n"));
         updateRate = TWO_HUNDRED;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "h");	
+    }
+    
+    // ============================================================================================
+    /// currentMode commands
+    // ============================================================================================
+    if(input_char == 'p'){
+        fprintf_P(&usart_stream, PSTR("setting currentMode to PERIODIC\n"));
+        currentMode = PERIODIC;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "p");
+    }
+    if(input_char == 'V'){
+        fprintf_P(&usart_stream, PSTR("setting currentMode to AVERAGE\n"));
+        currentMode = AVERAGE;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "V");
+    }
+    
+    // ============================================================================================
+    /// toggle debug print
+    // ============================================================================================
+    if(input_char == 'P'){
+        fprintf_P(&usart_stream, PSTR("'P' - toggling debug printf on/off \n"));
+        debugPrint = !debugPrint;
+    }
 
 }

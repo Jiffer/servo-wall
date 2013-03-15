@@ -188,31 +188,34 @@ void servo_motor_control(float);
 #define LASTtime 630
 
 // jif's globals //
-float gAngle = 0.0; // from -90 to 90
+#define MAX_ANGLE 50.0
+float gAngle = 0; // from -90 to 90
 bool gDirection = 0; // to or fro...
-int neighborAngles[6];
+float neighborAngles[6];
 float randomPeriod = 0.0;
 int numConnected = 0;
+bool debugPrint = false;
 
 #define gBufferSize 3
 int gAngleBuffer[gBufferSize];
 int gPtr = 0;
 
 enum updateInterval {
-    SMOOTH,
-    ONE_HUNDRED,
-    TWO_HUNDRED
+    NONE = 0,
+    SMOOTH = 10,
+    ONE_HUNDRED = 100,
+    TWO_HUNDRED = 200
     };
 
-int updateRate = TWO_HUNDRED;
+int updateRate = SMOOTH; // send 's' for SMOOTH, 'h' for TWO_HUNNDRED
 
 enum algorithm {
-    sweep,
-    periodic,
-    average
+    SWEEP,
+    PERIODIC,
+    AVERAGE
     };
 
-int currentMode = average;
+int currentMode = SWEEP;
 
 // \jif's globals //
 

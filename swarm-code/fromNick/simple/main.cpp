@@ -67,14 +67,12 @@ ISR(TCC0_OVF_vect)
     }
     
 	if(jiffies%200 == 0)
-	{
-        fprintf_P(&usart_stream, PSTR("current Angle : %i\r\n"), (int)gAngle);
-
+	{   
         ////////////////////////////////////////////////////
         // Read analog input every 200 ms
         ////////////////////////////////////////////////////
         if(1){
-            //bottom || special
+            // photoresistor sensor
             if (ADCB.CH0.INTFLAGS) {
                 //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
                 ADCB.CH0.INTFLAGS = 0x01;
@@ -102,14 +100,6 @@ ISR(TCC0_OVF_vect)
             gAngleBuffer[gPtr++] = gAngle;
             gPtr %= gBufferSize;
             
-           /*
-            if(ms_sensor_value > 800){
-                updateRate = TWO_HUNDRED;
-            }
-            else
-                updateRate = SMOOTH;*/
-            
-            updateRate = SMOOTH;
         }
 
 		use_sensor_data_on = true;
@@ -134,7 +124,16 @@ ISR(TCC0_OVF_vect)
 		sensor_value_now = 0;
 
 		if(!communication_on) LED_PORT.OUT =  LED_USR_0_PIN_bm;
-		if(communication_on)  LED_PORT.OUT = !LED_USR_0_PIN_bm;		
+		if(communication_on)  LED_PORT.OUT = !LED_USR_0_PIN_bm;
+        
+        if(debugPrint){
+            fprintf_P(&usart_stream, PSTR("cur angle: %f\r\n"), gAngle);
+            for(int i =0; i < 6; i++){
+                if (connected[i]){
+                    fprintf_P(&usart_stream, PSTR("n#: %i, ang: %f\r\n"), i, neighborAngles[i]);
+                }
+            }
+        }
 	}
 	xgrid.process();
 }
@@ -152,9 +151,7 @@ void StageInit(int StageTime, const char str[])
 // MAIN FUNCTION
 // ============================================================================================
 int main(void)
-{
-	float angle = 0;
-	
+{	
 	xgrid.rx_pkt = &rx_pkt;
 
 	_delay_ms(50);
@@ -230,38 +227,32 @@ int main(void)
 		}
         
         
- ////////////////////////////////////////////////////
-        // if angle is being updated
+        ////////////////////////////////////////////////
+        // if angle is being updated this cycle
         if(servo_motor_on)
         {
-            // set the servo position
-//            if (special){
-//                set_servo_position(gAngle);
-//                send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngle);
-//                fprintf_P(&usart_stream, PSTR("Current angle:%i \n"), gAngleBuffer[gPtr]);
-//            }
-//            else{ // use delayed value
-//                set_servo_position(gAngleBuffer[gPtr]);
-//                send_new_message(MOTOR_ANGLE, ALL_DIRECTION, 1, gAngleBuffer[gPtr]);
-//                fprintf_P(&usart_stream, PSTR("current angle:%i \n"), gAngleBuffer[gPtr]);
-//            }
             
-            
-            if (currentMode == periodic){
-                //periodicMotion(45, randomPeriod);
-                gAngle = cycle(randomPeriod, 45, 0);
+            if (currentMode == PERIODIC){
+                gAngle = cycle(randomPeriod, 45.0, 0.0);
             }
             
-            if (currentMode == average){
+            if (currentMode == AVERAGE){
                 mesmer();
             }
             
-            set_servo_position(gAngle);
+            if (currentMode == SWEEP){
+                quickSweep();
+            }
             
+            // set servo angle
+            set_servo_position(gAngle);
+            send_angle(gAngle);
 
-            LED_PORT.OUTTGL = LED_USR_2_PIN_bm;
 
+            // wait until updateRate has come back around
             servo_motor_on = false;
+            
+            
         }
 /////////////////////////////////////////////////////
         
