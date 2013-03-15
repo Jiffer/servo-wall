@@ -121,65 +121,64 @@ void init(void)
 		
         // ADC setup
         // TODO: not working...
-        ADCA.CTRLA = ADC_DMASEL_OFF_gc | ADC_FLUSH_bm;
-        ADCA.CTRLB = ADC_CONMODE_bm | ADC_RESOLUTION_12BIT_gc;
-        ADCA.REFCTRL = ADC_REFSEL_INT1V_gc | ADC_BANDGAP_bm;
-        ADCA.EVCTRL = ADC_SWEEP_0123_gc | ADC_EVSEL_0123_gc | ADC_EVACT_SWEEP_gc;
-        ADCA.PRESCALER = ADC_PRESCALER_DIV64_gc;
-        ADCA.CALL = SP_ReadCalibrationByte(PROD_SIGNATURES_START + ADCACAL0_offset);
-        ADCA.CALH = SP_ReadCalibrationByte(PROD_SIGNATURES_START + ADCACAL1_offset);
-        
-        ADCA.CH0.CTRL = ADC_CH_GAIN_1X_gc | ADC_CH_INPUTMODE_SINGLEENDED_gc;
-        ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc;
-        ADCA.CH0.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
-        ADCA.CH0.RES = 0;
-        
-        ADCA.CH1.CTRL = ADC_CH_GAIN_1X_gc | ADC_CH_INPUTMODE_SINGLEENDED_gc;
-        ADCA.CH1.MUXCTRL = ADC_CH_MUXPOS_PIN2_gc;
-        ADCA.CH1.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
-        ADCA.CH1.RES = 0;
-        
-        ADCA.CH2.CTRL = ADC_CH_GAIN_1X_gc | ADC_CH_INPUTMODE_SINGLEENDED_gc;
-        ADCA.CH2.MUXCTRL = ADC_CH_MUXPOS_PIN3_gc;
-        ADCA.CH2.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
-        ADCA.CH2.RES = 0;
-        
-        ADCA.CH3.CTRL = ADC_CH_GAIN_1X_gc | ADC_CH_INPUTMODE_SINGLEENDED_gc;
-        ADCA.CH3.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
-        ADCA.CH3.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
-        ADCA.CH3.RES = 0;
+//        ADCA.CTRLA = ADC_DMASEL_OFF_gc | ADC_FLUSH_bm;
+//        ADCA.CTRLB = ADC_CONMODE_bm | ADC_RESOLUTION_12BIT_gc;
+//        ADCA.REFCTRL = ADC_REFSEL_INT1V_gc | ADC_BANDGAP_bm;
+//        ADCA.EVCTRL = ADC_SWEEP_0123_gc | ADC_EVSEL_0123_gc | ADC_EVACT_SWEEP_gc;
+//        ADCA.PRESCALER = ADC_PRESCALER_DIV64_gc;
+//        ADCA.CALL = SP_ReadCalibrationByte(PROD_SIGNATURES_START + ADCACAL0_offset);
+//        ADCA.CALH = SP_ReadCalibrationByte(PROD_SIGNATURES_START + ADCACAL1_offset);
+//        
+//        ADCA.CH0.CTRL = ADC_CH_GAIN_1X_gc | ADC_CH_INPUTMODE_SINGLEENDED_gc;
+//        ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN1_gc;
+//        ADCA.CH0.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
+//        ADCA.CH0.RES = 0;
+//        
+//        ADCA.CH1.CTRL = ADC_CH_GAIN_1X_gc | ADC_CH_INPUTMODE_SINGLEENDED_gc;
+//        ADCA.CH1.MUXCTRL = ADC_CH_MUXPOS_PIN2_gc;
+//        ADCA.CH1.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
+//        ADCA.CH1.RES = 0;
+//        
+//        ADCA.CH2.CTRL = ADC_CH_GAIN_1X_gc | ADC_CH_INPUTMODE_SINGLEENDED_gc;
+//        ADCA.CH2.MUXCTRL = ADC_CH_MUXPOS_PIN3_gc;
+//        ADCA.CH2.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
+//        ADCA.CH2.RES = 0;
+//        
+//        ADCA.CH3.CTRL = ADC_CH_GAIN_1X_gc | ADC_CH_INPUTMODE_SINGLEENDED_gc;
+//        ADCA.CH3.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
+//        ADCA.CH3.INTCTRL = ADC_CH_INTMODE_COMPLETE_gc | ADC_CH_INTLVL_LO_gc;
+//        ADCA.CH3.RES = 0;
+//        
+//        // TODO: start ADC ?? not working
+//        ADCA.CTRLA |= ADC_CH0START_bm;
+//        ADCA.CH0.INTFLAGS = ADC_CH_CHIF_bm;
+//        
+//        //ADCA.CTRLA |= ADC_ENABLE_bm;
+//        //ADCA.CTRLB |= ADC_FREERUN_bm;
     
-    // TODO: start ADC ?? not working
-    ADCA.CTRLA |= ADC_CH0START_bm;
-    ADCA.CH0.INTFLAGS = ADC_CH_CHIF_bm;
         
-        //ADCA.CTRLA |= ADC_ENABLE_bm;
-        //ADCA.CTRLB |= ADC_FREERUN_bm;
+        PORTB.DIR &= ~(1 << 4);
+        ADCB.CTRLA = ADC_ENABLE_bm;
+        ADCB.CTRLB = ADC_RESOLUTION_12BIT_gc | ADC_FREERUN_bm ;
+        ADCB.REFCTRL = ADC_REFSEL_VCC_gc | ADC_BANDGAP_bm;
+        ADCB.PRESCALER = ADC_PRESCALER_DIV8_gc;
+        //ADCB.EVCTRL =
+        ADCB.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
+        ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
     
-    
-    PORTB.DIR &= ~(1 << 4);
-    ADCB.CTRLA = ADC_ENABLE_bm;
-    ADCB.CTRLB = ADC_RESOLUTION_12BIT_gc | ADC_FREERUN_bm ;
-    ADCB.REFCTRL = ADC_REFSEL_VCC_gc | ADC_BANDGAP_bm;
-    ADCB.PRESCALER = ADC_PRESCALER_DIV8_gc;
-    //ADCB.EVCTRL =
-    ADCB.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
-    ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
-    
-/*    /// Set up for ADC PA0
-    fprintf_P(&usart_stream, PSTR("initializing sensor PA0 \r\n"));
-
-    PORTA.DIR &= ~(1 << 0);
-    ADCA.CTRLA = ADC_ENABLE_bm;
-    ADCA.CTRLB = ADC_RESOLUTION_12BIT_gc | ADC_FREERUN_bm ;
-    ADCA.REFCTRL = ADC_REFSEL_VCC_gc | ADC_BANDGAP_bm;
-    ADCA.PRESCALER = ADC_PRESCALER_DIV8_gc;
-    //ADCB.EVCTRL =
-    ADCA.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
-    ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc;
-    
-    fprintf_P(&usart_stream, PSTR("done initializing sensor PA0 \r\n"));
-  */ 
+        /// Set up for ADC PA0
+         fprintf_P(&usart_stream, PSTR("initializing sensor PA0 \r\n"));
+         
+         PORTA.DIR &= ~(1 << 0);
+         ADCA.CTRLA = ADC_ENABLE_bm;
+         ADCA.CTRLB = ADC_RESOLUTION_12BIT_gc | ADC_FREERUN_bm ;
+         ADCA.REFCTRL = ADC_REFSEL_VCC_gc | ADC_BANDGAP_bm;
+         ADCA.PRESCALER = ADC_PRESCALER_DIV8_gc;
+         //ADCB.EVCTRL =
+         ADCA.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
+         ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc;
+         
+         fprintf_P(&usart_stream, PSTR("done initializing sensor PA0 \r\n"));
     
         // TCC
         TCC0.CTRLA = TC_CLKSEL_DIV256_gc;
@@ -192,29 +191,29 @@ void init(void)
         TCC0.CNT = 0;
         TCC0.PER = 125;
     
-    
-    //// Get board ID
-    
-    uint32_t b = 0;
-    uint32_t crc = 0;
-    
-    NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc;
-	
-    for (uint32_t i = 0x08; i <= 0x15; i++)
-    {
-        b = PGM_READ_BYTE(i);
-        //fprintf_P(&usart_stream, PSTR("%i:%i\r\n"),i,b);
-        crc = _crc16_update(crc, b);
-    }
-	
-    NVM_CMD = NVM_CMD_NO_OPERATION_gc;
-    
-    swarm_id = crc;
-    if(swarm_id < 0)
-        swarm_id*=-1;
-    
-    ///////////  \ board ID
         
+        //// Get board ID
+        
+        uint32_t b = 0;
+        uint32_t crc = 0;
+        
+        NVM_CMD = NVM_CMD_READ_CALIB_ROW_gc;
+        
+        for (uint32_t i = 0x08; i <= 0x15; i++)
+        {
+            b = PGM_READ_BYTE(i);
+            //fprintf_P(&usart_stream, PSTR("%i:%i\r\n"),i,b);
+            crc = _crc16_update(crc, b);
+        }
+        
+        NVM_CMD = NVM_CMD_NO_OPERATION_gc;
+        
+        swarm_id = crc;
+        if(swarm_id < 0)
+            swarm_id*=-1;
+        
+        ///////////  \ board ID
+    
         // ADC trigger on TCC0 overflow
         //EVSYS.CH0MUX = EVSYS_CHMUX_TCC0_OVF_gc;
         //EVSYS.CH0CTRL = 0;
