@@ -164,6 +164,7 @@ int main(void)
 
 	fprintf_P(&usart_stream, PSTR("START (build number : %ld)\r\n"), (unsigned long) &__BUILD_NUMBER);
     fprintf_P(&usart_stream, PSTR("Board ID %i\r\n"), swarm_id);
+    printKeyCommands();
     
     srand(swarm_id);
     randomPeriod = (18.0 * rand() / RAND_MAX)+ 2.0;
@@ -190,15 +191,10 @@ int main(void)
 		}
 	}
 
-	if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
-
-    //
-    for(int i; i < 6; i++){
-        neighborAngles[i] = 0;
-    }
-    // start ADC
+    // start ADC ??
     ADCA.CTRLA |= ADC_CH0START_bm;
     ADCA.CH0.INTFLAGS = ADC_CH_CHIF_bm;
+    
 	// #################### MAIN LOOP ####################
 
 	while (1)
@@ -231,33 +227,29 @@ int main(void)
         // if angle is being updated this cycle
         if(servo_motor_on)
         {
-            
-            if (currentMode == PERIODIC){
-                gAngle = cycle(randomPeriod, 45.0, 0.0);
+            switch(currentMode)
+			{
+				case PERIODIC:
+                    gAngle = cycle(randomPeriod, 45.0, 0.0);
+                    break;
+                case AVERAGE:
+                    mesmer();
+                    break;
+                case SWEEP:
+                    quickSweep();
+                    break;
             }
-            
-            if (currentMode == AVERAGE){
-                mesmer();
-            }
-            
-            if (currentMode == SWEEP){
-                quickSweep();
-            }
-            
+          
             // set servo angle
             set_servo_position(gAngle);
             send_angle(gAngle);
 
-
             // wait until updateRate has come back around
             servo_motor_on = false;
-            
-            
+
         }
-/////////////////////////////////////////////////////
-        
-	}
-	
+        /////////////////////////////////////////////////////
+	}	
 	return 0;
 }
 
