@@ -95,9 +95,14 @@ ISR(TCC0_OVF_vect)
             
             ///////////////
             if (ADCA.CH0.INTFLAGS){
-                fprintf_P(&usart_stream, PSTR("Succeed: %i\r\n"), ADCA.CH0RESL);
+                ms_sensor_value = ADCA.CH0RESL;
+                fprintf_P(&usart_stream, PSTR("A0: %i\r\n"), ms_sensor_value);
                 ADCA.CH0.INTFLAGS = 0x01;
             }
+//            if (ADCB.CH0.INTFLAGS){
+//                fprintf_P(&usart_stream, PSTR("B0: %i\r\n"), ADCB.CH0RESL);
+//                ADCB.CH0.INTFLAGS = 0x01;
+//            }
             ///////////////
             
             use_sensor_data_on = true;

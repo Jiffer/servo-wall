@@ -167,18 +167,18 @@ void init(void)
         ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
     
         /// Set up for ADC PA0
-         fprintf_P(&usart_stream, PSTR("initializing sensor PA0 \r\n"));
+        fprintf_P(&usart_stream, PSTR("initializing sensor PA0 \r\n"));
          
-         PORTA.DIR &= ~(1 << 0);
-         ADCA.CTRLA = ADC_ENABLE_bm;
-         ADCA.CTRLB = ADC_RESOLUTION_12BIT_gc | ADC_FREERUN_bm ;
-         ADCA.REFCTRL = ADC_REFSEL_VCC_gc | ADC_BANDGAP_bm;
-         ADCA.PRESCALER = ADC_PRESCALER_DIV8_gc;
-         //ADCB.EVCTRL =
-         ADCA.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
-         ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc;
+        PORTA.DIR &= ~(1 << 0);
+        ADCA.CTRLA = ADC_ENABLE_bm;
+        ADCA.CTRLB = ADC_RESOLUTION_12BIT_gc | ADC_FREERUN_bm ;
+        ADCA.REFCTRL = ADC_REFSEL_VCC_gc | ADC_BANDGAP_bm;
+        ADCA.PRESCALER = ADC_PRESCALER_DIV8_gc;
+        //ADCB.EVCTRL =
+        ADCA.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
+        ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc;
          
-         fprintf_P(&usart_stream, PSTR("done initializing sensor PA0 \r\n"));
+        fprintf_P(&usart_stream, PSTR("done initializing sensor PA0 \r\n"));
     
         // TCC
         TCC0.CTRLA = TC_CLKSEL_DIV256_gc;
