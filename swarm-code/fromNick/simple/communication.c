@@ -108,6 +108,7 @@ void rx_pkt(Xgrid::Packet *pkt)
                     jiffies = 0;    break;
                     
                 // jif
+                case 'c': cycleOn = !cycleOn; break;
                 case 'd':   debugPrint = !debugPrint; break;
                 case 'n':   updateRate = NONE; break;
                 case 's':   updateRate = SMOOTH; break;
@@ -188,19 +189,26 @@ void key_input()
     /// currentMode commands
     // ============================================================================================
     if(input_char == 'p'){
-        fprintf_P(&usart_stream, PSTR("setting currentMode to PERIODIC\n"));
+        fprintf_P(&usart_stream, PSTR("'p' - etting currentMode to PERIODIC\n"));
         currentMode = PERIODIC;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "p");
     }
     if(input_char == 'V'){
-        fprintf_P(&usart_stream, PSTR("setting currentMode to AVERAGE\n"));
+        fprintf_P(&usart_stream, PSTR("'V' - setting currentMode to AVERAGE\n"));
         currentMode = AVERAGE;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "V");
     }
     if(input_char == 'w'){
-        fprintf_P(&usart_stream, PSTR("setting currentMode to SWEEP\n"));
+        fprintf_P(&usart_stream, PSTR("'w' - setting currentMode to SWEEP\n"));
         currentMode = SWEEP;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "w");
+    }
+    
+    if(input_char == 'c'){
+        cycleOn = !cycleOn;
+        fprintf_P(&usart_stream, PSTR("'c' - cycle all modes\n"));
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "c");
+
     }
     
     // ============================================================================================

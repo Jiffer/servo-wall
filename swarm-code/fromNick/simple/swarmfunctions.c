@@ -78,7 +78,7 @@ void mesmer(){
     }
     else{
         gAngle = (int)(myAngle);
-        fprintf_P(&usart_stream, PSTR("no neighbors, myAngle: %f\r\n"), myAngle);
+        //fprintf_P(&usart_stream, PSTR("no neighbors, myAngle: %f\r\n"), myAngle);
     }
     
 }

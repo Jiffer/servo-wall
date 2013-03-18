@@ -195,6 +195,7 @@ float neighborAngles[6];
 float randomPeriod = 0.0;
 int numConnected = 0;
 bool debugPrint = false;
+bool cycleOn = false;
 
 #define gBufferSize 3
 int gAngleBuffer[gBufferSize];
@@ -210,6 +211,7 @@ enum updateInterval {
 int updateRate = SMOOTH; // send 's' for SMOOTH, 'h' for TWO_HUNNDRED
 
 enum algorithm {
+    BREAK,
     PERIODIC,
     AVERAGE,
     SWEEP
