@@ -56,12 +56,12 @@ float linearSweep(float howFast, float startAngle, float targetAngle){
 // average the neighbors
 // ============================================================================================
 void mesmer(){
-    float myAngle = cycle((float)randomPeriod, MAX_ANGLE/2, 0.0);
+    float myAngle = cycle((float)randomPeriod, 45.0, 0.0);
     float weight = 20.0;
     float average = 0.0;
     
     for(int i = 0; i < 6; i++){
-        if (abs(neighborAngles[i]) < MAX_ANGLE){
+        if (abs(neighborAngles[i]) < MAX_ANGLE && connected[i]){
             average += neighborAngles[i];
             
         }
@@ -77,7 +77,7 @@ void mesmer(){
         gAngle = (tempAngle);
     }
     else{
-        gAngle = (int)(myAngle);
+        gAngle = (myAngle);
         //fprintf_P(&usart_stream, PSTR("no neighbors, myAngle: %f\r\n"), myAngle);
     }
     

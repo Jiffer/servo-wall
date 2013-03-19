@@ -69,40 +69,16 @@ ISR(TCC0_OVF_vect)
         //                    //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
         //                    ADCB.CH0.INTFLAGS = 0x01;
         //                    ms_sensor_value = ADCB_CH0_RES;
-        //
-        //                    // if bottom left set angle based on sensor?
-        //                    if(special){
-        //                        // scale sensor value and set angle
-        //                        //ms_sensor_value = ms_sensor_value - 200;
-        //                        //float scaled_sensor = (float)ms_sensor_value * 0.2 - 90;
-        //                        //gAngle = (int)scaled_sensor;
-        //                    }
-        //
         //                }
-        //
-        //                // TODO: not working...
-        //                // attempting to read analog port PA0
-        //                if (ADCA.CH0.INTFLAGS){
-        //                    ADCA.CH0.INTFLAGS = 0x01;
-        //                    ms_sensor_value  = ADCA.CH0RESL;
-        //                    fprintf_P(&usart_stream, PSTR("PA0 Sensor Value : %i\r\n"), ms_sensor_value);
-        //                }
-        //
-        //                gAngleBuffer[gPtr++] = gAngle;
-        //                gPtr %= gBufferSize;
-        //
-        //            }
+
         
         ///////////////
         if (ADCA.CH0.INTFLAGS){
-            ms_sensor_value = ADCA.CH0RESL;
-            fprintf_P(&usart_stream, PSTR("A0: %i\r\n"), ms_sensor_value);
+            ms_sensor_value = ADCA_CH0_RES;
+            fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), ms_sensor_value);
             ADCA.CH0.INTFLAGS = 0x01;
         }
-        //            if (ADCB.CH0.INTFLAGS){
-        //                fprintf_P(&usart_stream, PSTR("B0: %i\r\n"), ADCB.CH0RESL);
-        //                ADCB.CH0.INTFLAGS = 0x01;
-        //            }
+
         ///////////////
         
         use_sensor_data_on = true;
@@ -121,7 +97,8 @@ ISR(TCC0_OVF_vect)
     
     if(jiffies%1000 == 0)
     {
-        if(communication_on) sec_counter++;
+        //if(communication_on) sec_counter++;
+        sec_counter++;
         sync = true;		//synchro bit should be set every 1 sec
         rhythm_on = true;
         sensor_value_now = 0;
@@ -139,6 +116,15 @@ ISR(TCC0_OVF_vect)
         }
     }
 	xgrid.process();
+    
+    if(cycleOn){
+        if (sec_counter >= 10){
+            currentMode++;
+            if(currentMode > SWEEP)
+                currentMode = 0;
+            sec_counter = 0;
+        }
+    }
 }
 
 void StageInit(int StageTime, const char str[])
@@ -149,6 +135,8 @@ void StageInit(int StageTime, const char str[])
 		init_variables();
 	}
 }
+
+
 
 // ============================================================================================
 // MAIN FUNCTION
@@ -173,6 +161,11 @@ int main(void)
     randomPeriod = (18.0 * rand() / RAND_MAX)+ 2.0;
     //fprintf_P(&usart_stream, PSTR("random %f\r\n"), randomish);
     
+    
+    // START ADC
+    //
+    ADCA.CTRLA |= ADC_CH0START_bm;
+    ADCA.CH0.INTFLAGS = ADC_CH_CHIF_bm;
 	// ===== SONAR CHECK & Indicated by LED (attached/not = GREEN/RED) =====
 	sonar_attached = check_sonar_attached();	//1:attached, 0:no
     
@@ -228,6 +221,8 @@ int main(void)
         {
             switch(currentMode)
 			{
+                case BREAK: // do nothing
+                    break;
 				case PERIODIC:
                     gAngle = cycle(randomPeriod, 45.0, 0.0);
                     break;
