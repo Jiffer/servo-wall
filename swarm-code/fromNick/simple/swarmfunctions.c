@@ -38,7 +38,7 @@ float linearSweep(float howFast, float startAngle, float targetAngle){
     lastTime = jiffies;
     
     // current angle +
-    angle = gAngle + timeStep * step;
+    angle = curAngle + timeStep * step;
     
     if (angle < MAX_ANGLE && angle > -MAX_ANGLE)
         return angle;
@@ -74,10 +74,10 @@ void mesmer(){
         float tempAngle = 1.3 * ((myAngle + weight * average) / (weight + 1));
    
         //fprintf_P(&usart_stream, PSTR("avg: %f\r\n"), average);
-        gAngle = (tempAngle);
+        curAngle = (tempAngle);
     }
     else{
-        gAngle = (myAngle);
+        curAngle = (myAngle);
         //fprintf_P(&usart_stream, PSTR("no neighbors, myAngle: %f\r\n"), myAngle);
     }
     
@@ -88,11 +88,23 @@ void quickSweep(){
     if ( newAngle > MAX_ANGLE - 1)
         newAngle = 0;
     
-    gAngle = newAngle;
+    curAngle = newAngle;
 
 }
 
 
+// ============================================================================================
+// listener
+// ============================================================================================
+void listen(){
+    if (presenceDetected){
+        curAngle = 0.0;
+    }
+    else if(neighborStrength[LEFT] > 0.3 || neighborStrength[RIGHT] > 0.3)
+        curAngle = 30.0;
+    else
+        curAngle = cycle(8, 60, 0);
+}
 
 // ============================================================================================
 // delayed reaction
@@ -107,7 +119,7 @@ void delayedReaction(){
     
                 }
                 else if (bottom){ // use delayed value
-                    gAngle = neighborAngles[2]; // enum LEFT, RIGHT, ABOVE, BELOW
+                    curAngle = neighborAngles[LEFT]; // enum LEFT, RIGHT, ABOVE, BELOW
     
                 }
     

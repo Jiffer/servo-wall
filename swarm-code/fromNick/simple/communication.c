@@ -9,6 +9,7 @@ void printKeyCommands(){
     fprintf_P(&usart_stream, PSTR("'p' - set currentMode to PERIODIC\n"));
     fprintf_P(&usart_stream, PSTR("'V' - set currentMode to AVERAGE\n"));
     fprintf_P(&usart_stream, PSTR("'w' - set currentMode to SWEEP\n"));
+    fprintf_P(&usart_stream, PSTR("'t' - set currentMode to TOGETHER\n"));
     fprintf_P(&usart_stream, PSTR("'P' - toggling debug printf on/off \n"));
 }
 
@@ -34,15 +35,12 @@ void send_message(uint8_t MessageType, uint8_t direction, int dist, const char s
 	xgrid.send_packet(&pkt, direction);	// send to all neighbors
 }
 
-struct InforSent {
-    int angle_value;
-    int times;
-} inforSent;
 
-struct AngleData {
+struct NeighborData {
     float angleValue;
+    int sensorValue;
     float strength; // TODO: use to impart influence on neighbors
-} angleData;
+} neighborData;
 
 
 // ============================================================================================
@@ -50,18 +48,20 @@ struct AngleData {
 // Send Angle data and strength of message to neighbors
 // Sends to all ports
 // ============================================================================================
-void send_angle(float angle)
+void send_neighbor_data(float angle, float strength)
 {
 	Xgrid::Packet pkt;
-	pkt.type = MOTOR_ANGLE;
+	pkt.type = NEIGHBOR_DATA;
 	pkt.flags = 0;
 	pkt.radius = 1;
 	
-    angleData.angleValue = angle;
+    neighborData.angleValue = angle;
+    neighborData.sensorValue = sensor_value;
+    neighborData.strength = strength; //(float)sensor_value / 4096.0;
     
-	pkt.data = (uint8_t *)&angleData;
+	pkt.data = (uint8_t *)&neighborData;
     
-	pkt.data_len = sizeof(AngleData);
+	pkt.data_len = sizeof(NeighborData);
 	
 	xgrid.send_packet(&pkt, ALL_DIRECTION);
 }
@@ -88,7 +88,7 @@ void rx_pkt(Xgrid::Packet *pkt)
                 calib_switch = false;
                 calib_times = lg_ptr->_calib_times;
                 lg_ptr->_jiffies += _DELAY_CALIB +1;
-                //jiffies = lg_ptr->_jiffies;
+                jiffies = lg_ptr->_jiffies;
                
                 //xgrid.send_packet(pkt,0b00111111);						// for test
                 xgrid.send_packet(pkt,(0b00111111 & ~(1<<pkt->rx_node)));	// for real
@@ -104,15 +104,19 @@ void rx_pkt(Xgrid::Packet *pkt)
         // keep track of who I have recieved messages from
         connected[port] = true;
         
-        // Neighbors angle
-        if (pkt->type == MOTOR_ANGLE) {
-            AngleData* recvAnglPtr = (AngleData*) pkt->data;
-            float angleIn = recvAnglPtr->angleValue;
-            neighborAngles[port] = angleIn;
+        // Neighbors angle and sensor
+        if (pkt->type == NEIGHBOR_DATA) {
+            NeighborData* recvNeighborPtr = (NeighborData*) pkt->data;
             
-            if(debugPrint) {
-                fprintf_P(&usart_stream, PSTR("neighbors: %f, %f, %f, %f, %f, %f\r\n"), neighborAngles[0], neighborAngles[1], neighborAngles[2], neighborAngles[3], neighborAngles[4], neighborAngles[5]);
+            neighborAngles[port] = recvNeighborPtr->angleValue;
+            neighborSensors[port] = recvNeighborPtr->sensorValue;
+            neighborStrength[port] = recvNeighborPtr->strength;
+            
+            // for columns set sensor value to that of the bottom board in the column
+            if (port == BELOW){
+                sensor_value = recvNeighborPtr->sensorValue;
             }
+            
         }
 
         /// parsing broadcast commands from neighbors
@@ -137,9 +141,12 @@ void rx_pkt(Xgrid::Packet *pkt)
                 case 'n':   updateRate = NONE; break;
                 case 's':   updateRate = SMOOTH; break;
                 case 'h':   updateRate = TWO_HUNDRED; break;
+
+                // modes
                 case 'p':   currentMode = PERIODIC; break;
                 case 'V':   currentMode = AVERAGE; break;
                 case 'w':   currentMode = SWEEP; break;
+                case 't':   currentMode = TOGETHER; break;
 
                 
 			}
@@ -226,6 +233,12 @@ void key_input()
         fprintf_P(&usart_stream, PSTR("'w' - setting currentMode to SWEEP\n"));
         currentMode = SWEEP;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "w");
+    }
+    if(input_char == 't'){
+        fprintf_P(&usart_stream, PSTR("'t' - setting currentMode to TOGETHER\n"));
+        currentMode = AVERAGE;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "t");
+
     }
     
     if(input_char == 'c'){

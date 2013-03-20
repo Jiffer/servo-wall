@@ -10,9 +10,6 @@
 #include "swarmfunctions.c"
 #include "communication.c"
 
-int ms_sensor_value = 0;
-
-
 void Calib();
 
 
@@ -23,10 +20,9 @@ ISR(TCC0_OVF_vect)
 {
     jiffies++;	// Timers
     
-    if(jiffies%10 == 0) // update every 1/100th of a second
+    // update every 1/100th of a second
+    if(jiffies%10 == 0)
     {
-        
-        
         // update the servo on this cycle
         if (updateRate == SMOOTH){
             servo_motor_on   = true;
@@ -34,6 +30,90 @@ ISR(TCC0_OVF_vect)
         }
     }
     
+    // every 100 ms
+    if(jiffies%100 == 0)
+    {
+        ////////////////////////////////////////////////////
+        // Read analog input
+        ////////////////////////////////////////////////////
+        //            if(1){
+        //                // photoresistor sensor
+        //                if (ADCB.CH0.INTFLAGS) {
+        //                    //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
+        //                    ADCB.CH0.INTFLAGS = 0x01;
+        //                    sensor_value = ADCB_CH0_RES;
+        //                }
+        
+        if (ADCA.CH0.INTFLAGS){
+            if(bottom)
+                sensor_value = ADCA_CH0_RES;
+            if(debugPrint)
+                fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), sensor_value);
+            ADCA.CH0.INTFLAGS = 0x01;
+        }
+        
+        // update buffer
+        sensorBuf[sensorBufPtr++] = sensor_value;
+        sensorBufPtr %= sensorBufSize;
+        
+        // update presenseDetected variable
+        // reset it to true, then check...
+        presenceDetected = true;
+        // check if current or recent are all above thresh, else set to false
+        for(int i = 0; i < sensorBufSize; i++){
+            // if any in the recent buffer are below threshold set to false
+            if (sensorBuf[i] < PRESENCE_THRESH)
+                presenceDetected = false;
+        }
+        if (presenceDetected){
+            myStrength = 1.0;
+        }
+        else if (neighborStrength[LEFT] > 0 || neighborStrength[RIGHT] > 0)
+            if (neighborStrength[LEFT] > neighborStrength[RIGHT])
+                myStrength = neighborStrength[LEFT] / 2.0;
+            else
+                myStrength = neighborStrength[RIGHT] / 2.0;
+            
+    }
+    
+    // every 200 ms
+    if(jiffies%200 == 0)
+    {
+        
+        
+        display_on = true;
+        
+        // update the servo on this cycle
+        if (updateRate == TWO_HUNDRED){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
+        
+    }
+    
+    // 1 second
+    if(jiffies%1000 == 0)
+    {
+        //if(communication_on) sec_counter++;
+        sec_counter++;
+        sync = true;		//synchro bit should be set every 1 sec
+        rhythm_on = true;
+                
+        if(!communication_on) LED_PORT.OUT =  LED_USR_0_PIN_bm;
+        if(communication_on)  LED_PORT.OUT = !LED_USR_0_PIN_bm;
+        
+        if(debugPrint){
+            fprintf_P(&usart_stream, PSTR("cur angle: %f\r\n"), curAngle);
+            for(int i =0; i < 6; i++){
+                if (connected[i]){
+                    fprintf_P(&usart_stream, PSTR("n#: %i, ang: %f\r\n"), i, neighborAngles[i]);
+                }
+            }
+        }
+    }
+    
+
+    // every 2 seconds
     if (jiffies%2000 == 0)
     {
         if (swarm_id != _MAIN_BOARD)
@@ -51,83 +131,33 @@ ISR(TCC0_OVF_vect)
     }
     
     // check every 5 seconds if it has recieved messages
-//    if(jiffies%5000){
-//        if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
-//        if(!connected[1] && connected[2]) bottom = true;
-//        
-//        numConnected = 0;
-//        for(int i = 0; i < 6; i++){
-//            if (connected[i])
-//                numConnected++;
-//        }
-//    }
-    
-    if(jiffies%200 == 0)
-    {
-        ////////////////////////////////////////////////////
-        // Read analog input every 200 ms
-        ////////////////////////////////////////////////////
-        //            if(1){
-        //                // photoresistor sensor
-        //                if (ADCB.CH0.INTFLAGS) {
-        //                    //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
-        //                    ADCB.CH0.INTFLAGS = 0x01;
-        //                    ms_sensor_value = ADCB_CH0_RES;
-        //                }
+    if(jiffies%5000){
+        // no neighbor
+        if(!connected[BELOW] && !connected[LEFT] && connected[ABOVE] && connected[RIGHT]) special = true;
 
+        // no neighbor from below // yes neighbor above
+        if(!connected[BELOW] && connected[ABOVE]) bottom = true;
         
-        ///////////////
-        if (ADCA.CH0.INTFLAGS){
-            ms_sensor_value = ADCA_CH0_RES;
-            if(debugPrint)
-                fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), ms_sensor_value);
-            ADCA.CH0.INTFLAGS = 0x01;
+        numConnected = 0;
+        for(int i = 0; i < 6; i++){
+            if (connected[i])
+                numConnected++;
         }
-
-        ///////////////
-        
-        use_sensor_data_on = true;
-        cnt4sensor++;
-        
-        display_on = true;
-        
-        // update the servo on this cycle
-        if (updateRate == TWO_HUNDRED){
-            servo_motor_on   = true;
-            sendmessage_fast = true;
-        }
-        //LED_PORT.OUTTGL = LED_USR_1_PIN_bm;
-        //LED_PORT.OUTTGL = LED_USR_2_PIN_bm;
     }
     
-    if(jiffies%1000 == 0)
-    {
-        //if(communication_on) sec_counter++;
-        sec_counter++;
-        sync = true;		//synchro bit should be set every 1 sec
-        rhythm_on = true;
-        sensor_value_now = 0;
-        
-        if(!communication_on) LED_PORT.OUT =  LED_USR_0_PIN_bm;
-        if(communication_on)  LED_PORT.OUT = !LED_USR_0_PIN_bm;
-        
-        if(debugPrint){
-            fprintf_P(&usart_stream, PSTR("cur angle: %f\r\n"), gAngle);
-            for(int i =0; i < 6; i++){
-                if (connected[i]){
-                    fprintf_P(&usart_stream, PSTR("n#: %i, ang: %f\r\n"), i, neighborAngles[i]);
-                }
-            }
-        }
-    }
-	xgrid.process();
+   	xgrid.process();
     
+    // cycle through all the current modes
+    // changing every cycleLength seconds
+    int cycleLength = 10;
     if(cycleOn){
-        if (sec_counter >= 10){
+        if (sec_counter >= cycleLength){
             currentMode++;
-            if(currentMode > SWEEP)
+            if(currentMode > BREAK)
                 currentMode = 0;
             sec_counter = 0;
+            
+            fprintf_P(&usart_stream, PSTR("currentMode chaged to: %i, \r\n"), currentMode);
         }
     }
 }
@@ -218,36 +248,28 @@ int main(void)
         
 		// ========== KEY INPUT ==========
 		key_input();
-        
-		// ========== CALCULATION ==========
-		if(sonar_attached && !communication_on)
-		{
-			if(sensor_value_trichk > RANGE1 && sensor_value_trichk < RANGE3)
-			{
-				send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "R");
-				_delay_ms(100);
-				send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "1");
-				communication_on = true;
-			}
-		}
-        
-        
+                
         ////////////////////////////////////////////////
         // if angle is being updated this cycle
         if(servo_motor_on)
         {
+            float myStrength = 0.0;
+            
             switch(currentMode)
 			{
                 case BREAK: // do nothing
                     break;
                 case TOGETHER:
-                    gAngle = cycle(5, 45.0, 0);
+                    curAngle = cycle(5, 45.0, 0);
                     break;
 				case PERIODIC:
-                    gAngle = cycle(randomPeriod, 45.0, 0.0);
+                    curAngle = cycle(randomPeriod, 45.0, 0.0);
                     break;
                 case AVERAGE:
                     mesmer();
+                    break;
+                case LISTEN:
+                    listen();
                     break;
                 case SWEEP:
                     quickSweep();
@@ -255,8 +277,8 @@ int main(void)
             }
             
             // set servo angle
-            set_servo_position(gAngle);
-            send_angle(gAngle);
+            set_servo_position(curAngle);
+            send_neighbor_data(curAngle, myStrength);
             
             // wait until updateRate has come back around
             servo_motor_on = false;

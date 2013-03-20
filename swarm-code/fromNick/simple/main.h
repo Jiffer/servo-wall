@@ -90,17 +90,14 @@ uint8_t SP_ReadUserSigRow( uint8_t index );
 #define LEFT_TOP				3	//0b00001000   
 #define LEFT_BOTTOM				2	//0b00000100
 #define RIGHT_BOTTOM			4	//0b00010000
-#define RIGHT_TOP				5	//0b00100000 
+#define RIGHT_TOP				5	//0b00100000
 
 #define MESSAGE_NUMDATA 0
 #define MESSAGE_COMMAND 1
 #define ALL_DIRECTION 0x3F
 
-// for sending to specific ports
-#define ABOVE 0b00010000
-
 #define ALL 20
-#define MOTOR_ANGLE 10
+#define NEIGHBOR_DATA 11
 //##########################################################################
 
 struct OBJ1
@@ -129,7 +126,7 @@ volatile unsigned long jiffies = 0, temp_time, cnt4sensor = 0;
 bool connected[NUM_NEIGHBORS];
 bool sonar_attached = false;
 bool dblchk = true, trichk = true;
-uint16_t sensor_value, sensor_value_now, sensor_value_dblchk, sensor_value_trichk;
+//uint16_t sensor_value, sensor_value_now, sensor_value_dblchk, sensor_value_trichk;
 uint16_t sum_dbl = 0, sum_tri = 0;
 
 
@@ -189,17 +186,34 @@ void servo_motor_control(float);
 
 // jif's globals //
 #define MAX_ANGLE 80.0
-float gAngle = 0; // from -90 to 90
-bool gDirection = 0; // to or fro...
-float neighborAngles[6];
+#define PRESENCE_THRESH 2000
+
+float curAngle = 0; // from -90 to 90
+bool presenceDetected = false;
+float myStrength;
 float randomPeriod = 0.0;
-int numConnected = 0;
 bool debugPrint = false;
 bool cycleOn = false;
 
-#define gBufferSize 3
-int gAngleBuffer[gBufferSize];
-int gPtr = 0;
+// from ports
+#define BELOW   1
+#define ABOVE   4
+#define LEFT    2
+#define RIGHT   5
+// neighbors data
+int numConnected = 0;
+float neighborAngles[6];
+int neighborSensors[6];
+float neighborStrength[6];
+
+#define sensorBufSize 2
+int sensor_value = 0;
+int sensorBuf[sensorBufSize];
+int sensorBufPtr = 0;
+
+#define angleBufSize 100
+int angleBuffer[angleBufSize];
+int angleBufPtr = 0;
 
 enum updateInterval {
     NONE = 0,
@@ -211,11 +225,12 @@ enum updateInterval {
 int updateRate = SMOOTH; // send 's' for SMOOTH, 'h' for TWO_HUNNDRED
 
 enum algorithm {
-    BREAK,
     TOGETHER,
     PERIODIC,
     AVERAGE,
-    SWEEP
+    SWEEP,
+    LISTEN,
+    BREAK
     };
 
 int currentMode = TOGETHER;
