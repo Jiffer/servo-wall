@@ -73,30 +73,6 @@ void send_angle(float angle)
 void rx_pkt(Xgrid::Packet *pkt)
 {
 	// where did the packet come from
-    
-    if (pkt->type == _TIME_CALIB)
-    {
-        if (swarm_id == _MAIN_BOARD)
-        {
-        }
-        
-        if (swarm_id != _MAIN_BOARD)
-        {
-            CalibInfo* lg_ptr= (CalibInfo*)pkt->data;
-            if (calib_switch)
-            {
-                calib_switch = false;
-                calib_times = lg_ptr->_calib_times;
-                lg_ptr->_jiffies += _DELAY_CALIB +1;
-                //jiffies = lg_ptr->_jiffies;
-               
-                //xgrid.send_packet(pkt,0b00111111);						// for test
-                xgrid.send_packet(pkt,(0b00111111 & ~(1<<pkt->rx_node)));	// for real
-                LED_PORT.OUTTGL = LED_USR_1_PIN_bm;
-            }	
-        }
-    }
-    
     uint8_t port = pkt->rx_node;
 	char command;
 
@@ -165,7 +141,7 @@ void key_input()
 		temp_time = jiffies + 3000;
 		while(jiffies < temp_time)
 		{
-			//LED_PORT.OUTTGL = LED_USR_1_PIN_bm; _delay_ms(100);
+			LED_PORT.OUTTGL = LED_USR_1_PIN_bm; _delay_ms(100);
 		}
 		xboot_reset();
 	}

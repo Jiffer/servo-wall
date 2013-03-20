@@ -212,25 +212,14 @@ int updateRate = SMOOTH; // send 's' for SMOOTH, 'h' for TWO_HUNNDRED
 
 enum algorithm {
     BREAK,
-    TOGETHER,
     PERIODIC,
     AVERAGE,
     SWEEP
     };
 
-int currentMode = TOGETHER;
+int currentMode = SWEEP;
 
 // \jif's globals //
-
-// #################### Synchronize ####################
-
-bool calib_switch;			// whether or not to begin the calibration
-int calib_times;			// how many time this is to calibration
-bool calib_double_switch;
-
-#define _MAIN_BOARD     13068
-#define _DELAY_CALIB    2
-#define _TIME_CALIB		10
 
 
 

@@ -13,8 +13,6 @@
 int ms_sensor_value = 0;
 
 
-void Calib();
-
 
 // ============================================================================================
 // Timer tick ISR (1 kHz)
@@ -26,6 +24,20 @@ ISR(TCC0_OVF_vect)
     if(jiffies%10 == 0) // update every 1/100th of a second
     {
         
+        // sweep sine wave
+        
+        // Linear sweep:
+        // sweep between -90 and 90
+        /* if(gAngle < -90 || gAngle > 90){
+         gDirection = !gDirection;
+         }
+         if (gDirection){
+         gAngle++;
+         }
+         else
+         gAngle--;
+         */
+        
         
         // update the servo on this cycle
         if (updateRate == SMOOTH){
@@ -34,33 +46,17 @@ ISR(TCC0_OVF_vect)
         }
     }
     
-    if (jiffies%2000 == 0)
-    {
-        if (swarm_id != _MAIN_BOARD)
-        {
-            calib_switch  = true ;
-        }
-        if (swarm_id == _MAIN_BOARD)
-        {
-//            asm("nop");
-//            asm("nop");
-            Calib();
-            fprintf_P(&usart_stream, PSTR("I am\r\n"));            
-        }
-        
-    }
-    
     // check every 5 seconds if it has recieved messages
-//    if(jiffies%5000){
-//        if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
-//        if(!connected[1] && connected[2]) bottom = true;
-//        
-//        numConnected = 0;
-//        for(int i = 0; i < 6; i++){
-//            if (connected[i])
-//                numConnected++;
-//        }
-//    }
+    if(jiffies%5000){
+        if(!connected[1] && !connected[2] && connected[4] && connected[5]) special = true;
+        if(!connected[1] && connected[2]) bottom = true;
+        
+        numConnected = 0;
+        for(int i = 0; i < 6; i++){
+            if (connected[i])
+                numConnected++;
+        }
+    }
     
     if(jiffies%200 == 0)
     {
@@ -79,8 +75,7 @@ ISR(TCC0_OVF_vect)
         ///////////////
         if (ADCA.CH0.INTFLAGS){
             ms_sensor_value = ADCA_CH0_RES;
-            if(debugPrint)
-                fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), ms_sensor_value);
+            fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), ms_sensor_value);
             ADCA.CH0.INTFLAGS = 0x01;
         }
 
@@ -159,7 +154,8 @@ int main(void)
 	init_sonar();		//for sensor
     
 	fprintf_P(&usart_stream, PSTR("START (build number : %ld)\r\n"), (unsigned long) &__BUILD_NUMBER);
-    //printKeyCommands();
+    fprintf_P(&usart_stream, PSTR("Board ID %i\r\n"), swarm_id);
+    printKeyCommands();
     
     srand(swarm_id);
     randomPeriod = (18.0 * rand() / RAND_MAX)+ 2.0;
@@ -191,28 +187,15 @@ int main(void)
 		}
 	}
     
-	// #################### Synchronize ####################
-    calib_switch = true;
-    calib_double_switch = true;
-    calib_times = 0;
-    calibinfo._calib_times = 0;
+	// #################### MAIN LOOP ####################
     
-    if (swarm_id == _MAIN_BOARD)
-    {
-        _delay_ms(1000);
-        Calib();
-    }
-    
-    
-    // #################### MAIN LOOP ####################
-
 	while (1)
 	{
 		// ========== REBOOT PROCESS ==========
 		if(reboot_on)
 		{
 			temp_time = jiffies + 3000;
-			//while(jiffies < temp_time){LED_PORT.OUTTGL = LED_USR_1_PIN_bm; _delay_ms(100);}
+			while(jiffies < temp_time){LED_PORT.OUTTGL = LED_USR_1_PIN_bm; _delay_ms(100);}
 			xboot_reset();
 		}
         
@@ -240,9 +223,6 @@ int main(void)
 			{
                 case BREAK: // do nothing
                     break;
-                case TOGETHER:
-                    gAngle = cycle(5, 45.0, 0);
-                    break;
 				case PERIODIC:
                     gAngle = cycle(randomPeriod, 45.0, 0.0);
                     break;
@@ -266,26 +246,3 @@ int main(void)
 	}	
 	return 0;
 }
-
-
-
-void Calib()
-{
-    
-    Xgrid::Packet pkt;
-	pkt.type = _TIME_CALIB;
-	pkt.flags = 0;
-	pkt.radius = 1;
-	
-	calibinfo._calib_times += 1;
-	calibinfo._jiffies = jiffies;
-	pkt.data = (uint8_t *) &calibinfo;
-    
-	pkt.data_len = sizeof(CalibInfo);
-	
-	xgrid.send_packet(&pkt,0b00111111);
-    LED_PORT.OUTTGL = LED_USR_1_PIN_bm;
-
-}
-
-

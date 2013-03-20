@@ -42,6 +42,14 @@ I2c i2c(&I2C_DEV);
 
 // Timer
 
+// DS for Synchronize
+struct CalibInfo
+{
+	int _calib_times;
+	unsigned long _jiffies;
+} calibinfo;				// initialization in the init function
+
+
 // Production signature row access
 uint8_t SP_ReadCalibrationByte( uint8_t index )
 {
@@ -129,7 +137,7 @@ void init(void)
     ADCB.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
     
     /// Set up for ADC PA0
-    fprintf_P(&usart_stream, PSTR("initializing sensor PA0 \r\n"));
+    //fprintf_P(&usart_stream, PSTR("initializing sensor PA0 \r\n"));
     
     PORTA.DIR &= ~(1 << 0);
     ADCA.CTRLA = ADC_ENABLE_bm;
@@ -140,7 +148,7 @@ void init(void)
     ADCA.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
     ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN0_gc;
     
-    fprintf_P(&usart_stream, PSTR("done initializing sensor PA0 \r\n"));
+    //fprintf_P(&usart_stream, PSTR("done initializing sensor PA0 \r\n"));
     
     // TCC
     TCC0.CTRLA = TC_CLKSEL_DIV256_gc;
@@ -173,8 +181,38 @@ void init(void)
     swarm_id = crc;
     if(swarm_id < 0)
         swarm_id*=-1;
+    fprintf_P(&usart_stream, PSTR("id: %i\r\n"),swarm_id);
     
+    /*  if we use the number on the board */
+    /*
+    for(uint8_t i=0;i<AMOUNT_OF_BOARD;i++)
+    {
+        if (board_sig[i] == swarm_id)
+        {
+            _swarm_id = board_num[i];
+            board_index = i + 1;
+            break;
+        }
+        
+    }
+    coor_x = (board_index) % LINE_NUMBER;
+    if (coor_x == 1)
+    {
+        coor_y = (board_index) / LINE_NUMBER;
+    }
+    else
+    {
+        coor_y = ((board_index) / LINE_NUMBER ) + 1;
+    }
+    */
+    
+    //_swarm_id = swarm_id;			// if we still use big signature number
+  
     ///////////  \ board ID
+    calibinfo._calib_times = 0;
+
+    
+    
     
     // ADC trigger on TCC0 overflow
     //EVSYS.CH0MUX = EVSYS_CHMUX_TCC0_OVF_gc;
