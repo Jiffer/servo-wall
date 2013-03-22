@@ -45,10 +45,10 @@ ISR(TCC0_OVF_vect)
         //                }
         
         if (ADCA.CH0.INTFLAGS){
+            // if on the bottom row assign sensor value here, others will read from below
             if(bottom)
                 sensor_value = ADCA_CH0_RES;
-            if(debugPrint)
-                fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), sensor_value);
+            
             ADCA.CH0.INTFLAGS = 0x01;
         }
         
@@ -106,9 +106,11 @@ ISR(TCC0_OVF_vect)
             fprintf_P(&usart_stream, PSTR("cur angle: %f\r\n"), curAngle);
             for(int i =0; i < 6; i++){
                 if (connected[i]){
-                    fprintf_P(&usart_stream, PSTR("n#: %i, ang: %f\r\n"), i, neighborAngles[i]);
+                    fprintf_P(&usart_stream, PSTR("n#: %i, ang: %f, snsr: %i, strngth: %f\r\n"), i, neighborAngles[i], neighborSensors[i], neighborStrength[i]);
                 }
             }
+            if(debugPrint)
+                fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), sensor_value);
         }
     }
     
@@ -137,6 +139,8 @@ ISR(TCC0_OVF_vect)
 
         // no neighbor from below // yes neighbor above
         if(!connected[BELOW] && connected[ABOVE]) bottom = true;
+        
+        fprintf_P(&usart_stream, PSTR("connections: %i, %i, %i, %i, %i, %i, \r\n"), connected[0], connected[1], connected[3], connected[4], connected[5], connected[6]);
         
         numConnected = 0;
         for(int i = 0; i < 6; i++){

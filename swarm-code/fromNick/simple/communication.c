@@ -97,15 +97,17 @@ void rx_pkt(Xgrid::Packet *pkt)
         }
     }
     
-    uint8_t port = pkt->rx_node;
-	char command;
-
-	if(port >= 0 && port < NUM_NEIGHBORS){
-        // keep track of who I have recieved messages from
-        connected[port] = true;
+    
         
         // Neighbors angle and sensor
         if (pkt->type == NEIGHBOR_DATA) {
+            uint8_t port = pkt->rx_node;
+            char command;
+            
+            if(port >= 0 && port < NUM_NEIGHBORS){
+                // keep track of who I have recieved messages from
+                connected[port] = true;
+                
             NeighborData* recvNeighborPtr = (NeighborData*) pkt->data;
             
             neighborAngles[port] = recvNeighborPtr->angleValue;
@@ -123,6 +125,8 @@ void rx_pkt(Xgrid::Packet *pkt)
         // ============================================================================================
 		if(pkt->type == MESSAGE_COMMAND)
 		{
+            uint8_t port = pkt->rx_node;
+            
 			char* char_ptr = (char*) pkt->data;
 			command = *char_ptr;
 			
@@ -147,6 +151,7 @@ void rx_pkt(Xgrid::Packet *pkt)
                 case 'V':   currentMode = AVERAGE; break;
                 case 'w':   currentMode = SWEEP; break;
                 case 't':   currentMode = TOGETHER; break;
+                case 'l':   currentMode = LISTEN; break;
 
                 
 			}
@@ -236,11 +241,17 @@ void key_input()
     }
     if(input_char == 't'){
         fprintf_P(&usart_stream, PSTR("'t' - setting currentMode to TOGETHER\n"));
-        currentMode = AVERAGE;
+        currentMode = TOGETHER;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "t");
 
     }
-    
+    if(input_char == 'l'){
+        fprintf_P(&usart_stream, PSTR("'l' - setting currentMode to LISTEN\n"));
+        currentMode = LISTEN;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "l");
+        
+    }
+    // cycle all
     if(input_char == 'c'){
         cycleOn = !cycleOn;
         fprintf_P(&usart_stream, PSTR("'c' - cycle all modes\n"));
