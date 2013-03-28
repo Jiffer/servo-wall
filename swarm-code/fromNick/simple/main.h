@@ -186,7 +186,7 @@ void servo_motor_control(float);
 
 // jif's globals //
 #define MAX_ANGLE 80.0
-#define PRESENCE_THRESH 2000
+#define PRESENCE_THRESH 4000
 
 float curAngle = 0; // from -90 to 90
 bool presenceDetected = false;
@@ -197,9 +197,9 @@ bool cycleOn = false;
 
 // from ports
 #define BELOW   1
-#define ABOVE   4
+#define ABOVE   5
 #define LEFT    2
-#define RIGHT   5
+#define RIGHT   4
 // neighbors data
 int numConnected = 0;
 float neighborAngles[6];
@@ -233,7 +233,7 @@ enum algorithm {
     BREAK
     };
 
-int currentMode = TOGETHER;
+int currentMode = LISTEN;
 
 // \jif's globals //
 

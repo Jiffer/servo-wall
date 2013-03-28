@@ -73,12 +73,10 @@ void mesmer(){
         // TODO : still not sure why these guys freq out when scale is 2.0 or more...
         float tempAngle = 1.3 * ((myAngle + weight * average) / (weight + 1));
    
-        //fprintf_P(&usart_stream, PSTR("avg: %f\r\n"), average);
         curAngle = (tempAngle);
     }
     else{
         curAngle = (myAngle);
-        //fprintf_P(&usart_stream, PSTR("no neighbors, myAngle: %f\r\n"), myAngle);
     }
     
 }
@@ -100,8 +98,10 @@ void listen(){
     if (presenceDetected){
         curAngle = 0.0;
     }
-    else if(neighborStrength[LEFT] > 0.3 || neighborStrength[RIGHT] > 0.3)
-        curAngle = 30.0;
+    else if(neighborStrength[LEFT] > 0.3 && (neighborStrength[LEFT] > neighborStrength[RIGHT]))
+        curAngle = MAX_ANGLE * myStrength;
+    else if( neighborStrength[RIGHT] > 0.3)
+        curAngle = -MAX_ANGLE * myStrength;
     else
         curAngle = cycle(8, 60, 0);
 }

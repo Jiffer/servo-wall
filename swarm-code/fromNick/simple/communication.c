@@ -25,6 +25,7 @@ void send_message(uint8_t MessageType, uint8_t direction, int dist, const char s
 	switch(MessageType)
 	{
 		case MESSAGE_COMMAND:
+
 			pkt.data = (uint8_t*)str;
 			pkt.radius = dist;
 			pkt.data_len = sizeof(str);
@@ -72,8 +73,6 @@ void send_neighbor_data(float angle, float strength)
 // ============================================================================================
 void rx_pkt(Xgrid::Packet *pkt)
 {
-	// where did the packet come from
-    
     if (pkt->type == _TIME_CALIB)
     {
         if (swarm_id == _MAIN_BOARD)
@@ -85,7 +84,7 @@ void rx_pkt(Xgrid::Packet *pkt)
             CalibInfo* lg_ptr= (CalibInfo*)pkt->data;
             if (calib_switch)
             {
-                calib_switch = false;
+                calib_switch = false; // TODO: check if _calib_times is greater than local calib_times?
                 calib_times = lg_ptr->_calib_times;
                 lg_ptr->_jiffies += _DELAY_CALIB +1;
                 jiffies = lg_ptr->_jiffies;
@@ -96,68 +95,66 @@ void rx_pkt(Xgrid::Packet *pkt)
             }	
         }
     }
+
     
-    
+    // Neighbors angle and sensor
+    if (pkt->type == NEIGHBOR_DATA) {
+        uint8_t port = pkt->rx_node;
         
-        // Neighbors angle and sensor
-        if (pkt->type == NEIGHBOR_DATA) {
-            uint8_t port = pkt->rx_node;
-            char command;
+        if(port >= 0 && port < NUM_NEIGHBORS){
+            // keep track of who I have recieved messages from
+            connected[port] = true;
             
-            if(port >= 0 && port < NUM_NEIGHBORS){
-                // keep track of who I have recieved messages from
-                connected[port] = true;
-                
             NeighborData* recvNeighborPtr = (NeighborData*) pkt->data;
-            
             neighborAngles[port] = recvNeighborPtr->angleValue;
             neighborSensors[port] = recvNeighborPtr->sensorValue;
             neighborStrength[port] = recvNeighborPtr->strength;
-            
+        
             // for columns set sensor value to that of the bottom board in the column
             if (port == BELOW){
                 sensor_value = recvNeighborPtr->sensorValue;
             }
-            
         }
+    }
 
         /// parsing broadcast commands from neighbors
+           
         // ============================================================================================
-		if(pkt->type == MESSAGE_COMMAND)
-		{
-            uint8_t port = pkt->rx_node;
-            
-			char* char_ptr = (char*) pkt->data;
-			command = *char_ptr;
-			
-			connected[port] = true;
-
-			switch(command)
-			{
-				case 'Z': reboot_on = true;
-				case 'r':
-                    sec_counter = 0;
-                    jiffies = 0;    break;
-                    
-                // jif
-                case 'c': cycleOn = !cycleOn; break;
-                case 'd':   debugPrint = !debugPrint; break;
-                case 'n':   updateRate = NONE; break;
-                case 's':   updateRate = SMOOTH; break;
-                case 'h':   updateRate = TWO_HUNDRED; break;
-
-                // modes
-                case 'p':   currentMode = PERIODIC; break;
-                case 'V':   currentMode = AVERAGE; break;
-                case 'w':   currentMode = SWEEP; break;
-                case 't':   currentMode = TOGETHER; break;
-                case 'l':   currentMode = LISTEN; break;
-
+    if(pkt->type == MESSAGE_COMMAND)
+    {
+        char command;
+        fprintf_P(&usart_stream, PSTR("got MESSAGE_COMMAND\r\n"));
+        
+        uint8_t port = pkt->rx_node;
+        
+        char* char_ptr = (char*) pkt->data;
+        command = *char_ptr;
+        
+        
+        connected[port] = true;
+        switch(command)
+        {
+            case 'Z': reboot_on = true;
+            case 'r':
+                sec_counter = 0;
+                jiffies = 0;    break;
                 
-			}
-		}
-		
+            // jif
+            case 'c': cycleOn = true; break;
+            case 'o': cycleOn = false; break;
+            case 'd':   debugPrint = !debugPrint; break;
+            case 'n':   updateRate = NONE; break;
+            case 's':   updateRate = SMOOTH; break;
+            case 'h':   updateRate = TWO_HUNDRED; break;
+            // modes
+            case 'p':   currentMode = PERIODIC; break;
+            case 'V':   currentMode = AVERAGE; break;
+            case 'w':   currentMode = SWEEP; break;
+            case 't':   currentMode = TOGETHER; break;
+            case 'l':   currentMode = LISTEN; break;
+        }
     }
+    
 }
 
 // ============================================================================================
@@ -218,7 +215,7 @@ void key_input()
     if(input_char == 'h'){
         fprintf_P(&usart_stream, PSTR("setting updateRate to 200ms\n"));
         updateRate = TWO_HUNDRED;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "h");	
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "h");
     }
     
     // ============================================================================================
@@ -253,10 +250,15 @@ void key_input()
     }
     // cycle all
     if(input_char == 'c'){
-        cycleOn = !cycleOn;
+        cycleOn = true;
         fprintf_P(&usart_stream, PSTR("'c' - cycle all modes\n"));
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "c");
 
+    }
+    if(input_char == 'o'){
+        cycleOn = false;
+        fprintf_P(&usart_stream, PSTR("'o' - cycle all modes off\n"));
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "o");
     }
     
     // ============================================================================================

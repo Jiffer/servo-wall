@@ -73,14 +73,14 @@ ISR(TCC0_OVF_vect)
                 myStrength = neighborStrength[LEFT] / 2.0;
             else
                 myStrength = neighborStrength[RIGHT] / 2.0;
+        else
+            myStrength = 0.0;
             
     }
     
     // every 200 ms
     if(jiffies%200 == 0)
     {
-        
-        
         display_on = true;
         
         // update the servo on this cycle
@@ -88,7 +88,6 @@ ISR(TCC0_OVF_vect)
             servo_motor_on   = true;
             sendmessage_fast = true;
         }
-        
     }
     
     // 1 second
@@ -104,11 +103,7 @@ ISR(TCC0_OVF_vect)
         
         if(debugPrint){
             fprintf_P(&usart_stream, PSTR("cur angle: %f\r\n"), curAngle);
-            for(int i =0; i < 6; i++){
-                if (connected[i]){
-                    fprintf_P(&usart_stream, PSTR("n#: %i, ang: %f, snsr: %i, strngth: %f\r\n"), i, neighborAngles[i], neighborSensors[i], neighborStrength[i]);
-                }
-            }
+            
             if(debugPrint)
                 fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), sensor_value);
         }
@@ -129,19 +124,27 @@ ISR(TCC0_OVF_vect)
             Calib();
             fprintf_P(&usart_stream, PSTR("I am\r\n"));            
         }
+        /*
+        for(int i =0; i < 6; i++){
+            if (connected[i]){
+                fprintf_P(&usart_stream, PSTR("# %i, st: %f\r\n"), i, neighborStrength[i]);
+            }
+        }*/
+         //fprintf_P(&usart_stream, PSTR("connections: %i, %i, %i, %i, %i, %i, \r\n"), connected[0], connected[1], connected[2], connected[3], connected[4], connected[5]);
         
     }
     
     // check every 5 seconds if it has recieved messages
-    if(jiffies%5000){
+    if(jiffies%5000 == 0){
         // no neighbor
-        if(!connected[BELOW] && !connected[LEFT] && connected[ABOVE] && connected[RIGHT]) special = true;
-
+        if(!connected[BELOW] && !connected[LEFT] && connected[ABOVE] && connected[RIGHT]){
+            special = true;
+            bottom = true;
+            fprintf_P(&usart_stream, PSTR("I'm special\r\n"));  
+        }
         // no neighbor from below // yes neighbor above
         if(!connected[BELOW] && connected[ABOVE]) bottom = true;
-        
-        fprintf_P(&usart_stream, PSTR("connections: %i, %i, %i, %i, %i, %i, \r\n"), connected[0], connected[1], connected[3], connected[4], connected[5], connected[6]);
-        
+                
         numConnected = 0;
         for(int i = 0; i < 6; i++){
             if (connected[i])
@@ -197,8 +200,6 @@ int main(void)
     
     srand(swarm_id);
     randomPeriod = (18.0 * rand() / RAND_MAX)+ 2.0;
-    //fprintf_P(&usart_stream, PSTR("random %f\r\n"), randomish);
-    
     
     // START ADC
     //
@@ -256,9 +257,7 @@ int main(void)
         ////////////////////////////////////////////////
         // if angle is being updated this cycle
         if(servo_motor_on)
-        {
-            float myStrength = 0.0;
-            
+        {            
             switch(currentMode)
 			{
                 case BREAK: // do nothing
