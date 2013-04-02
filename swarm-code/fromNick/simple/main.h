@@ -131,6 +131,7 @@ uint16_t sum_dbl = 0, sum_tri = 0;
 
 
 int sec_counter = 0;
+int counterTenHz = 0;
 float decay_tim;
 float global_amp;
 
@@ -187,6 +188,7 @@ void servo_motor_control(float);
 // jif's globals //
 #define MAX_ANGLE 80.0
 #define PRESENCE_THRESH 4000
+#define PRESENCE_OFF_THRESH 3500
 
 float curAngle = 0; // from -90 to 90
 bool presenceDetected = false;
@@ -194,32 +196,48 @@ float myStrength;
 float randomPeriod = 0.0;
 bool debugPrint = false;
 bool cycleOn = false;
+bool servoEnabled = true;
 
 // from ports
 #define BELOW   1
 #define ABOVE   5
 #define LEFT    2
 #define RIGHT   4
+
+// delay buffer port names
+#define DEL_ABOVE 0
+#define DEL_BELOW 1
+#define DEL_LEFT 2
+#define DEL_RIGHT 3
+
 // neighbors data
 int numConnected = 0;
 float neighborAngles[6];
 int neighborSensors[6];
 float neighborStrength[6];
 
+#define NEIGHBOR_BUFFER_SIZE 40
+uint8_t neighborBuffer[6][NEIGHBOR_BUFFER_SIZE];
+uint8_t neighborBufferPtr = 0;
+
 #define sensorBufSize 2
 int sensor_value = 0;
+int light_sensor = 0;
 int sensorBuf[sensorBufSize];
 int sensorBufPtr = 0;
 
 #define angleBufSize 100
 int angleBuffer[angleBufSize];
 int angleBufPtr = 0;
+bool actionComplete = false;
 
 enum updateInterval {
-    NONE = 0,
-    SMOOTH = 10,
-    ONE_HUNDRED = 100,
-    TWO_HUNDRED = 200
+    NONE,
+    SMOOTH,
+    ONE_HUNDRED,
+    TWO_HUNDRED,
+    THREE_HUNDRED,
+    FOUR_HUNDRED
     };
 
 int updateRate = SMOOTH; // send 's' for SMOOTH, 'h' for TWO_HUNNDRED
@@ -230,10 +248,13 @@ enum algorithm {
     AVERAGE,
     SWEEP,
     LISTEN,
+    TWITCH,
+    DELAYED,
     BREAK
     };
 
-int currentMode = LISTEN;
+int currentMode = DELAYED;
+int lastMode = currentMode;
 
 // \jif's globals //
 

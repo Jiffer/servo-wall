@@ -30,20 +30,40 @@ ISR(TCC0_OVF_vect)
         }
     }
     
+    // 50 ms (20Hz)
+    if(jiffies%50 == 0)
+    {
+        
+
+        // storing as unsigned ints, when used must subtract 90
+        neighborBuffer[ABOVE][neighborBufferPtr] = (uint8_t)(neighborAngles[ABOVE] + 90);
+        neighborBuffer[BELOW][neighborBufferPtr] = (uint8_t)(neighborAngles[BELOW] + 90);
+        neighborBuffer[LEFT][neighborBufferPtr] = (uint8_t)(neighborAngles[LEFT] + 90);
+        neighborBuffer[RIGHT][neighborBufferPtr] = (uint8_t)(neighborAngles[RIGHT] + 90);
+        
+        // increment pointer,  check for roll over
+        neighborBufferPtr++;
+        neighborBufferPtr %= NEIGHBOR_BUFFER_SIZE;
+        
+    }
+    
     // every 100 ms
     if(jiffies%100 == 0)
     {
+
+        // increment 10 hz counter
+        counterTenHz++;
+        
         ////////////////////////////////////////////////////
         // Read analog input
         ////////////////////////////////////////////////////
-        //            if(1){
-        //                // photoresistor sensor
-        //                if (ADCB.CH0.INTFLAGS) {
-        //                    //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
-        //                    ADCB.CH0.INTFLAGS = 0x01;
-        //                    sensor_value = ADCB_CH0_RES;
-        //                }
-        
+                                // photoresistor sensor
+        if (ADCB.CH0.INTFLAGS) {
+            //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
+            ADCB.CH0.INTFLAGS = 0x01;
+            light_sensor = ADCB_CH0_RES;
+        }
+            
         if (ADCA.CH0.INTFLAGS){
             // if on the bottom row assign sensor value here, others will read from below
             if(bottom)
@@ -57,13 +77,21 @@ ISR(TCC0_OVF_vect)
         sensorBufPtr %= sensorBufSize;
         
         // update presenseDetected variable
-        // reset it to true, then check...
+
+        // store what happened last
+        bool presenseDetectedLast = presenceDetected;
         presenceDetected = true;
         // check if current or recent are all above thresh, else set to false
         for(int i = 0; i < sensorBufSize; i++){
             // if any in the recent buffer are below threshold set to false
-            if (sensorBuf[i] < PRESENCE_THRESH)
-                presenceDetected = false;
+            if(presenseDetectedLast){
+                if (sensorBuf[i] < PRESENCE_OFF_THRESH)
+                    presenceDetected = false;
+            }
+            else{
+                if (sensorBuf[i] < PRESENCE_THRESH)
+                    presenceDetected = false;
+            }
         }
         if (presenceDetected){
             myStrength = 1.0;
@@ -78,6 +106,18 @@ ISR(TCC0_OVF_vect)
             
     }
     
+    // every 100 ms
+    if(jiffies%100 == 0)
+    {
+        display_on = true;
+        
+        // update the servo on this cycle
+        if (updateRate == ONE_HUNDRED){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
+    }
+    
     // every 200 ms
     if(jiffies%200 == 0)
     {
@@ -85,6 +125,29 @@ ISR(TCC0_OVF_vect)
         
         // update the servo on this cycle
         if (updateRate == TWO_HUNDRED){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
+    }
+    // every 300 ms
+    if(jiffies%300 == 0)
+    {
+        display_on = true;
+        
+        // update the servo on this cycle
+        if (updateRate == THREE_HUNDRED){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
+    }
+    
+    // every 400 ms
+    if(jiffies%400 == 0)
+    {
+        display_on = true;
+        
+        // update the servo on this cycle
+        if (updateRate == FOUR_HUNDRED){
             servo_motor_on   = true;
             sendmessage_fast = true;
         }
@@ -261,26 +324,76 @@ int main(void)
             switch(currentMode)
 			{
                 case BREAK: // do nothing
+                    setServo(false);
                     break;
                 case TOGETHER:
+                    if(lastMode != currentMode){
+                        setServo(true);
+                        updateRate = SMOOTH;
+                    }
+
                     curAngle = cycle(5, 45.0, 0);
+                    set_servo_position(curAngle);
                     break;
 				case PERIODIC:
+                    setServo(true);
+                    if(lastMode != currentMode){
+                        randomPeriod = getRandom(2.0, 8.0);
+                        updateRate = (int)getRandom(SMOOTH, FOUR_HUNDRED);
+                    }
+                    
                     curAngle = cycle(randomPeriod, 45.0, 0.0);
+                    set_servo_position(curAngle);
                     break;
                 case AVERAGE:
+                    if(lastMode != currentMode){
+                        updateRate = SMOOTH;
+                        // calculte a new random period each time it enters this mode
+                        randomPeriod = getRandom(4.0, 20.0);
+                    }
+                    
+                    // mesmer averaging based on Processing sketch
                     mesmer();
+                    // if no neighbors don't scale the angle
+                    if(numConnected > 0)
+                        set_servo_position(3.5 * curAngle);
+                    else
+                        set_servo_position(curAngle);
                     break;
                 case LISTEN:
+                    if(lastMode != currentMode){
+                        updateRate = SMOOTH;
+                    }
+                    
                     listen();
+                    set_servo_position(curAngle);
                     break;
+                    
+                case TWITCH:
+                    
+                    twitch();
+                    set_servo_position(curAngle);
+                    break;
+                    
                 case SWEEP:
+                    if(lastMode != currentMode){
+                        updateRate = SMOOTH;
+                    }
                     quickSweep();
+                    set_servo_position(curAngle);
                     break;
+                    
+                case DELAYED:
+                    if(lastMode != currentMode){
+                        updateRate = SMOOTH;
+                    }
+                    delayedReaction();
+                    set_servo_position(curAngle);
             }
+            lastMode = currentMode;
             
             // set servo angle
-            set_servo_position(curAngle);
+           
             send_neighbor_data(curAngle, myStrength);
             
             // wait until updateRate has come back around

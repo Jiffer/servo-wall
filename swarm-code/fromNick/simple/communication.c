@@ -123,7 +123,7 @@ void rx_pkt(Xgrid::Packet *pkt)
     if(pkt->type == MESSAGE_COMMAND)
     {
         char command;
-        fprintf_P(&usart_stream, PSTR("got MESSAGE_COMMAND\r\n"));
+        //fprintf_P(&usart_stream, PSTR("got MESSAGE_COMMAND\r\n"));
         
         uint8_t port = pkt->rx_node;
         
@@ -144,13 +144,18 @@ void rx_pkt(Xgrid::Packet *pkt)
             case 'o': cycleOn = false; break;
             case 'd':   debugPrint = !debugPrint; break;
             case 'n':   updateRate = NONE; break;
-            case 's':   updateRate = SMOOTH; break;
-            case 'h':   updateRate = TWO_HUNDRED; break;
+            case '0':   updateRate = SMOOTH; break;
+            case '1': updateRate = ONE_HUNDRED; break;
+            case '2':   updateRate = TWO_HUNDRED; break;
+            case '3':   updateRate = THREE_HUNDRED; break;
+            case '4':   updateRate = FOUR_HUNDRED; break;
             // modes
+            case 'b':   currentMode = BREAK; break;
             case 'p':   currentMode = PERIODIC; break;
             case 'V':   currentMode = AVERAGE; break;
-            case 'w':   currentMode = SWEEP; break;
+            case 'e':   currentMode = SWEEP; break;
             case 't':   currentMode = TOGETHER; break;
+            case 'w':   currentMode = TWITCH; break;
             case 'l':   currentMode = LISTEN; break;
         }
     }
@@ -207,20 +212,36 @@ void key_input()
         updateRate = NONE;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "n");
     }
-    if(input_char == 's'){
+    if(input_char == '0'){
         fprintf_P(&usart_stream, PSTR("setting updateRate to 10ms\n"));
         updateRate = SMOOTH;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "s");	
     }
-    if(input_char == 'h'){
+    if(input_char == '2'){
         fprintf_P(&usart_stream, PSTR("setting updateRate to 200ms\n"));
         updateRate = TWO_HUNDRED;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "h");
+    }
+    if(input_char == '1'){
+        fprintf_P(&usart_stream, PSTR("setting updateRate to 100ms\n"));
+        updateRate = ONE_HUNDRED;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "s");
+    }
+    if(input_char == '4'){
+        fprintf_P(&usart_stream, PSTR("setting updateRate to 400ms\n"));
+        updateRate = FOUR_HUNDRED;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "h");
     }
     
     // ============================================================================================
     /// currentMode commands
     // ============================================================================================
+    if(input_char == 'b'){
+        fprintf_P(&usart_stream, PSTR("'b' - etting currentMode to BREAK\n"));
+        currentMode = BREAK;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "b");
+    }
+    
     if(input_char == 'p'){
         fprintf_P(&usart_stream, PSTR("'p' - etting currentMode to PERIODIC\n"));
         currentMode = PERIODIC;
@@ -231,10 +252,10 @@ void key_input()
         currentMode = AVERAGE;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "V");
     }
-    if(input_char == 'w'){
-        fprintf_P(&usart_stream, PSTR("'w' - setting currentMode to SWEEP\n"));
+    if(input_char == 'e'){
+        fprintf_P(&usart_stream, PSTR("'e' - setting currentMode to linear SWEEP\n"));
         currentMode = SWEEP;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "w");
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "l");
     }
     if(input_char == 't'){
         fprintf_P(&usart_stream, PSTR("'t' - setting currentMode to TOGETHER\n"));
@@ -242,11 +263,16 @@ void key_input()
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "t");
 
     }
-    if(input_char == 'l'){
-        fprintf_P(&usart_stream, PSTR("'l' - setting currentMode to LISTEN\n"));
-        currentMode = LISTEN;
+    if(input_char == 'w'){
+        fprintf_P(&usart_stream, PSTR("'w' - setting currentMode to TWITCH\n"));
+        currentMode = TWITCH;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "l");
         
+    }
+    if(input_char == 'l'){
+        fprintf_P(&usart_stream, PSTR("'l' - setting currentMode to linear SWEEP\n"));
+        currentMode = SWEEP;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "l");
     }
     // cycle all
     if(input_char == 'c'){
