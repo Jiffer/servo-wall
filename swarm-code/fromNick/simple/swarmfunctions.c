@@ -46,6 +46,24 @@ float cycle(float period, float range, float offset){
     return angle;
 }
 
+float constrainAngle(float angle){
+    if (angle > MAX_ANGLE)
+        angle = MAX_ANGLE;
+    else if (angle < -MAX_ANGLE)
+        angle = -MAX_ANGLE;
+    
+    return angle;
+}
+
+float constrainAngle(float angle, float min, float max){
+    if (angle > max)
+        angle = max;
+    else if (angle < min)
+        angle = min;
+    
+    return angle;
+}
+
 // ============================================================================================
 /// calculate a linear sweep
 // ============================================================================================
@@ -94,7 +112,8 @@ float getDelNeighbor(int port, int time){
 void mesmer(){
     setServo(true);
     float myAngle = cycle((float)randomPeriod, 45.0, 0.0);
-    float weight = 20.0;
+    //float weight = 20.0;
+    float weight = cycle(20, 10, 10);
     float average = 0.0;
     
     for(int i = 0; i < 6; i++){ 
@@ -105,13 +124,12 @@ void mesmer(){
     if (numConnected > 0){
         //fprintf_P(&usart_stream, PSTR("b4_avg: %f\r\n"), average);
         average = average / numConnected;
-        // TODO : still not sure why these guys freq out when scale is 2.0 or more...
         float tempAngle = ((myAngle + weight * average) / (weight + 1));
    
-        curAngle = (tempAngle);
+        curAngle = constrainAngle(tempAngle);
     }
     else{
-        curAngle = (myAngle);
+        curAngle = constrainAngle(myAngle);
     }
     
 }
@@ -220,7 +238,7 @@ void delayedReaction(){
         curAngle = getDelNeighbor(LEFT, 500); // enum LEFT, RIGHT, ABOVE, BELOW
     }
     else
-        curAngle = getDelNeighbor(BELOW, 1000);
+        curAngle = neighborAngles[BELOW];
     
 }
 

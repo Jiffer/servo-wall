@@ -255,7 +255,7 @@ void key_input()
     if(input_char == 'e'){
         fprintf_P(&usart_stream, PSTR("'e' - setting currentMode to linear SWEEP\n"));
         currentMode = SWEEP;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "l");
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "e");
     }
     if(input_char == 't'){
         fprintf_P(&usart_stream, PSTR("'t' - setting currentMode to TOGETHER\n"));
@@ -266,7 +266,7 @@ void key_input()
     if(input_char == 'w'){
         fprintf_P(&usart_stream, PSTR("'w' - setting currentMode to TWITCH\n"));
         currentMode = TWITCH;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "l");
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "w");
         
     }
     if(input_char == 'l'){
