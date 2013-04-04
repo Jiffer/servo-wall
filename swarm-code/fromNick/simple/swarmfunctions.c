@@ -46,6 +46,10 @@ float cycle(float period, float range, float offset){
     return angle;
 }
 
+
+// ============================================================================================
+// constrain angle functions
+// ============================================================================================
 float constrainAngle(float angle){
     if (angle > MAX_ANGLE)
         angle = MAX_ANGLE;
@@ -110,23 +114,23 @@ float getDelNeighbor(int port, int time){
 // average the neighbors
 // ============================================================================================
 void mesmer(){
-    setServo(true);
     float myAngle = cycle((float)randomPeriod, 45.0, 0.0);
     //float weight = 20.0;
     float weight = cycle(20, 10, 10);
     float average = 0.0;
+    float scaling = 3.5;
     
     for(int i = 0; i < 6; i++){ 
         if (abs(neighborAngles[i]) < MAX_ANGLE && connected[i]){ // neighborAngles[LEFT]
-            average += neighborAngles[i];
+            average += (neighborAngles[i]);
         }
     }
     if (numConnected > 0){
         //fprintf_P(&usart_stream, PSTR("b4_avg: %f\r\n"), average);
         average = average / numConnected;
-        float tempAngle = ((myAngle + weight * average) / (weight + 1));
+        float tempAngle = ((myAngle + weight * average) / (weight + 1)/scaling);
    
-        curAngle = constrainAngle(tempAngle);
+        curAngle = constrainAngle(tempAngle * scaling);
     }
     else{
         curAngle = constrainAngle(myAngle);
@@ -138,9 +142,8 @@ void mesmer(){
 // quick Sweep
 // ============================================================================================
 void quickSweep(){
-    setServo(true);
     float newAngle = linearSweep(4.0, 0, MAX_ANGLE - 1);
-    if ( newAngle > MAX_ANGLE - 1)
+    if ( newAngle > MAX_ANGLE - 1 || newAngle < 0)
         newAngle = 0;
     
     curAngle = newAngle;
@@ -152,7 +155,6 @@ void quickSweep(){
 // listener
 // ============================================================================================
 void listen(){
-    setServo(true);
     if (presenceDetected){
         curAngle = 0.0;
     }
@@ -226,21 +228,90 @@ void twitch(){
 // delayed reaction
 // ============================================================================================
 void delayedReaction(){
-    /// TODO: Write this function
-    // need to know who to follow and how many samples to delay by
-    // this should depend on the updateRate
-    
     
     if (special){
-        curAngle = cycle(9, 45 * cycle(12, 0.5, 0.5), cycle(2, 3 * cycle(9, 0.5, 0.5), 0));
+        curAngle = cycle(9, 45 * cycle(12, 0.5, 0.5), 0);
     }
     else if (bottom){ // use delayed value
-        curAngle = getDelNeighbor(LEFT, 500); // enum LEFT, RIGHT, ABOVE, BELOW
+        curAngle = getDelNeighbor(LEFT, cycle(20, 1000, 1000)); // enum LEFT, RIGHT, ABOVE, BELOW
     }
     else
         curAngle = neighborAngles[BELOW];
     
 }
 
+void servoBehavior(){
+    // when new mode starts
+    // initialize
+    if(lastMode != currentMode){
+        if (currentMode == BREAK)
+            setServo(false);
+        else{
+            // start a transition 
+            transitionAngle = curAngle;
+            crossFade = 0.0;
+            inTransition = true;
+
+            // enable servo
+            setServo(true);
+            updateRate = SMOOTH; // for modes which use other updateRate set below in switch
+            
+            switch(currentMode)
+            {
+                case PERIODIC:
+                    randomPeriod = getRandom(2.0, 8.0);
+                    updateRate = (int)getRandom(SMOOTH, FOUR_HUNDRED);
+                    break;
+                case AVERAGE:
+                    randomPeriod = getRandom(4.0, 20.0);
+                    break;
+                    
+            }
+        }
+    }
+    
+    switch(currentMode)
+    {
+        case BREAK: // do nothing
+            break;
+            
+        case TOGETHER:
+            curAngle = cycle(5, 45.0, 0);
+            break;
+            
+        case PERIODIC:
+            curAngle = cycle(randomPeriod, 45.0, 0.0);
+            break;
+            
+        case AVERAGE:
+            mesmer();
+            break;
+            
+        case LISTEN:
+            listen();
+            break;
+            
+        case TWITCH:
+            twitch();
+            break;
+            
+        case SWEEP:
+            quickSweep();
+            break;
+            
+        case DELAYED:
+            delayedReaction();
+    }
+    
+    if (!inTransition){
+        set_servo_position(curAngle);
+    }
+    else // in transition
+    {
+        curAngle = crossFade * curAngle + (1.0 - crossFade) * transitionAngle;
+        set_servo_position(curAngle);
+    }
+
+}
 
 

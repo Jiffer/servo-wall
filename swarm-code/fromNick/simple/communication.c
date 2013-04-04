@@ -1,17 +1,4 @@
-// ============================================================================================
-// send message packet
-// ============================================================================================
-void printKeyCommands(){
-    
-    fprintf_P(&usart_stream, PSTR("'n' - set servo updateRate to NONE\n"));
-    fprintf_P(&usart_stream, PSTR("'s' - set servo updateRate to 10ms\n"));
-    fprintf_P(&usart_stream, PSTR("'h' - set servo updateRate to 200ms\n"));
-    fprintf_P(&usart_stream, PSTR("'p' - set currentMode to PERIODIC\n"));
-    fprintf_P(&usart_stream, PSTR("'V' - set currentMode to AVERAGE\n"));
-    fprintf_P(&usart_stream, PSTR("'w' - set currentMode to SWEEP\n"));
-    fprintf_P(&usart_stream, PSTR("'t' - set currentMode to TOGETHER\n"));
-    fprintf_P(&usart_stream, PSTR("'P' - toggling debug printf on/off \n"));
-}
+
 
 // ============================================================================================
 // send message packet
@@ -142,10 +129,10 @@ void rx_pkt(Xgrid::Packet *pkt)
             // jif
             case 'c': cycleOn = true; break;
             case 'o': cycleOn = false; break;
-            case 'd':   debugPrint = !debugPrint; break;
+
             case 'n':   updateRate = NONE; break;
             case '0':   updateRate = SMOOTH; break;
-            case '1': updateRate = ONE_HUNDRED; break;
+            case '1':   updateRate = ONE_HUNDRED; break;
             case '2':   updateRate = TWO_HUNDRED; break;
             case '3':   updateRate = THREE_HUNDRED; break;
             case '4':   updateRate = FOUR_HUNDRED; break;
@@ -157,6 +144,7 @@ void rx_pkt(Xgrid::Packet *pkt)
             case 't':   currentMode = TOGETHER; break;
             case 'w':   currentMode = TWITCH; break;
             case 'l':   currentMode = LISTEN; break;
+            case 'd':   currentMode = DELAYED; break;
         }
     }
     
@@ -189,11 +177,7 @@ void key_input()
 	if(input_char == 'v')
 		fprintf_P(&usart_stream, PSTR("build number = %ld\r\n"), (unsigned long) &__BUILD_NUMBER);
 
-	if(input_char == 'd')
-	{
-		if(display) display = false;
-		else		display = true;
-	}
+
 
 	if(input_char == 'r')	//set sec_counter as 0
 	{
@@ -215,22 +199,27 @@ void key_input()
     if(input_char == '0'){
         fprintf_P(&usart_stream, PSTR("setting updateRate to 10ms\n"));
         updateRate = SMOOTH;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "s");	
-    }
-    if(input_char == '2'){
-        fprintf_P(&usart_stream, PSTR("setting updateRate to 200ms\n"));
-        updateRate = TWO_HUNDRED;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "h");
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "0");
     }
     if(input_char == '1'){
         fprintf_P(&usart_stream, PSTR("setting updateRate to 100ms\n"));
         updateRate = ONE_HUNDRED;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "s");
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "1");
+    }
+    if(input_char == '2'){
+        fprintf_P(&usart_stream, PSTR("setting updateRate to 200ms\n"));
+        updateRate = TWO_HUNDRED;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "2");
+    }
+    if(input_char == '3'){
+        fprintf_P(&usart_stream, PSTR("setting updateRate to 300ms\n"));
+        updateRate = TWO_HUNDRED;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "3");
     }
     if(input_char == '4'){
         fprintf_P(&usart_stream, PSTR("setting updateRate to 400ms\n"));
         updateRate = FOUR_HUNDRED;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "h");
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "4");
     }
     
     // ============================================================================================
@@ -270,10 +259,16 @@ void key_input()
         
     }
     if(input_char == 'l'){
-        fprintf_P(&usart_stream, PSTR("'l' - setting currentMode to linear SWEEP\n"));
-        currentMode = SWEEP;
+        fprintf_P(&usart_stream, PSTR("'l' - setting currentMode to linear LISTEN\n"));
+        currentMode = LISTEN;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "l");
     }
+    if(input_char == 'd'){
+        fprintf_P(&usart_stream, PSTR("'d' - setting currentMode to linear DELAYED\n"));
+        currentMode = LISTEN;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "d");
+    }
+    
     // cycle all
     if(input_char == 'c'){
         cycleOn = true;
@@ -293,9 +288,6 @@ void key_input()
     if(input_char == 'P'){
         fprintf_P(&usart_stream, PSTR("'P' - toggling debug printf on/off \n"));
         debugPrint = !debugPrint;
-    }
-    if(input_char == 'c'){
-        printKeyCommands();
     }
 
 }

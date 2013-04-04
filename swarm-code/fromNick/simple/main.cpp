@@ -28,13 +28,26 @@ ISR(TCC0_OVF_vect)
             servo_motor_on   = true;
             sendmessage_fast = true;
         }
+        if (inTransition)
+        {
+            crossFade += 0.01; // should take 1 second
+            if (crossFade >= 1.0)
+            {
+                crossFade = 1.0;
+                inTransition = false;
+            }
+        }
+    }
+    
+    // 50Hz update rate
+    if(jiffies%20 == 0)
+    {
+        send_neighbor_data(curAngle, myStrength);
     }
     
     // 50 ms (20Hz)
     if(jiffies%50 == 0)
     {
-        
-
         // storing as unsigned ints, when used must subtract 90
         neighborBuffer[ABOVE][neighborBufferPtr] = (uint8_t)(neighborAngles[ABOVE] + 90);
         neighborBuffer[BELOW][neighborBufferPtr] = (uint8_t)(neighborAngles[BELOW] + 90);
@@ -320,81 +333,10 @@ int main(void)
         ////////////////////////////////////////////////
         // if angle is being updated this cycle
         if(servo_motor_on)
-        {            
-            switch(currentMode)
-			{
-                case BREAK: // do nothing
-                    setServo(false);
-                    break;
-                case TOGETHER:
-                    if(lastMode != currentMode){
-                        setServo(true);
-                        updateRate = SMOOTH;
-                    }
-
-                    curAngle = cycle(5, 45.0, 0);
-                    set_servo_position(curAngle);
-                    break;
-				case PERIODIC:
-                    setServo(true);
-                    if(lastMode != currentMode){
-                        randomPeriod = getRandom(2.0, 8.0);
-                        updateRate = (int)getRandom(SMOOTH, FOUR_HUNDRED);
-                    }
-                    
-                    curAngle = cycle(randomPeriod, 45.0, 0.0);
-                    set_servo_position(curAngle);
-                    break;
-                case AVERAGE:
-                    if(lastMode != currentMode){
-                        updateRate = SMOOTH;
-                        // calculte a new random period each time it enters this mode
-                        randomPeriod = getRandom(4.0, 20.0);
-                    }
-                    
-                    // mesmer averaging based on Processing sketch
-                    mesmer();
-                    // if no neighbors don't scale the angle
-                    if(numConnected > 0)
-                        set_servo_position(3.5 * curAngle);
-                    else
-                        set_servo_position(curAngle);
-                    break;
-                case LISTEN:
-                    if(lastMode != currentMode){
-                        updateRate = SMOOTH;
-                    }
-                    
-                    listen();
-                    set_servo_position(curAngle);
-                    break;
-                    
-                case TWITCH:
-                    
-                    twitch();
-                    set_servo_position(curAngle);
-                    break;
-                    
-                case SWEEP:
-                    if(lastMode != currentMode){
-                        updateRate = SMOOTH;
-                    }
-                    quickSweep();
-                    set_servo_position(curAngle);
-                    break;
-                    
-                case DELAYED:
-                    if(lastMode != currentMode){
-                        updateRate = SMOOTH;
-                    }
-                    delayedReaction();
-                    set_servo_position(curAngle);
-            }
+        {
+            servoBehavior();
             lastMode = currentMode;
             
-            // set servo angle
-           
-            send_neighbor_data(curAngle, myStrength);
             
             // wait until updateRate has come back around
             servo_motor_on = false;

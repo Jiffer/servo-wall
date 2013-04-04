@@ -132,6 +132,7 @@ uint16_t sum_dbl = 0, sum_tri = 0;
 
 int sec_counter = 0;
 int counterTenHz = 0;
+
 float decay_tim;
 float global_amp;
 
@@ -186,14 +187,18 @@ void servo_motor_control(float);
 #define LASTtime 630
 
 // jif's globals //
-#define MAX_ANGLE 80.0
+#define MAX_ANGLE 65.0
 #define PRESENCE_THRESH 4000
 #define PRESENCE_OFF_THRESH 3500
 
 float curAngle = 0; // from -90 to 90
+float transitionAngle = 0;
+bool inTransition = false;
+
 bool presenceDetected = false;
 float myStrength;
 float randomPeriod = 0.0;
+float crossFade = 0.0;
 bool debugPrint = false;
 bool cycleOn = false;
 bool servoEnabled = true;
@@ -254,7 +259,7 @@ enum algorithm {
     };
 
 int currentMode = DELAYED;
-int lastMode = currentMode;
+int lastMode = -1; // first time through this will force initialization to run for whatever mode it starts in
 
 // \jif's globals //
 
