@@ -36,12 +36,12 @@ void send_neighbor_data(float angle, float strength)
 	pkt.flags = 0;
 	pkt.radius = 1;
 	
-    neighborData.angleValue = angle;
-    neighborData.sensorValue = sensor_value;
-    neighborData.strength = strength; //(float)sensor_value / 4096.0;
-    neighborData.fromDir = strengthDir;
+    sendData.angleValue = angle;
+    sendData.sensorValue = sensor_value;
+    sendData.strength = strength; //(float)sensor_value / 4096.0;
+    sendData.fromDir = strengthDir;
     
-	pkt.data = (uint8_t *)&neighborData;
+	pkt.data = (uint8_t *)&sendData;
     
 	pkt.data_len = sizeof(NeighborData);
 	
@@ -87,10 +87,26 @@ void rx_pkt(Xgrid::Packet *pkt)
             connected[port] = true;
             
             NeighborData* recvNeighborPtr = (NeighborData*) pkt->data;
+            
             neighborAngles[port] = recvNeighborPtr->angleValue;
             neighborSensors[port] = recvNeighborPtr->sensorValue;
             neighborStrength[port] = recvNeighborPtr->strength;
             neighborStrengthDir[port] = recvNeighborPtr->fromDir;
+            
+            //fprintf_P(&usart_stream, PSTR("p:%i, rNP.d.%i, rNP.s.%f\r\n"), port, recvNeighborPtr->fromDir, recvNeighborPtr->strength);
+            // TODO: switching to neighborData[] array struct variable
+            if (port == recvNeighborPtr->fromDir || (recvNeighborPtr->fromDir == MOOT && (port == LEFT || port == RIGHT))){
+                neighborData[port] = *recvNeighborPtr;
+             //   if(port == LEFT)
+             //       fprintf_P(&usart_stream, PSTR("left, frm.%i, strngt.%f, l: %f\r\n"), recvNeighborPtr->fromDir, recvNeighborPtr->strength, neighborData[LEFT].strength);
+             //   if(port == RIGHT)
+             //       fprintf_P(&usart_stream, PSTR("right, frm.%i, strngt.%f, r: %f\r\n"), recvNeighborPtr->fromDir, recvNeighborPtr->strength, neighborData[RIGHT].strength);
+            }
+            else{ // don't update strength unless direction matches port
+                neighborData[port].angleValue = recvNeighborPtr->angleValue;
+                neighborData[port].sensorValue = recvNeighborPtr->sensorValue;
+            }
+            
             // for columns set sensor value to that of the bottom board in the column
             if (port == BELOW){
                 sensor_value = recvNeighborPtr->sensorValue;

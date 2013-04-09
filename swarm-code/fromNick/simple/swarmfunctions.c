@@ -240,7 +240,7 @@ void twitch(bool wave){
         reverb = false;
     }
     
-    if(myStrength > 0.01){
+    if(neighborData[LEFT].strength > 0.01 || neighborData[RIGHT].strength > 0.01){
         startTime = sec_counter;
         reverb = true;
         //fprintf_P(&usart_stream, PSTR("time: %u,\r\n"), startTime);
@@ -261,13 +261,13 @@ void twitch(bool wave){
     else if(reverb){
         
         if(wave){
-            if(strengthDir == LEFT)
+            if(lastStrengthDir == RIGHT) // direction it is moving not where it came from
             {
-                tempAngle = getDelNeighbor(LEFT, 1200);
+                tempAngle = lastStrength * getDelNeighbor(RIGHT, 1200);
             }
-            else if(strengthDir == RIGHT)
+            else if(lastStrengthDir == LEFT)
             {
-                tempAngle = getDelNeighbor(RIGHT, 1200);
+                tempAngle = lastStrength * getDelNeighbor(LEFT, 1200);
             }
         }
     }

@@ -197,7 +197,9 @@ bool inTransition = false;
 
 bool presenceDetected = false;
 float myStrength;
+float lastStrength;
 int strengthDir;
+int lastStrengthDir;
 float randomPeriod = 0.0;
 float crossFade = 0.0;
 bool debugPrint = false;
@@ -224,7 +226,9 @@ struct NeighborData {
     int sensorValue;
     float strength; // use to impart influence on neighbors
     int fromDir;
-} neighborData;
+} ;
+NeighborData sendData;
+NeighborData neighborData[6];
 
 int numConnected = 0;
 float neighborAngles[6];

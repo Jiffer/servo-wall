@@ -110,23 +110,33 @@ ISR(TCC0_OVF_vect)
             myStrength = 1.0;
             strengthDir = MOOT;
         }
-        else if (neighborStrength[LEFT] > 0.01 || neighborStrength[RIGHT] > 0.01){
-            // make sure strength messages only move in the direction away from the sensor
-            if (neighborStrength[LEFT] >= neighborStrength[RIGHT] && (neighborStrengthDir[LEFT] == LEFT || neighborStrengthDir[LEFT] == MOOT)){
-                myStrength = neighborStrength[LEFT] / 2.0;
-                strengthDir = LEFT;
+        
+        else{
+            if(((neighborData[LEFT].strength > 0.01) || (neighborData[RIGHT].strength > 0.01)) && neighborData[LEFT].strength != neighborData[RIGHT].strength)
+            {
+                if (neighborData[LEFT].strength > neighborData[RIGHT].strength && (neighborData[LEFT].fromDir == LEFT ||neighborData[LEFT].fromDir == MOOT)){
+                    myStrength = neighborData[LEFT].strength / 1.3;
+                    strengthDir = LEFT;
+                    lastStrengthDir = LEFT;
+                    lastStrength = myStrength;
+                    //fprintf_P(&usart_stream, PSTR("updating L\r\n"));
+                }
+                else if (neighborData[RIGHT].strength > neighborData[LEFT].strength && (neighborData[RIGHT].fromDir == RIGHT || neighborData[RIGHT].fromDir == MOOT)){
+                    myStrength = neighborData[RIGHT].strength / 1.3;
+                    strengthDir = RIGHT;
+                    lastStrengthDir = RIGHT;
+                    lastStrength = myStrength;
+                    //fprintf_P(&usart_stream, PSTR("updating R\r\n"));
+                }
             }
-            else if(neighborStrengthDir[RIGHT] == RIGHT || neighborStrengthDir[RIGHT] == MOOT){
-                myStrength = neighborStrength[RIGHT] / 2.0;
-                strengthDir = RIGHT;
-            }
-        }
-        else
-        {
+            else
+            {
                 myStrength = 0.0;
-                strengthDir = NOTHING;
+                strengthDir = MOOT;
+                //fprintf_P(&usart_stream, PSTR("moot!\r\n"));
+            }
         }
-    }
+    } // \(jiffies % 100==0)
     
     
     // every 100 ms
@@ -151,6 +161,7 @@ ISR(TCC0_OVF_vect)
             servo_motor_on   = true;
             sendmessage_fast = true;
         }
+        fprintf_P(&usart_stream, PSTR("my: %f, d.%i, l%f, r%f\r\n"), myStrength, strengthDir, neighborData[LEFT].strength, neighborData[RIGHT].strength);
     }
     // every 300 ms
     if(jiffies%300 == 0)
