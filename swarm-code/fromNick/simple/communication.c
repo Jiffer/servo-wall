@@ -24,13 +24,6 @@ void send_message(uint8_t MessageType, uint8_t direction, int dist, const char s
 }
 
 
-struct NeighborData {
-    float angleValue;
-    int sensorValue;
-    float strength; // TODO: use to impart influence on neighbors
-} neighborData;
-
-
 // ============================================================================================
 // Send angle packet
 // Send Angle data and strength of message to neighbors
@@ -46,6 +39,7 @@ void send_neighbor_data(float angle, float strength)
     neighborData.angleValue = angle;
     neighborData.sensorValue = sensor_value;
     neighborData.strength = strength; //(float)sensor_value / 4096.0;
+    neighborData.fromDir = strengthDir;
     
 	pkt.data = (uint8_t *)&neighborData;
     
@@ -96,7 +90,7 @@ void rx_pkt(Xgrid::Packet *pkt)
             neighborAngles[port] = recvNeighborPtr->angleValue;
             neighborSensors[port] = recvNeighborPtr->sensorValue;
             neighborStrength[port] = recvNeighborPtr->strength;
-        
+            neighborStrengthDir[port] = recvNeighborPtr->fromDir;
             // for columns set sensor value to that of the bottom board in the column
             if (port == BELOW){
                 sensor_value = recvNeighborPtr->sensorValue;

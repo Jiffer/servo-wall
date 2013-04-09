@@ -43,11 +43,7 @@ ISR(TCC0_OVF_vect)
     if(jiffies%20 == 0)
     {
         send_neighbor_data(curAngle, myStrength);
-    }
-    
-    // 50 ms (20Hz)
-    if(jiffies%50 == 0)
-    {
+        
         // storing as unsigned ints, when used must subtract 90
         neighborBuffer[ABOVE][neighborBufferPtr] = (uint8_t)(neighborAngles[ABOVE] + 90);
         neighborBuffer[BELOW][neighborBufferPtr] = (uint8_t)(neighborAngles[BELOW] + 90);
@@ -57,16 +53,20 @@ ISR(TCC0_OVF_vect)
         // increment pointer,  check for roll over
         neighborBufferPtr++;
         neighborBufferPtr %= NEIGHBOR_BUFFER_SIZE;
-        
     }
+    
+    // 50 ms (20Hz)
+//    if(jiffies%50 == 0)
+//    {
+//        
+//        
+//    }
     
     // every 100 ms
     if(jiffies%100 == 0)
     {
-
         // increment 10 hz counter
         counterTenHz++;
-        
         ////////////////////////////////////////////////////
         // Read analog input
         ////////////////////////////////////////////////////
@@ -108,16 +108,26 @@ ISR(TCC0_OVF_vect)
         }
         if (presenceDetected){
             myStrength = 1.0;
+            strengthDir = MOOT;
         }
-        else if (neighborStrength[LEFT] > 0 || neighborStrength[RIGHT] > 0)
-            if (neighborStrength[LEFT] > neighborStrength[RIGHT])
+        else if (neighborStrength[LEFT] > 0.01 || neighborStrength[RIGHT] > 0.01){
+            // make sure strength messages only move in the direction away from the sensor
+            if (neighborStrength[LEFT] >= neighborStrength[RIGHT] && (neighborStrengthDir[LEFT] == LEFT || neighborStrengthDir[LEFT] == MOOT)){
                 myStrength = neighborStrength[LEFT] / 2.0;
-            else
+                strengthDir = LEFT;
+            }
+            else if(neighborStrengthDir[RIGHT] == RIGHT || neighborStrengthDir[RIGHT] == MOOT){
                 myStrength = neighborStrength[RIGHT] / 2.0;
+                strengthDir = RIGHT;
+            }
+        }
         else
-            myStrength = 0.0;
-            
+        {
+                myStrength = 0.0;
+                strengthDir = NOTHING;
+        }
     }
+    
     
     // every 100 ms
     if(jiffies%100 == 0)
@@ -226,8 +236,8 @@ ISR(TCC0_OVF_vect)
             if (connected[i])
                 numConnected++;
         }
-    }
     
+    }
    	xgrid.process();
     
     // cycle through all the current modes

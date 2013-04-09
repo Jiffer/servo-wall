@@ -46,6 +46,20 @@ float cycle(float period, float range, float offset){
     return angle;
 }
 
+// version with just period will go from -1.0 to 1.0
+float cycle(float period){
+    float angle;
+    angle = sin(jiffies * 2.0 * PI /(period * 1000.0)); //
+    return angle;
+}
+
+// version with just period will go from -1.0 to 1.0
+float cycle(float period, float phase){
+    float angle;
+    angle = sin(jiffies * 2.0 * PI /(period * 1000.0) + phase); //
+    return angle;
+}
+
 
 // ============================================================================================
 // constrain angle functions
@@ -100,14 +114,49 @@ float linearSweep(float howFast, float startAngle, float targetAngle){
 // time is in ms
 // ============================================================================================
 float getDelNeighbor(int port, int time){
-    // sample rate for this buffer is 50ms
-    int samples = (int)(time / 50.0);
+    // sample rate for this buffer is 20ms
+    int samples = (int)(time / 20.0);
     //fprintf_P(&usart_stream, PSTR("offset: %i\r\n"), samples);
     int tempPtr = neighborBufferPtr - samples;
     if (tempPtr < 0)
         tempPtr += NEIGHBOR_BUFFER_SIZE;
+    
+    if (samples == 0)
+        return neighborAngles[port];
+    else
+        return (float)(neighborBuffer[port][tempPtr] - 90); // storing as unsigned so -90
+}
 
-    return (float)(neighborBuffer[port][tempPtr] - 90); // storing as unsigned so -90
+// ============================================================================================
+// I'm the Map!
+// ============================================================================================
+float map(float mapSignal, float loIn, float hiIn, float loOut, float hiOut){
+    float scale, offset;
+    
+    float inputRange = hiIn - loIn;
+    float outputRange = hiOut - loOut;
+    
+    scale = outputRange / inputRange;
+    offset = outputRange / 2 + loOut;
+    
+    return (scale * mapSignal + offset);
+}
+
+// ============================================================================================
+// presense wave - follow lead of wherever presense is detected by specified delay amount
+// ============================================================================================
+float presenceWave(float thresh, int delAmount){
+    float tempAngle = 0;
+    if(neighborStrength[LEFT] > thresh && (neighborStrength[LEFT] > neighborStrength[RIGHT]))
+    {
+        tempAngle = getDelNeighbor(LEFT, delAmount);
+    }
+    else if( neighborStrength[RIGHT] > thresh)
+    {
+        tempAngle = getDelNeighbor(RIGHT, delAmount);
+    }
+    
+    return tempAngle;
 }
 
 // ============================================================================================
@@ -169,36 +218,62 @@ void listen(){
 // ============================================================================================
 // twitch
 // ============================================================================================
-void twitch(){
+void twitch(bool wave){
     static float randomTime;
-    static bool toFro;
     int lowTime = 2;
     int hiTime = 8;
     float tempAngle = 0.0;
     
+    static int startTime;
+    static bool reverb;
+    
     if(lastMode != currentMode){
         setServo(true);
+        
+        // random twitch variables
         counterTenHz = 0;
-        toFro = true;
         randomTime = getRandom(lowTime, hiTime);
         actionComplete = false;
+        
+        // wave still propogating vars
+        startTime = 0;
+        reverb = false;
     }
     
+    if(myStrength > 0.01){
+        startTime = sec_counter;
+        reverb = true;
+        //fprintf_P(&usart_stream, PSTR("time: %u,\r\n"), startTime);
+    }
+    else if(startTime + 5 < sec_counter){ // wave lasts 5 seconds after presense is no longer there
+        reverb = false;
+        //fprintf_P(&usart_stream, PSTR("disabling: %u,\r\n"), sec_counter);
+    }
+    
+    
+    // my coloumn is active
     if (presenceDetected){
         // wiggle
         tempAngle = cycle(0.125, 10, 0);
     }
-    else if(neighborStrength[LEFT] > 0.1 && (neighborStrength[LEFT] > neighborStrength[RIGHT]))
-    {
+    
+    // presense is detected somewhere in the system
+    else if(reverb){
         
+        if(wave){
+            if(strengthDir == LEFT)
+            {
+                tempAngle = getDelNeighbor(LEFT, 1200);
+            }
+            else if(strengthDir == RIGHT)
+            {
+                tempAngle = getDelNeighbor(RIGHT, 1200);
+            }
+        }
     }
-    else if( neighborStrength[RIGHT] > 0.1)
-    {
-        
-    }
+    
     else
     {
-        
         if (counterTenHz > 10.0 * randomTime){
             //fprintf_P(&usart_stream, PSTR("comp: %f, %f\r\n"), (float)counterTenHz, (10.0 * (randomTime + 0.5)));
 
@@ -228,18 +303,33 @@ void twitch(){
 // delayed reaction
 // ============================================================================================
 void delayedReaction(){
-    
+
     if (special){
-        curAngle = cycle(9, 45 * cycle(12, 0.5, 0.5), 0);
-    }
+        //curAngle = cycle(9, 45 * cycle(12, 0.5, 0.5), 0);
+
+        //curAngle = cycle(9 + tempPeriod, 45, 0);
+        //curAngle = 45 * sin((jiffies * 2.0 * PI /(9.0 * 1000.0)) + sin(jiffies * 2.0 * PI /(23.0 * 1000.0)));
+        //curAngle = 45 * cycle(9, map(cycle(21), -1, 1, -3, 3));
+
+        curAngle = 45 * cycle(9, cycle(21));
+}
+    
     else if (bottom){ // use delayed value
-        curAngle = getDelNeighbor(LEFT, cycle(20, 1000, 1000)); // enum LEFT, RIGHT, ABOVE, BELOW
+        //curAngle = getDelNeighbor(LEFT, 500); // enum LEFT, RIGHT, ABOVE, BELOW
+        //float delayAmount = 500 + 500 * sin(jiffies * 2.0 * PI /(20 * 1000.0));
+        //fprintf_P(&usart_stream, PSTR("del: %f\r\n"), delayAmount);
+        curAngle = getDelNeighbor(LEFT, cycle(20, 500, 500));
     }
+    
     else
         curAngle = neighborAngles[BELOW];
     
 }
 
+
+// ============================================================================================
+// switches between all the servo modes
+// ============================================================================================
 void servoBehavior(){
     // when new mode starts
     // initialize
@@ -292,7 +382,11 @@ void servoBehavior(){
             break;
             
         case TWITCH:
-            twitch();
+            twitch(false);
+            break;
+            
+        case TWITCH_WAVE:
+            twitch(true);
             break;
             
         case SWEEP:
@@ -301,6 +395,16 @@ void servoBehavior(){
             
         case DELAYED:
             delayedReaction();
+            break;
+            
+        case FM_TOGETHER:
+            curAngle = 45 * cycle(9, cycle(21));
+            break;
+            
+        case AM_TOGETHER:
+            curAngle = 45 * cycle(10) * cycle(2);
+            break;
+
     }
     
     if (!inTransition){

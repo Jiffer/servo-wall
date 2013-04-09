@@ -197,6 +197,7 @@ bool inTransition = false;
 
 bool presenceDetected = false;
 float myStrength;
+int strengthDir;
 float randomPeriod = 0.0;
 float crossFade = 0.0;
 bool debugPrint = false;
@@ -208,6 +209,8 @@ bool servoEnabled = true;
 #define ABOVE   5
 #define LEFT    2
 #define RIGHT   4
+#define MOOT    0
+#define NOTHING    7
 
 // delay buffer port names
 #define DEL_ABOVE 0
@@ -216,12 +219,20 @@ bool servoEnabled = true;
 #define DEL_RIGHT 3
 
 // neighbors data
+struct NeighborData {
+    float angleValue;
+    int sensorValue;
+    float strength; // use to impart influence on neighbors
+    int fromDir;
+} neighborData;
+
 int numConnected = 0;
 float neighborAngles[6];
 int neighborSensors[6];
 float neighborStrength[6];
+int neighborStrengthDir[6];
 
-#define NEIGHBOR_BUFFER_SIZE 40
+#define NEIGHBOR_BUFFER_SIZE 100
 uint8_t neighborBuffer[6][NEIGHBOR_BUFFER_SIZE];
 uint8_t neighborBufferPtr = 0;
 
@@ -254,7 +265,10 @@ enum algorithm {
     SWEEP,
     LISTEN,
     TWITCH,
+    TWITCH_WAVE,
     DELAYED,
+    FM_TOGETHER,
+    AM_TOGETHER,
     BREAK
     };
 
