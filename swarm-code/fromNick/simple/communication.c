@@ -149,7 +149,7 @@ void rx_pkt(Xgrid::Packet *pkt)
             // modes
             case 'b':   currentMode = BREAK; break;
             case 'p':   currentMode = PERIODIC; break;
-            case 'V':   currentMode = AVERAGE; break;
+            case 'V':   currentMode = MESMER; break;
             case 'e':   currentMode = SWEEP; break;
             case 't':   currentMode = TOGETHER; break;
             case 'w':   currentMode = TWITCH; break;
@@ -247,8 +247,8 @@ void key_input()
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "p");
     }
     if(input_char == 'V'){
-        fprintf_P(&usart_stream, PSTR("'V' - setting currentMode to AVERAGE\n"));
-        currentMode = AVERAGE;
+        fprintf_P(&usart_stream, PSTR("'V' - setting currentMode to MESMER\n"));
+        currentMode = MESMER;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "V");
     }
     if(input_char == 'e'){

@@ -42,6 +42,16 @@ ISR(TCC0_OVF_vect)
     // 50Hz update rate
     if(jiffies%20 == 0)
     {
+        counterFiftyHz++;
+        
+        beatCounterFiftyHz++;
+        beatCounterFiftyHz %= (ticksPerBeat * numBeats);
+//        if (beatCounterFiftyHz % ticksPerBeat == 0)
+//        {
+//            currentBeat++;
+//            currentBeat %= numBeats;
+//        }
+        
         send_neighbor_data(curAngle, myStrength);
         
         // storing as unsigned ints, when used must subtract 90
@@ -106,6 +116,12 @@ ISR(TCC0_OVF_vect)
                     presenceDetected = false;
             }
         }
+        
+        if (presenceDetected && !presenseDetectedLast)
+            newPresence = true;
+        else
+            newPresence = false;
+        
         if (presenceDetected){
             myStrength = 1.0;
             strengthDir = MOOT;
@@ -161,7 +177,12 @@ ISR(TCC0_OVF_vect)
             servo_motor_on   = true;
             sendmessage_fast = true;
         }
-        fprintf_P(&usart_stream, PSTR("my: %f, d.%i, l%f, r%f\r\n"), myStrength, strengthDir, neighborData[LEFT].strength, neighborData[RIGHT].strength);
+        //fprintf_P(&usart_stream, PSTR("my: %f, d.%i, l%f, r%f\r\n"), myStrength, strengthDir, neighborData[LEFT].strength, neighborData[RIGHT].strength);
+        
+
+            currentBeat++;
+            currentBeat %= numBeats;
+
     }
     // every 300 ms
     if(jiffies%300 == 0)

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1C9DDBF01718B6E1004AFB82 /* presenceFunctions.c in Sources */ = {isa = PBXBuildFile; fileRef = 1C9DDBEF1718B6E1004AFB82 /* presenceFunctions.c */; };
 		1CC32E7116DFAD3A00668506 /* simple.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 1CC32E7016DFAD3A00668506 /* simple.1 */; };
 		1CC32E9616DFAD8000668506 /* board_init.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E7816DFAD8000668506 /* board_init.c */; };
 		1CC32E9716DFAD8000668506 /* communication.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CC32E7B16DFAD8000668506 /* communication.c */; };
@@ -39,6 +40,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1C9DDBEF1718B6E1004AFB82 /* presenceFunctions.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = presenceFunctions.c; sourceTree = "<group>"; };
 		1CC32E6A16DFAD3A00668506 /* simple */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = simple; sourceTree = BUILT_PRODUCTS_DIR; };
 		1CC32E7016DFAD3A00668506 /* simple.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = simple.1; sourceTree = "<group>"; };
 		1CC32E7716DFAD8000668506 /* avr_compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = avr_compiler.h; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 				1CC32E8516DFAD8000668506 /* main.h */,
 				1CC32E8416DFAD8000668506 /* main.cpp */,
 				1CC32E9016DFAD8000668506 /* swarmfunctions.c */,
+				1C9DDBEF1718B6E1004AFB82 /* presenceFunctions.c */,
 				1CC32E7B16DFAD8000668506 /* communication.c */,
 				1CC32E7916DFAD8000668506 /* board.h */,
 				1CC32E7816DFAD8000668506 /* board_init.c */,
@@ -206,6 +209,7 @@
 				1CC32EA216DFAD8000668506 /* swarmfunctions.c in Sources */,
 				1CC32EA316DFAD8000668506 /* usart.cpp in Sources */,
 				1CC32EA416DFAD8000668506 /* xgrid.cpp in Sources */,
+				1C9DDBF01718B6E1004AFB82 /* presenceFunctions.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

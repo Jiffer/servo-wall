@@ -1,3 +1,13 @@
+// ============================================================================================
+// presence detected functions
+// ============================================================================================
+void toFro();
+
+// ============================================================================================
+// ============================================================================================
+// ============================================================================================
+// ============================================================================================
+
 
 // ============================================================================================
 // for initialization of swarm dynamics function
@@ -8,6 +18,12 @@ void init_variables()
     for(int i; i < 6; i++){
         neighborAngles[i] = 0;
     }
+    for(int i; i < MAX_BEATS; i++){
+        beatPattern[i] = 0;
+    }
+    beatPattern[0] = 1;
+    beatPattern[1] = 1;
+    beatPattern[3] = 1;
     
 	enable_servo();	
 	set_servo_position(0);
@@ -57,6 +73,27 @@ float cycle(float period){
 float cycle(float period, float phase){
     float angle;
     angle = sin(jiffies * 2.0 * PI /(period * 1000.0) + phase); //
+    return angle;
+}
+
+// ============================================================================================
+// sinSweep - sweeps from 0 to 1, 1/4 of a sin wave
+// reset counter50Hz to 0 before starting a new sweep
+// ============================================================================================
+float sinSweep(float sweepTime){
+    float angle;
+    
+    // sweepTime * 4 will get through 1/4 of a cycle in the specified time
+    // when it gets to pi/2 its 1/4 way through
+    float quarterCycle = 50.0 * sweepTime;  // for 50Hz counter
+    if (counterFiftyHz <= quarterCycle)
+        angle = sin(counterFiftyHz * 2.0 * PI /((sweepTime * 4) * 50));
+    else{
+        angle = 1.0;
+        actionComplete = true;
+    }
+    
+    //fprintf_P(&usart_stream, PSTR("sweepAng: %f\r\n"), angle);
     return angle;
 }
 
@@ -167,24 +204,39 @@ void mesmer(){
     //float weight = 20.0;
     float weight = cycle(20, 10, 10);
     float average = 0.0;
-    float scaling = 3.5;
+    float scaling = 6.0;
+    static float randAngle;
     
+    if (presenceDetected){
+        if (newPresence){
+            randAngle = getRandom(-MAX_ANGLE, MAX_ANGLE);
+        }
+        // wiggle
+        //curAngle =  cycle(0.25, 10, 0);
+        //curAngle =  (2 * cycle(5.3) + 8) * cycle(0.2, cycle(1)) ;
+        
+        //curAngle = randAngle;
+        
+        toFro();
+    }
+    
+    else{
     for(int i = 0; i < 6; i++){ 
         if (abs(neighborAngles[i]) < MAX_ANGLE && connected[i]){ // neighborAngles[LEFT]
             average += (neighborAngles[i]);
+            }
+        }
+        if (numConnected > 0){
+            //fprintf_P(&usart_stream, PSTR("b4_avg: %f\r\n"), average);
+            average = average / numConnected;
+            float tempAngle = ((myAngle + weight * average) / (weight + 1)/scaling);
+   
+            curAngle = constrainAngle(tempAngle * scaling);
+        }
+        else{
+            curAngle = constrainAngle(myAngle);
         }
     }
-    if (numConnected > 0){
-        //fprintf_P(&usart_stream, PSTR("b4_avg: %f\r\n"), average);
-        average = average / numConnected;
-        float tempAngle = ((myAngle + weight * average) / (weight + 1)/scaling);
-   
-        curAngle = constrainAngle(tempAngle * scaling);
-    }
-    else{
-        curAngle = constrainAngle(myAngle);
-    }
-    
 }
 
 // ============================================================================================
@@ -196,7 +248,6 @@ void quickSweep(){
         newAngle = 0;
     
     curAngle = newAngle;
-
 }
 
 
@@ -254,7 +305,7 @@ void twitch(bool wave){
     // my coloumn is active
     if (presenceDetected){
         // wiggle
-        tempAngle = cycle(0.125, 10, 0);
+        tempAngle = cycle(0.25, 10, 0);
     }
     
     // presense is detected somewhere in the system
@@ -326,6 +377,33 @@ void delayedReaction(){
     
 }
 
+// ============================================================================================
+// to and fro with 1/4 sin wave sweep
+// ============================================================================================
+void toFro(){
+    int degreesPerBeat = 20;
+    static int direction = 1;
+    static float startAngle = 0;
+// quantize to something...
+    
+    if (currentBeat != lastBeat){
+        lastBeat = currentBeat;
+        counterFiftyHz = 0;
+        startAngle = curAngle;
+        if (abs(curAngle + direction * degreesPerBeat) > MAX_ANGLE){
+            direction *= -1;
+        }
+    }
+    //fprintf_P(&usart_stream, PSTR("beat: %i\r\n"), currentBeat);
+    float tempAngle = beatPattern[currentBeat] * direction * degreesPerBeat * sinSweep(0.2);
+
+    curAngle = constrainAngle( startAngle + tempAngle );
+    
+//    if (counterFiftyHz >=  0.2 * 50){
+//        toOrFro = !toOrFro;
+//        counterFiftyHz = 0;
+//    }
+}
 
 // ============================================================================================
 // switches between all the servo modes
@@ -352,7 +430,7 @@ void servoBehavior(){
                     randomPeriod = getRandom(2.0, 8.0);
                     updateRate = (int)getRandom(SMOOTH, FOUR_HUNDRED);
                     break;
-                case AVERAGE:
+                case MESMER:
                     randomPeriod = getRandom(4.0, 20.0);
                     break;
                     
@@ -373,7 +451,7 @@ void servoBehavior(){
             curAngle = cycle(randomPeriod, 45.0, 0.0);
             break;
             
-        case AVERAGE:
+        case MESMER:
             mesmer();
             break;
             

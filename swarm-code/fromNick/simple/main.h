@@ -129,9 +129,19 @@ bool dblchk = true, trichk = true;
 //uint16_t sensor_value, sensor_value_now, sensor_value_dblchk, sensor_value_trichk;
 uint16_t sum_dbl = 0, sum_tri = 0;
 
-
+// counters
 int sec_counter = 0;
 int counterTenHz = 0;
+int counterFiftyHz = 0;
+
+// tracking beats
+int beatCounterFiftyHz = 0;
+int currentBeat = 0;
+int lastBeat = 0;
+int ticksPerBeat = 12;
+int numBeats = 6;
+#define MAX_BEATS 16
+int beatPattern[MAX_BEATS];
 
 float decay_tim;
 float global_amp;
@@ -196,6 +206,7 @@ float transitionAngle = 0;
 bool inTransition = false;
 
 bool presenceDetected = false;
+bool newPresence = false;
 float myStrength;
 float lastStrength;
 int strengthDir;
@@ -265,7 +276,7 @@ int updateRate = SMOOTH; // send 's' for SMOOTH, 'h' for TWO_HUNNDRED
 enum algorithm {
     TOGETHER,
     PERIODIC,
-    AVERAGE,
+    MESMER,
     SWEEP,
     LISTEN,
     TWITCH,
@@ -276,7 +287,7 @@ enum algorithm {
     BREAK
     };
 
-int currentMode = DELAYED;
+int currentMode = MESMER;
 int lastMode = -1; // first time through this will force initialization to run for whatever mode it starts in
 
 // \jif's globals //
