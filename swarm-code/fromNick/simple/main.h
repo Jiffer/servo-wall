@@ -98,25 +98,7 @@ uint8_t SP_ReadUserSigRow( uint8_t index );
 
 #define ALL 20
 #define NEIGHBOR_DATA 11
-//##########################################################################
 
-struct OBJ1
-{
-	float px, py, vx, vy, hd;
-	float neix[NUM_NEIGHBORS], neiy[NUM_NEIGHBORS];
-} agent0, agent1;
-
-struct OBJ2
-{
-	float tim1, tim2;
-	bool flg;
-} agent2, agent3;
-
-struct point
-{
-	float x1, y1;
-	float x0, y0;
-} mdata;
 
 //##########################################################################
 
@@ -133,6 +115,9 @@ uint16_t sum_dbl = 0, sum_tri = 0;
 int sec_counter = 0;
 int counterTenHz = 0;
 int counterFiftyHz = 0;
+int presenceTimer = 0;
+int neighborPresenceTimer = 0;
+int presModeCounter = 0;
 
 // tracking beats
 int beatCounterFiftyHz = 0;
@@ -140,7 +125,8 @@ int currentBeat = 0;
 int lastBeat = 0;
 int ticksPerBeat = 12;
 int numBeats = 6;
-#define MAX_BEATS 16
+
+#define MAX_BEATS 8
 int beatPattern[MAX_BEATS];
 
 float decay_tim;
@@ -164,7 +150,7 @@ bool special = false;	//marker of "Bottom-Left" module
 bool bottom = false;
 
 //===== for "Ken's model" =====
-bool sync = true;
+//bool sync = true;
 
 //===== for "wave" and "column swing" =====
 bool wave_flg = false,  wave_ping = false;
@@ -172,7 +158,7 @@ bool column_flg = false;
 uint8_t wave_port;
 
 //===== for "rhythm" =====
-bool rhythm_on = false;
+//bool rhythm_on = false;
 
 // ===== PROTOTYPE DECLARATION =====
 void send_message(uint8_t, uint8_t, int, const char[]);
@@ -184,34 +170,39 @@ void servo_motor_control(float);
 #define RANGE3 250
 #define IGNORE_DISTANCE 400
 
-//##### TIMER ######
-#define STGtime1 0		//sync
-#define STGtime2 150	//FM
-#define STGtime3 210	//AM
-#define STGtime4 270	//break
-#define STGtime5 300	//sync-chaos
-#define STGtime6 360	//column swing
-#define STGtime7 420	//plane wave
-#define STGtime8 480	//avalanche
-#define STGtime9 570	//break
-#define LASTtime 630
-
 // jif's globals //
 #define MAX_ANGLE 65.0
 #define PRESENCE_THRESH 4000
 #define PRESENCE_OFF_THRESH 3500
+#define STRENGTH_THRESHOLD 0.1
 
 float curAngle = 0; // from -90 to 90
 float transitionAngle = 0;
 bool inTransition = false;
+float fadeIncrement = 0.01;
+
+float offsetVar[4];
+int offsetVarIndex = 0;
+float amplitudeScaler = 1.0;
 
 bool presenceDetected = false;
+bool neighborPresenceDetected = false;
 bool newPresence = false;
+bool newNeighborPresence = false;
+bool ignorePresence = false;
+bool ignoreNeighborPresence = false;
+bool presenceDetectedLast = false;
+bool neighborPresenceDetectedLast = false;
+bool usingNeighborPresence = false;
+
+int presenceTimeOut = 15;
+int neighborPresenceTimeOut = 15;
 float myStrength;
 float lastStrength;
 int strengthDir;
 int lastStrengthDir;
 float randomPeriod = 0.0;
+int delayFunction = 0;
 float crossFade = 0.0;
 bool debugPrint = false;
 bool cycleOn = false;
@@ -225,12 +216,6 @@ bool servoEnabled = true;
 #define MOOT    0
 #define NOTHING    7
 
-// delay buffer port names
-#define DEL_ABOVE 0
-#define DEL_BELOW 1
-#define DEL_LEFT 2
-#define DEL_RIGHT 3
-
 // neighbors data
 struct NeighborData {
     float angleValue;
@@ -243,9 +228,7 @@ NeighborData neighborData[6];
 
 int numConnected = 0;
 float neighborAngles[6];
-int neighborSensors[6];
-float neighborStrength[6];
-int neighborStrengthDir[6];
+
 
 #define NEIGHBOR_BUFFER_SIZE 100
 uint8_t neighborBuffer[6][NEIGHBOR_BUFFER_SIZE];
@@ -268,17 +251,17 @@ enum updateInterval {
     ONE_HUNDRED,
     TWO_HUNDRED,
     THREE_HUNDRED,
-    FOUR_HUNDRED
+    FOUR_HUNDRED,
+    SIX_HUNDRED,
+    EIGHT_HUNDRED,
     };
 
-int updateRate = SMOOTH; // send 's' for SMOOTH, 'h' for TWO_HUNNDRED
 
 enum algorithm {
     TOGETHER,
     PERIODIC,
     MESMER,
     SWEEP,
-    LISTEN,
     TWITCH,
     TWITCH_WAVE,
     DELAYED,
@@ -287,8 +270,28 @@ enum algorithm {
     BREAK
     };
 
-int currentMode = MESMER;
+enum sensorAlgorithm {
+    POINT,
+    SHAKE,
+    WAVE,
+    RANDOM,
+    RATE,
+    RHYTHM,
+    IGNORE
+};
+
+enum delayAlgorighm{
+    CHOP,
+    FM,
+    AM
+};
+
+int updateRate = SMOOTH; 
+int currentMode = DELAYED;
+int presMode = POINT;
+
 int lastMode = -1; // first time through this will force initialization to run for whatever mode it starts in
+int lastPresMode = -1;
 
 // \jif's globals //
 

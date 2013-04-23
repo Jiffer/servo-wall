@@ -30,7 +30,7 @@ ISR(TCC0_OVF_vect)
         }
         if (inTransition)
         {
-            crossFade += 0.01; // should take 1 second
+            crossFade += fadeIncrement; // should take 1/2 second
             if (crossFade >= 1.0)
             {
                 crossFade = 1.0;
@@ -46,11 +46,6 @@ ISR(TCC0_OVF_vect)
         
         beatCounterFiftyHz++;
         beatCounterFiftyHz %= (ticksPerBeat * numBeats);
-//        if (beatCounterFiftyHz % ticksPerBeat == 0)
-//        {
-//            currentBeat++;
-//            currentBeat %= numBeats;
-//        }
         
         send_neighbor_data(curAngle, myStrength);
         
@@ -65,12 +60,6 @@ ISR(TCC0_OVF_vect)
         neighborBufferPtr %= NEIGHBOR_BUFFER_SIZE;
     }
     
-    // 50 ms (20Hz)
-//    if(jiffies%50 == 0)
-//    {
-//        
-//        
-//    }
     
     // every 100 ms
     if(jiffies%100 == 0)
@@ -80,7 +69,6 @@ ISR(TCC0_OVF_vect)
         ////////////////////////////////////////////////////
         // Read analog input
         ////////////////////////////////////////////////////
-                                // photoresistor sensor
         if (ADCB.CH0.INTFLAGS) {
             //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
             ADCB.CH0.INTFLAGS = 0x01;
@@ -100,14 +88,14 @@ ISR(TCC0_OVF_vect)
         sensorBufPtr %= sensorBufSize;
         
         // update presenseDetected variable
-
         // store what happened last
-        bool presenseDetectedLast = presenceDetected;
+        presenceDetectedLast = presenceDetected;
+        neighborPresenceDetectedLast = neighborPresenceDetected;
         presenceDetected = true;
         // check if current or recent are all above thresh, else set to false
         for(int i = 0; i < sensorBufSize; i++){
             // if any in the recent buffer are below threshold set to false
-            if(presenseDetectedLast){
+            if(presenceDetectedLast){
                 if (sensorBuf[i] < PRESENCE_OFF_THRESH)
                     presenceDetected = false;
             }
@@ -117,40 +105,73 @@ ISR(TCC0_OVF_vect)
             }
         }
         
-        if (presenceDetected && !presenseDetectedLast)
-            newPresence = true;
+        if (neighborData[LEFT].strength > STRENGTH_THRESHOLD || neighborData[RIGHT].strength > STRENGTH_THRESHOLD){
+            neighborPresenceDetected = true;
+        }
         else
-            newPresence = false;
+            neighborPresenceDetected = false;
+        
+        if (presenceDetected != presenceDetectedLast){
+            newPresence = true;
+            presenceTimer = 0;
+        }
+        
+        // if presence is moving around in system reset timer
+        if (neighborPresenceDetected != neighborPresenceDetectedLast){
+            newNeighborPresence = true;
+            neighborPresenceTimer = 0;
+        }
         
         if (presenceDetected){
             myStrength = 1.0;
             strengthDir = MOOT;
         }
-        
+                    
         else{
-            if(((neighborData[LEFT].strength > 0.01) || (neighborData[RIGHT].strength > 0.01)) && neighborData[LEFT].strength != neighborData[RIGHT].strength)
+            if(((neighborData[LEFT].strength > STRENGTH_THRESHOLD) || (neighborData[RIGHT].strength > STRENGTH_THRESHOLD)) && neighborData[LEFT].strength != neighborData[RIGHT].strength)
             {
                 if (neighborData[LEFT].strength > neighborData[RIGHT].strength && (neighborData[LEFT].fromDir == LEFT ||neighborData[LEFT].fromDir == MOOT)){
                     myStrength = neighborData[LEFT].strength / 1.3;
                     strengthDir = LEFT;
                     lastStrengthDir = LEFT;
                     lastStrength = myStrength;
-                    //fprintf_P(&usart_stream, PSTR("updating L\r\n"));
                 }
                 else if (neighborData[RIGHT].strength > neighborData[LEFT].strength && (neighborData[RIGHT].fromDir == RIGHT || neighborData[RIGHT].fromDir == MOOT)){
                     myStrength = neighborData[RIGHT].strength / 1.3;
                     strengthDir = RIGHT;
                     lastStrengthDir = RIGHT;
                     lastStrength = myStrength;
-                    //fprintf_P(&usart_stream, PSTR("updating R\r\n"));
                 }
             }
             else
             {
                 myStrength = 0.0;
                 strengthDir = MOOT;
-                //fprintf_P(&usart_stream, PSTR("moot!\r\n"));
             }
+        }
+        
+        if (neighborPresenceDetected){
+            if (neighborPresenceTimer > neighborPresenceTimeOut){
+                // the first time through here start a cross fade
+                fprintf_P(&usart_stream, PSTR("neiP timeOut\r\n"));
+                if(!ignoreNeighborPresence)
+                    startXFade(0.02);
+                ignoreNeighborPresence = true;
+            }
+        }
+        else
+            ignoreNeighborPresence = false;
+        
+        if (presenceDetected){
+            if (presenceTimer > presenceTimeOut){
+                fprintf_P(&usart_stream, PSTR("P timeOut\r\n"));
+                if(!ignorePresence)
+                    startXFade(0.02);
+                ignorePresence = true;
+            }
+        }
+        else{
+            ignorePresence = false;
         }
     } // \(jiffies % 100==0)
     
@@ -207,14 +228,43 @@ ISR(TCC0_OVF_vect)
             sendmessage_fast = true;
         }
     }
+    // every 600 ms
+    if(jiffies%600 == 0)
+    {
+        display_on = true;
+        
+        // update the servo on this cycle
+        if (updateRate == SIX_HUNDRED){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
+    }
+    // every 800 ms
+    if(jiffies%800 == 0)
+    {
+        display_on = true;
+        
+        // update the servo on this cycle
+        if (updateRate == EIGHT_HUNDRED){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
+    }
     
     // 1 second
     if(jiffies%1000 == 0)
     {
         //if(communication_on) sec_counter++;
         sec_counter++;
-        sync = true;		//synchro bit should be set every 1 sec
-        rhythm_on = true;
+        presModeCounter++;
+        if (presenceDetected){
+            presenceTimer++;
+        }
+        if(neighborPresenceDetected)
+            neighborPresenceTimer++;
+        
+        //sync = true;		//synchro bit should be set every 1 sec
+        //rhythm_on = true;
                 
         if(!communication_on) LED_PORT.OUT =  LED_USR_0_PIN_bm;
         if(communication_on)  LED_PORT.OUT = !LED_USR_0_PIN_bm;
@@ -240,16 +290,7 @@ ISR(TCC0_OVF_vect)
 //            asm("nop");
 //            asm("nop");
             Calib();
-            fprintf_P(&usart_stream, PSTR("I am\r\n"));            
         }
-        /*
-        for(int i =0; i < 6; i++){
-            if (connected[i]){
-                fprintf_P(&usart_stream, PSTR("# %i, st: %f\r\n"), i, neighborStrength[i]);
-            }
-        }*/
-         //fprintf_P(&usart_stream, PSTR("connections: %i, %i, %i, %i, %i, %i, \r\n"), connected[0], connected[1], connected[2], connected[3], connected[4], connected[5]);
-        
     }
     
     // check every 5 seconds if it has recieved messages
@@ -275,6 +316,7 @@ ISR(TCC0_OVF_vect)
     // cycle through all the current modes
     // changing every cycleLength seconds
     int cycleLength = 10;
+    int presenceCycleLength = 5;
     if(cycleOn){
         if (sec_counter >= cycleLength){
             currentMode++;
@@ -283,6 +325,15 @@ ISR(TCC0_OVF_vect)
             sec_counter = 0;
             
             fprintf_P(&usart_stream, PSTR("currentMode chaged to: %i, \r\n"), currentMode);
+        }
+        
+        if (presModeCounter >= presenceCycleLength){
+            presMode++;
+            if(presMode > IGNORE)
+                presMode = 0;
+            presModeCounter = 0;
+            
+            fprintf_P(&usart_stream, PSTR("presMode chaged to: %i, \r\n"), presMode);
         }
     }
 }
@@ -354,6 +405,7 @@ int main(void)
     {
         _delay_ms(1000);
         Calib();
+        special = true;
     }
     
     
@@ -378,7 +430,7 @@ int main(void)
         {
             servoBehavior();
             lastMode = currentMode;
-            
+            lastPresMode = presMode;
             
             // wait until updateRate has come back around
             servo_motor_on = false;
