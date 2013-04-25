@@ -14,13 +14,13 @@ void init_variables()
 {
     // initialize array of neighbor arrays
     for(int i; i < 6; i++){
-        neighborAngles[i] = 0;
+        //neighborAngles[i] = 0;
+        neighborData[i].angleValue = 0;
     }
     
     for(int i; i < 4; i++){
         offsetVar[i] = 0.0;
     }
-    
     
     shufflePattern();
     
@@ -157,15 +157,15 @@ float linearSweep(float howFast, float startAngle, float targetAngle){
 // time is in ms
 // ============================================================================================
 float getDelNeighbor(int port, int time){
-    // sample rate for this buffer is 20ms
-    int samples = (int)(time / 20.0);
+    // sample rate for this buffer is 30ms
+    int samples = (int)(time / 30.0);
     //fprintf_P(&usart_stream, PSTR("offset: %i\r\n"), samples);
     int tempPtr = neighborBufferPtr - samples;
     if (tempPtr < 0)
         tempPtr += NEIGHBOR_BUFFER_SIZE;
     
     if (samples == 0)
-        return neighborAngles[port];
+        return neighborData[port].angleValue; // neighborAngles[port];
     else
         return (float)(neighborBuffer[port][tempPtr] - 90); // storing as unsigned so -90
 }

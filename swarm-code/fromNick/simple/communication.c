@@ -87,18 +87,12 @@ void rx_pkt(Xgrid::Packet *pkt)
             connected[port] = true;
             
             NeighborData* recvNeighborPtr = (NeighborData*) pkt->data;
+            //neighborAngles[port] = recvNeighborPtr->angleValue;
             
-            neighborAngles[port] = recvNeighborPtr->angleValue;
-
             
-            //fprintf_P(&usart_stream, PSTR("p:%i, rNP.d.%i, rNP.s.%f\r\n"), port, recvNeighborPtr->fromDir, recvNeighborPtr->strength);
-            // TODO: switching to neighborData[] array struct variable
             if (port == recvNeighborPtr->fromDir || (recvNeighborPtr->fromDir == MOOT && (port == LEFT || port == RIGHT))){
                 neighborData[port] = *recvNeighborPtr;
-             //   if(port == LEFT)
-             //       fprintf_P(&usart_stream, PSTR("left, frm.%i, strngt.%f, l: %f\r\n"), recvNeighborPtr->fromDir, recvNeighborPtr->strength, neighborData[LEFT].strength);
-             //   if(port == RIGHT)
-             //       fprintf_P(&usart_stream, PSTR("right, frm.%i, strngt.%f, r: %f\r\n"), recvNeighborPtr->fromDir, recvNeighborPtr->strength, neighborData[RIGHT].strength);
+
             }
             else{ // don't update strength unless direction matches port
                 neighborData[port].angleValue = recvNeighborPtr->angleValue;
@@ -130,52 +124,36 @@ void rx_pkt(Xgrid::Packet *pkt)
         switch(command)
         {
             case 'Z': reboot_on = true;
-            case 'r':
-                sec_counter = 0;
-                jiffies = 0;    break;
+
                 
             // jif
             case 'c': cycleOn = true; break;
             case 'o': cycleOn = false; break;
 
             case '0':   currentMode = TOGETHER; break;
-            case '1':   currentMode = PERIODIC; break;
-            case '2':   currentMode = FM_TOGETHER; break;
-            case '3':   currentMode = AM_TOGETHER; break;
+            case '1':   currentMode = SINY; break;
+            case '2':   currentMode = FM; break;
+            case '3':   currentMode = AM; break;
             case '4':   currentMode = MESMER; break;
             case '5':   currentMode = SWEEP; break;
             case '6':   currentMode = TWITCH; break;
             case '7':   currentMode = TWITCH_WAVE; break;
-            case '8':   currentMode = DELAYED; break;
             case '9':   currentMode = BREAK; break;
+            case '-':   currentMode = ZERO; break;
                 
-            // modes
-            case 'b':   currentMode = BREAK; break;
-                                
-            case 'i':
-                presMode++;
-                presMode %= IGNORE;
-                break;
+            // sensor modes
+            case 'q':   presMode = POINT; break;
+            case 'w':   presMode = SHAKE; break;
+            case 'e':   presMode = WAVE; break;
+            case 'r':   presMode = RANDOM; break;
+            case 't':   presMode = RATE; break;
+            case 'y':   presMode = RHYTHM; break;
+            case 'i':   presMode = IGNORE; break;
                 
-            case 'm':
-                presMode--;
-                if(presMode < 0)
-                    presMode = IGNORE;
-                break;
                 
-            case 'k':
-                currentMode++;
-                currentMode %= BREAK;
-                break;
-            case 'j':
-                presMode--;
-                if(currentMode < 0)
-                    currentMode = BREAK;
-                break;
-                
-            case 'y':
+            case 'u':
                 offsetVarIndex++;
-                offsetVarIndex %= 4;
+                offsetVarIndex %= NUMOFFSET;
                 break;
                 
             case 'a':
@@ -232,40 +210,30 @@ void key_input()
 
 
 
-	if(input_char == 'r')	//set sec_counter as 0
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "r");	
-		sec_counter = 0;
-	}
 
     
     
     // ============================================================================================
     /// currentMode commands
     // ============================================================================================
-    if(input_char == 'b'){
-        fprintf_P(&usart_stream, PSTR("'b' - etting currentMode to BREAK\n"));
-        currentMode = BREAK;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "b");
-    }
     if(input_char == '0'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to TOGETHER\n"));
         currentMode = TOGETHER;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "0");
     }
     if(input_char == '1'){
-        fprintf_P(&usart_stream, PSTR("setting currentMode to PERIODIC\n"));
-        currentMode = PERIODIC;
+        fprintf_P(&usart_stream, PSTR("setting currentMode to SINY\n"));
+        currentMode = SINY;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "1");
     }
     if(input_char == '2'){
-        fprintf_P(&usart_stream, PSTR("setting currentMode to FM_TOGETHER\n"));
-        currentMode = FM_TOGETHER;
+        fprintf_P(&usart_stream, PSTR("setting currentMode to FM\n"));
+        currentMode = FM;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "2");
     }
     if(input_char == '3'){
-        fprintf_P(&usart_stream, PSTR("setting currentMode to AM_TOGETHER\n"));
-        currentMode = AM_TOGETHER;
+        fprintf_P(&usart_stream, PSTR("setting currentMode to AM\n"));
+        currentMode = AM;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "3");
     }
     if(input_char == '4'){
@@ -285,19 +253,18 @@ void key_input()
     }
     if(input_char == '7'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to TWITCH_WAVE\n"));
-        currentMode = TWITCH;
+        currentMode = TWITCH_WAVE;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "7");
     }
-    if(input_char == '8'){
-        fprintf_P(&usart_stream, PSTR("setting currentMode to linear DELAYED\n"));
-        currentMode = DELAYED;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "8");
-    }
-    
     if(input_char == '9'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to linear BREAK\n"));
-        currentMode = DELAYED;
+        currentMode = BREAK;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "9");
+    }
+    if(input_char == '-'){
+        fprintf_P(&usart_stream, PSTR("setting currentMode to linear ZERO\n"));
+        currentMode = ZERO;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "-");
     }
     
     // cycle all
@@ -313,41 +280,51 @@ void key_input()
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "o");
     }
     
-    // up/ down algorithm and presence mode
-    if(input_char == 'k'){
-        currentMode++;
-        currentMode %= BREAK;
-        fprintf_P(&usart_stream, PSTR("'k' currentMode = %i\n"), currentMode);
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "k");
+    // change presence Mode commands
+    if(input_char == 'q'){
+        presMode = POINT;
+        fprintf_P(&usart_stream, PSTR("presenceMode = %i, POINT\n"), presMode);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "q");
     }
-    if(input_char == 'j'){
-        currentMode--;
-        if(currentMode < 0)
-            currentMode = BREAK;
-        fprintf_P(&usart_stream, PSTR("'j' currentMode = %i\n"), currentMode);
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "j");
+    if(input_char == 'w'){
+        presMode = SHAKE;
+        fprintf_P(&usart_stream, PSTR("presenceMode = %i, SHAKE\n"), presMode);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "w");
+    }
+    if(input_char == 'e'){
+        presMode = WAVE;
+        fprintf_P(&usart_stream, PSTR("presenceMode = %i, WAVE\n"), presMode);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "e");
+    }
+    if(input_char == 'r'){
+        presMode = RANDOM;
+        fprintf_P(&usart_stream, PSTR("presenceMode = %i, RANDOM\n"), presMode);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "r");
+    }
+    if(input_char == 'RATE'){
+        presMode = POINT;
+        fprintf_P(&usart_stream, PSTR("presenceMode = %i, RATE\n"), presMode);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "t");
+    }
+    if(input_char == 'y'){
+        presMode = RHYTHM;
+        fprintf_P(&usart_stream, PSTR("presenceMode = %i, RHYTHM\n"), presMode);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "y");
     }
     
     if(input_char == 'i'){
-        presMode++;
-        presMode %= IGNORE;
-        fprintf_P(&usart_stream, PSTR("'i' presenceMode = %i\n"), presMode);
+        presMode = IGNORE;
+        fprintf_P(&usart_stream, PSTR("'i' presenceMode = %i, IGNORE\n"), presMode);
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "i");
     }
-    if(input_char == 'm'){
-        presMode--;
-        if(presMode < 0)
-            presMode = IGNORE;
-        fprintf_P(&usart_stream, PSTR("'m' presenceMode = %i\n"), presMode);
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "m");
-    }
+
     
     /// offset variable for debug
-    if(input_char == 'y'){
+    if(input_char == 'u'){
         offsetVarIndex++;
-        offsetVarIndex %= 4;
-        fprintf_P(&usart_stream, PSTR("'y' offsetVarIndex: %i, offset: %f\n"), offsetVarIndex, offsetVar[offsetVarIndex]);
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "y");
+        offsetVarIndex %= NUMOFFSET;
+        fprintf_P(&usart_stream, PSTR("offsetVarIndex: %i, offset: %f\n"), offsetVarIndex, offsetVar[offsetVarIndex]);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "u");
     }
     
     if(input_char == 'a'){

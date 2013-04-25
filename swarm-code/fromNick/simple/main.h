@@ -120,7 +120,7 @@ int neighborPresenceTimer = 0;
 int presModeCounter = 0;
 
 // tracking beats
-int beatCounterFiftyHz = 0;
+//int beatCounterFiftyHz = 0;
 int currentBeat = 0;
 int lastBeat = 0;
 int ticksPerBeat = 12;
@@ -181,7 +181,8 @@ float transitionAngle = 0;
 bool inTransition = false;
 float fadeIncrement = 0.01;
 
-float offsetVar[4];
+#define NUMOFFSET 5
+float offsetVar[NUMOFFSET];
 int offsetVarIndex = 0;
 float amplitudeScaler = 1.0;
 
@@ -202,7 +203,6 @@ float lastStrength;
 int strengthDir;
 int lastStrengthDir;
 float randomPeriod = 0.0;
-int delayFunction = 0;
 float crossFade = 0.0;
 bool debugPrint = false;
 bool cycleOn = false;
@@ -227,10 +227,10 @@ NeighborData sendData;
 NeighborData neighborData[6];
 
 int numConnected = 0;
-float neighborAngles[6];
+//float neighborAngles[6];
 
 
-#define NEIGHBOR_BUFFER_SIZE 100
+#define NEIGHBOR_BUFFER_SIZE 80
 uint8_t neighborBuffer[6][NEIGHBOR_BUFFER_SIZE];
 uint8_t neighborBufferPtr = 0;
 
@@ -262,11 +262,12 @@ enum algorithm {
     PERIODIC,
     MESMER,
     SWEEP,
+    SINY,
+    FM,
+    AM,
     TWITCH,
     TWITCH_WAVE,
-    DELAYED,
-    FM_TOGETHER,
-    AM_TOGETHER,
+    ZERO,
     BREAK
     };
 
@@ -280,15 +281,9 @@ enum sensorAlgorithm {
     IGNORE
 };
 
-enum delayAlgorighm{
-    CHOP,
-    FM,
-    AM
-};
-
 int updateRate = SMOOTH; 
-int currentMode = DELAYED;
-int presMode = POINT;
+int currentMode = SWEEP;
+int presMode = IGNORE;
 
 int lastMode = -1; // first time through this will force initialization to run for whatever mode it starts in
 int lastPresMode = -1;

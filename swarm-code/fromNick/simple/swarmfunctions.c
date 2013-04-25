@@ -9,16 +9,16 @@
 // average the neighbors
 // ============================================================================================
 void mesmer(){
-    float myAngle = cycle((float)randomPeriod, 45.0, 0.0);
+    float myAngle = cycle((float)randomPeriod, MAX_ANGLE, 0.0);
     //float weight = 20.0;
-    float weight = cycle(20, 10, 10);
+    float weight = cycle(offsetVar[0] + 20, offsetVar[1] + 10, offsetVar[2] + 10);
     float average = 0.0;
-    float scaling = 6.0;
+    float scaling = 6.0 + offsetVar[3];
     
     if(!sensorBehavior()){
     for(int i = 0; i < 6; i++){ 
-        if (abs(neighborAngles[i]) < MAX_ANGLE && connected[i]){ // neighborAngles[LEFT]
-            average += (neighborAngles[i]);
+        if (abs(neighborData[i].angleValue) < MAX_ANGLE && connected[i]){ // neighborAngles[i]
+            average += (neighborData[i].angleValue);
             }
         }
         if (numConnected > 0){
@@ -53,8 +53,8 @@ void quickSweep(){
 // ============================================================================================
 void twitch(){
     static float randomTime;
-    int lowTime = 2;
-    int hiTime = 8;
+    int lowTime = offsetVar[0] + 2;
+    int hiTime = offsetVar[1] + 8;
     float tempAngle = 0.0;
     
     if(lastMode != currentMode){
@@ -105,34 +105,51 @@ void delayedReaction(){
         //curAngle = cycle(9 + tempPeriod, 45, 0);
         //curAngle = 45 * sin((jiffies * 2.0 * PI /(9.0 * 1000.0)) + sin(jiffies * 2.0 * PI /(23.0 * 1000.0)));
         //curAngle = 45 * cycle(9, map(cycle(21), -1, 1, -3, 3));
-/*        switch(delayFunction){
+        switch(currentMode){
+            case SINY:
+                curAngle = cycle(10 + offsetVar[0], 45, 0);
+                break;
             case FM:
-                curAngle = 45 * cycle(9, cycle(21 + offsetVar[0]));
+                curAngle = 45 * cycle(9 + offsetVar[0], cycle(21 + offsetVar[1]));
                 break;
             case AM:
-                curAngle = 45 * cycle(9) * cycle(4.5);
+                curAngle = 45 * cycle(9) + offsetVar[0] * cycle(4.5 + offsetVar[2] + offsetVar[3]);
                 break;
                 
-            case CHOP:*/
+            case SWEEP:
                 float newAngle = linearSweep(4.0 + offsetVar[1], 0, MAX_ANGLE - 1);
                 if ( newAngle > MAX_ANGLE - 1 || newAngle < 0)
                     newAngle = 0;
                 
                 curAngle = newAngle;
-
-                //break;
-        //}
+                break;
+        }
 }
     
     else if (bottom){ // use delayed value
-        //curAngle = getDelNeighbor(LEFT, 500); // enum LEFT, RIGHT, ABOVE, BELOW
-        //float delayAmount = 500 + 500 * sin(jiffies * 2.0 * PI /(20 * 1000.0));
-        //fprintf_P(&usart_stream, PSTR("del: %f\r\n"), delayAmount);
-        curAngle = getDelNeighbor(LEFT, cycle(20, 500, 500));
+        int delayAmount = 150;
+        switch(currentMode){
+            case SINY:
+                delayAmount = 1000;
+                break;
+            case FM:
+                delayAmount = 500;
+                break;
+            case AM:
+                delayAmount = 500;
+                break;
+                
+            case SWEEP:
+                delayAmount = 150;
+                break;
+        }
+        
+        
+        curAngle = getDelNeighbor(LEFT, cycle(20,amplitudeScaler * delayAmount, amplitudeScaler * delayAmount));
     }
     
     else
-        curAngle = neighborAngles[BELOW];
+        curAngle = neighborData[BELOW].angleValue;// neighborAngles[BELOW];
 }
 
 // ============================================================================================
@@ -164,12 +181,6 @@ void servoBehavior(){
                 case MESMER:
                     randomPeriod = getRandom(4.0, 20.0);
                     break;
-                    
-                case DELAYED:
-                    curAngle = 0;
-                    delayFunction = (int)getRandom(0.0, 0.99);
-                    break;
-                    
             }
         }
     }
@@ -177,6 +188,10 @@ void servoBehavior(){
     switch(currentMode)
     {
         case BREAK: // do nothing
+            break;
+        
+        case ZERO:
+            curAngle = 0;
             break;
             
         case TOGETHER:
@@ -202,22 +217,22 @@ void servoBehavior(){
             break;
             
         case SWEEP:
-            quickSweep();
-            break;
+            if(!sensorBehavior())
+                delayedReaction();
             
-        case DELAYED:
+        case SINY:
             if(!sensorBehavior())
                 delayedReaction();
             break;
             
-        case FM_TOGETHER:
+        case FM:
             if(!sensorBehavior())
-                curAngle = amplitudeScaler * 45 * cycle(9 + offsetVar[2], cycle(21 + offsetVar[3]));
+                delayedReaction();
             break;
             
-        case AM_TOGETHER:
+        case AM:
             if(!sensorBehavior())
-                curAngle = amplitudeScaler * 45 * cycle(10 + offsetVar[2]) * cycle(2 + offsetVar[3]);
+                delayedReaction();
             break;
 
     }
@@ -227,7 +242,6 @@ void servoBehavior(){
     }
     else // in transition
     {
-        //fprintf_P(&usart_stream, PSTR("x-fade: %f, %f\r\n"), curAngle, transitionAngle);
         curAngle = crossFade * curAngle + (1.0 - crossFade) * transitionAngle;
         set_servo_position(curAngle);
         

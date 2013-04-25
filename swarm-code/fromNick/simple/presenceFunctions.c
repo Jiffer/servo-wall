@@ -82,7 +82,7 @@ bool toFro(){
     
     if (currentBeat != lastBeat){
         lastBeat = currentBeat;
-        counterFiftyHz = 0;
+        // counterFiftyHz = 0;
         startAngle = curAngle;
         if (abs(curAngle + direction * degreesPerBeat * beatPattern[currentBeat]) > MAX_ANGLE){
             direction *= -1;
@@ -95,7 +95,8 @@ bool toFro(){
             updated = true;
         }
         else{
-            curAngle = neighborAngles[BELOW];
+            // curAngle = neighborAngles;
+            curAngle = neighborData[BELOW].angleValue;
             updated = true;
         }
     }
@@ -185,7 +186,7 @@ bool sensorBehavior(){
         
         switch(presMode){
             case POINT:
-                presenceTimeOut = 10; // in seconds
+                presenceTimeOut = 6; // in seconds
                 neighborPresenceTimeOut = presenceTimeOut;
                 usingNeighborPresence = true;
                 break;
@@ -225,7 +226,7 @@ bool sensorBehavior(){
     // because for rate there is no change of angle just update rate so don't need to transition
     if(newPresence && presMode != RATE && presMode != IGNORE){
         fprintf_P(&usart_stream, PSTR("newPres\r\n"));
-        startXFade(0.04);
+        startXFade(0.1);
     }
     
     if (newNeighborPresence && usingNeighborPresence){
@@ -234,7 +235,7 @@ bool sensorBehavior(){
             case POINT:
                 fprintf_P(&usart_stream, PSTR("new neighbor\r\n"));
 
-                startXFade(0.04);
+                startXFade(0.05);
                 break;
                 
         }

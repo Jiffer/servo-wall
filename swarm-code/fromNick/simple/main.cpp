@@ -24,10 +24,7 @@ ISR(TCC0_OVF_vect)
     if(jiffies%10 == 0)
     {
         // update the servo on this cycle
-        if (updateRate == SMOOTH){
-            servo_motor_on   = true;
-            sendmessage_fast = true;
-        }
+        
         if (inTransition)
         {
             crossFade += fadeIncrement; // should take 1/2 second
@@ -44,22 +41,28 @@ ISR(TCC0_OVF_vect)
     {
         counterFiftyHz++;
         
-        beatCounterFiftyHz++;
-        beatCounterFiftyHz %= (ticksPerBeat * numBeats);
-        
+        if (updateRate == SMOOTH){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
+        //cbeatCounterFiftyHz++;
+        //beatCounterFiftyHz %= (ticksPerBeat * numBeats);
+    }
+    
+    if (jiffies%30 == 0)
+    {
         send_neighbor_data(curAngle, myStrength);
         
         // storing as unsigned ints, when used must subtract 90
-        neighborBuffer[ABOVE][neighborBufferPtr] = (uint8_t)(neighborAngles[ABOVE] + 90);
-        neighborBuffer[BELOW][neighborBufferPtr] = (uint8_t)(neighborAngles[BELOW] + 90);
-        neighborBuffer[LEFT][neighborBufferPtr] = (uint8_t)(neighborAngles[LEFT] + 90);
-        neighborBuffer[RIGHT][neighborBufferPtr] = (uint8_t)(neighborAngles[RIGHT] + 90);
+        neighborBuffer[ABOVE][neighborBufferPtr] = (uint8_t)(neighborData[ABOVE].angleValue + 90);
+        neighborBuffer[BELOW][neighborBufferPtr] = (uint8_t)(neighborData[BELOW].angleValue + 90);
+        neighborBuffer[LEFT][neighborBufferPtr] = (uint8_t)(neighborData[LEFT].angleValue + 90);
+        neighborBuffer[RIGHT][neighborBufferPtr] = (uint8_t)(neighborData[RIGHT].angleValue + 90);
         
         // increment pointer,  check for roll over
         neighborBufferPtr++;
         neighborBufferPtr %= NEIGHBOR_BUFFER_SIZE;
     }
-    
     
     // every 100 ms
     if(jiffies%100 == 0)
@@ -153,9 +156,10 @@ ISR(TCC0_OVF_vect)
         if (neighborPresenceDetected){
             if (neighborPresenceTimer > neighborPresenceTimeOut){
                 // the first time through here start a cross fade
-                fprintf_P(&usart_stream, PSTR("neiP timeOut\r\n"));
-                if(!ignoreNeighborPresence)
+                if(!ignoreNeighborPresence){
+                    fprintf_P(&usart_stream, PSTR("neiP timeOut\r\n"));
                     startXFade(0.02);
+                }
                 ignoreNeighborPresence = true;
             }
         }
@@ -173,19 +177,20 @@ ISR(TCC0_OVF_vect)
         else{
             ignorePresence = false;
         }
-    } // \(jiffies % 100==0)
-    
-    
-    // every 100 ms
-    if(jiffies%100 == 0)
-    {
-        display_on = true;
+
+        //////////////////
+        display_on = true; 
         
         // update the servo on this cycle
         if (updateRate == ONE_HUNDRED){
             servo_motor_on   = true;
             sendmessage_fast = true;
         }
+    }   // \(jiffies % 100==0)
+    
+    if(jiffies%150 == 0){
+        currentBeat++;
+        currentBeat %= numBeats;
     }
     
     // every 200 ms
@@ -198,12 +203,6 @@ ISR(TCC0_OVF_vect)
             servo_motor_on   = true;
             sendmessage_fast = true;
         }
-        //fprintf_P(&usart_stream, PSTR("my: %f, d.%i, l%f, r%f\r\n"), myStrength, strengthDir, neighborData[LEFT].strength, neighborData[RIGHT].strength);
-        
-
-            currentBeat++;
-            currentBeat %= numBeats;
-
     }
     // every 300 ms
     if(jiffies%300 == 0)
@@ -269,12 +268,6 @@ ISR(TCC0_OVF_vect)
         if(!communication_on) LED_PORT.OUT =  LED_USR_0_PIN_bm;
         if(communication_on)  LED_PORT.OUT = !LED_USR_0_PIN_bm;
         
-        if(debugPrint){
-            fprintf_P(&usart_stream, PSTR("cur angle: %f\r\n"), curAngle);
-            
-            if(debugPrint)
-                fprintf_P(&usart_stream, PSTR("A0: %u\r\n"), sensor_value);
-        }
     }
     
 
@@ -362,7 +355,6 @@ int main(void)
     init();				//for board
 	init_servo();		//for servo
 	init_variables();	//for program
-	init_sonar();		//for sensor
     
 	fprintf_P(&usart_stream, PSTR("START (build number : %ld)\r\n"), (unsigned long) &__BUILD_NUMBER);
     //printKeyCommands();
@@ -374,11 +366,6 @@ int main(void)
     //
     ADCA.CTRLA |= ADC_CH0START_bm;
     ADCA.CH0.INTFLAGS = ADC_CH_CHIF_bm;
-	// ===== SONAR CHECK & Indicated by LED (attached/not = GREEN/RED) =====
-	sonar_attached = check_sonar_attached();	//1:attached, 0:no
-    
-	if(sonar_attached)	{LED_PORT.OUT = LED_USR_2_PIN_bm; _delay_ms(2000);}
-	else				{LED_PORT.OUT = LED_USR_0_PIN_bm; _delay_ms(2000);}
     
 	// ===== Identification of Left Bottom Corner module =====
 	// Special module is necessary
