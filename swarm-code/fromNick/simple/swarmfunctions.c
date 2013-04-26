@@ -113,7 +113,7 @@ void delayedReaction(){
                 curAngle = 45 * cycle(9 + offsetVar[0], cycle(21 + offsetVar[1]));
                 break;
             case AM:
-                curAngle = 45 * cycle(9) + offsetVar[0] * cycle(4.5 + offsetVar[2] + offsetVar[3]);
+                curAngle = ( 45 * cycle(9 + offsetVar[0])) * cycle(4.5 + offsetVar[2] + offsetVar[3]);
                 break;
                 
             case SWEEP:
@@ -162,7 +162,7 @@ void servoBehavior(){
         if (currentMode == BREAK)
             setServo(false);
         else{
-            // start a transition 
+            // start a transition  
             startXFade(0.01);
             fprintf_P(&usart_stream, PSTR("newAlgoMode\r\n"));
             // where presence is used ignore when first entering new mode
@@ -174,10 +174,10 @@ void servoBehavior(){
             
             switch(currentMode)
             {
-                case PERIODIC:
+                /*case PERIODIC:
                     randomPeriod = getRandom(2.0, 8.0);
                     updateRate = (int)getRandom(SMOOTH, FOUR_HUNDRED);
-                    break;
+                    break;*/
                 case MESMER:
                     randomPeriod = getRandom(4.0, 20.0);
                     break;
@@ -194,7 +194,7 @@ void servoBehavior(){
             curAngle = 0;
             break;
             
-        case TOGETHER:
+    /*    case TOGETHER:
             if(!sensorBehavior())
                 curAngle = amplitudeScaler * cycle(5 + offsetVar[0], 45.0, 0);
             break;
@@ -203,16 +203,12 @@ void servoBehavior(){
             if(!sensorBehavior())
                 curAngle = amplitudeScaler * cycle(randomPeriod, 45.0, 0.0);
             break;
-            
+      */      
         case MESMER:
             mesmer();
             break;
             
         case TWITCH:
-            twitch();
-            break;
-            
-        case TWITCH_WAVE:
             twitch();
             break;
             

@@ -130,16 +130,16 @@ void rx_pkt(Xgrid::Packet *pkt)
             case 'c': cycleOn = true; break;
             case 'o': cycleOn = false; break;
 
-            case '0':   currentMode = TOGETHER; break;
+//            case '0':   currentMode = TOGETHER; break;
             case '1':   currentMode = SINY; break;
             case '2':   currentMode = FM; break;
             case '3':   currentMode = AM; break;
             case '4':   currentMode = MESMER; break;
             case '5':   currentMode = SWEEP; break;
             case '6':   currentMode = TWITCH; break;
-            case '7':   currentMode = TWITCH_WAVE; break;
-            case '9':   currentMode = BREAK; break;
-            case '-':   currentMode = ZERO; break;
+//            case '7':   currentMode = TWITCH_WAVE; break;
+            case '-':   currentMode = BREAK; break;
+            case '0':   currentMode = ZERO; break;
                 
             // sensor modes
             case 'q':   presMode = POINT; break;
@@ -216,11 +216,11 @@ void key_input()
     // ============================================================================================
     /// currentMode commands
     // ============================================================================================
-    if(input_char == '0'){
+    /*if(input_char == '0'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to TOGETHER\n"));
         currentMode = TOGETHER;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "0");
-    }
+    }*/
     if(input_char == '1'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to SINY\n"));
         currentMode = SINY;
@@ -251,20 +251,15 @@ void key_input()
         currentMode = TWITCH;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "6");
     }
-    if(input_char == '7'){
-        fprintf_P(&usart_stream, PSTR("setting currentMode to TWITCH_WAVE\n"));
-        currentMode = TWITCH_WAVE;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "7");
-    }
-    if(input_char == '9'){
+    if(input_char == '-'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to linear BREAK\n"));
         currentMode = BREAK;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "9");
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "-");
     }
     if(input_char == '-'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to linear ZERO\n"));
         currentMode = ZERO;
-        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "-");
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "0");
     }
     
     // cycle all
@@ -301,7 +296,7 @@ void key_input()
         fprintf_P(&usart_stream, PSTR("presenceMode = %i, RANDOM\n"), presMode);
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "r");
     }
-    if(input_char == 'RATE'){
+    if(input_char == 't'){
         presMode = POINT;
         fprintf_P(&usart_stream, PSTR("presenceMode = %i, RATE\n"), presMode);
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "t");

@@ -47,7 +47,7 @@ void setServo(bool on){
 // ============================================================================================
 float getRandom(float lo, float high){
     // set a new random seed
-    srand(swarm_id * light_sensor + jiffies);
+    srand(swarm_id * my_sensor_value + jiffies);
     return ((high - lo) * rand() / RAND_MAX) + lo;
 }
 

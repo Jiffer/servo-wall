@@ -16,7 +16,7 @@
 // ============================================================================================
 // point at presence
 // ============================================================================================
-bool point(){
+bool point(){  
     bool updated = false;
     if(newPresence){
         newPresence = false;
@@ -162,11 +162,9 @@ bool randomUpdateRate(){
         newPresence = false;
     }
     
-    if (presenceDetected && !ignorePresence)
-        updated = false;
-    else
+    if (!presenceDetected || ignorePresence)
         updateRate = SMOOTH;
-    
+
     return updated;
 }
 
@@ -234,8 +232,10 @@ bool sensorBehavior(){
         switch(presMode){
             case POINT:
                 fprintf_P(&usart_stream, PSTR("new neighbor\r\n"));
-
-                startXFade(0.05);
+                if (neighborPresenceDetected)
+                    startXFade(0.05);
+                else
+                    startXFade(0.01);
                 break;
                 
         }

@@ -117,6 +117,7 @@ int counterTenHz = 0;
 int counterFiftyHz = 0;
 int presenceTimer = 0;
 int neighborPresenceTimer = 0;
+int modeCounter = 0;
 int presModeCounter = 0;
 
 // tracking beats
@@ -150,7 +151,7 @@ bool special = false;	//marker of "Bottom-Left" module
 bool bottom = false;
 
 //===== for "Ken's model" =====
-//bool sync = true;
+bool sync = true;
 
 //===== for "wave" and "column swing" =====
 bool wave_flg = false,  wave_ping = false;
@@ -158,7 +159,7 @@ bool column_flg = false;
 uint8_t wave_port;
 
 //===== for "rhythm" =====
-//bool rhythm_on = false;
+bool rhythm_on = false;
 
 // ===== PROTOTYPE DECLARATION =====
 void send_message(uint8_t, uint8_t, int, const char[]);
@@ -174,7 +175,7 @@ void servo_motor_control(float);
 #define MAX_ANGLE 65.0
 #define PRESENCE_THRESH 4000
 #define PRESENCE_OFF_THRESH 3500
-#define STRENGTH_THRESHOLD 0.1
+#define STRENGTH_THRESHOLD 0.2
 
 float curAngle = 0; // from -90 to 90
 float transitionAngle = 0;
@@ -211,8 +212,8 @@ bool servoEnabled = true;
 // from ports
 #define BELOW   1
 #define ABOVE   5
-#define LEFT    2
-#define RIGHT   4
+#define LEFT    4
+#define RIGHT   2
 #define MOOT    0
 #define NOTHING    7
 
@@ -236,7 +237,7 @@ uint8_t neighborBufferPtr = 0;
 
 #define sensorBufSize 2
 int sensor_value = 0;
-int light_sensor = 0;
+int my_sensor_value = 0;
 int sensorBuf[sensorBufSize];
 int sensorBufPtr = 0;
 
@@ -258,17 +259,14 @@ enum updateInterval {
 
 
 enum algorithm {
-    TOGETHER,
-    PERIODIC,
     MESMER,
     SWEEP,
     SINY,
     FM,
     AM,
     TWITCH,
-    TWITCH_WAVE,
-    ZERO,
-    BREAK
+    BREAK,
+    ZERO
     };
 
 enum sensorAlgorithm {
@@ -296,7 +294,7 @@ bool calib_switch;			// whether or not to begin the calibration
 int calib_times;			// how many time this is to calibration
 bool calib_double_switch;
 
-#define _MAIN_BOARD     13068
+#define _MAIN_BOARD     27385 //13068
 #define _DELAY_CALIB    2
 #define _TIME_CALIB		10
 

@@ -62,6 +62,7 @@ ISR(TCC0_OVF_vect)
         // increment pointer,  check for roll over
         neighborBufferPtr++;
         neighborBufferPtr %= NEIGHBOR_BUFFER_SIZE;
+        
     }
     
     // every 100 ms
@@ -72,17 +73,18 @@ ISR(TCC0_OVF_vect)
         ////////////////////////////////////////////////////
         // Read analog input
         ////////////////////////////////////////////////////
-        if (ADCB.CH0.INTFLAGS) {
+        /*if (ADCB.CH0.INTFLAGS) {
             //ADCB.CH0.INTFLAGS = ADC_CH__CHIF_bm;
             ADCB.CH0.INTFLAGS = 0x01;
-            light_sensor = ADCB_CH0_RES;
-        }
+            my_sensor_value = ADCB_CH0_RES;
+        }*/
             
         if (ADCA.CH0.INTFLAGS){
             // if on the bottom row assign sensor value here, others will read from below
+            my_sensor_value = ADCA_CH0_RES;
             if(bottom)
                 sensor_value = ADCA_CH0_RES;
-            
+
             ADCA.CH0.INTFLAGS = 0x01;
         }
         
@@ -90,6 +92,28 @@ ISR(TCC0_OVF_vect)
         sensorBuf[sensorBufPtr++] = sensor_value;
         sensorBufPtr %= sensorBufSize;
         
+        
+        
+        
+
+        //////////////////
+        display_on = true; 
+        
+        // update the servo on this cycle
+        if (updateRate == ONE_HUNDRED){
+            servo_motor_on   = true;
+            sendmessage_fast = true;
+        }
+    }   // \(jiffies % 100==0)
+    
+    if(jiffies%150 == 0){
+        currentBeat++;
+        currentBeat %= numBeats;
+    }
+    
+    // every 200 ms
+    if(jiffies%200 == 0)
+    {
         // update presenseDetected variable
         // store what happened last
         presenceDetectedLast = presenceDetected;
@@ -129,11 +153,11 @@ ISR(TCC0_OVF_vect)
             myStrength = 1.0;
             strengthDir = MOOT;
         }
-                    
+        
         else{
-            if(((neighborData[LEFT].strength > STRENGTH_THRESHOLD) || (neighborData[RIGHT].strength > STRENGTH_THRESHOLD)) && neighborData[LEFT].strength != neighborData[RIGHT].strength)
+            if((neighborData[LEFT].strength > STRENGTH_THRESHOLD) || (neighborData[RIGHT].strength > STRENGTH_THRESHOLD))
             {
-                if (neighborData[LEFT].strength > neighborData[RIGHT].strength && (neighborData[LEFT].fromDir == LEFT ||neighborData[LEFT].fromDir == MOOT)){
+                if (neighborData[LEFT].strength >= neighborData[RIGHT].strength && (neighborData[LEFT].fromDir == LEFT ||neighborData[LEFT].fromDir == MOOT)){
                     myStrength = neighborData[LEFT].strength / 1.3;
                     strengthDir = LEFT;
                     lastStrengthDir = LEFT;
@@ -153,11 +177,12 @@ ISR(TCC0_OVF_vect)
             }
         }
         
+         
         if (neighborPresenceDetected){
             if (neighborPresenceTimer > neighborPresenceTimeOut){
                 // the first time through here start a cross fade
                 if(!ignoreNeighborPresence){
-                    fprintf_P(&usart_stream, PSTR("neiP timeOut\r\n"));
+                    //fprintf_P(&usart_stream, PSTR("neiP timeOut\r\n"));
                     startXFade(0.02);
                 }
                 ignoreNeighborPresence = true;
@@ -168,34 +193,17 @@ ISR(TCC0_OVF_vect)
         
         if (presenceDetected){
             if (presenceTimer > presenceTimeOut){
-                fprintf_P(&usart_stream, PSTR("P timeOut\r\n"));
-                if(!ignorePresence)
+                if(!ignorePresence){
+                    //fprintf_P(&usart_stream, PSTR("P timeOut\r\n"));
                     startXFade(0.02);
+                }
                 ignorePresence = true;
             }
         }
         else{
             ignorePresence = false;
         }
-
-        //////////////////
-        display_on = true; 
         
-        // update the servo on this cycle
-        if (updateRate == ONE_HUNDRED){
-            servo_motor_on   = true;
-            sendmessage_fast = true;
-        }
-    }   // \(jiffies % 100==0)
-    
-    if(jiffies%150 == 0){
-        currentBeat++;
-        currentBeat %= numBeats;
-    }
-    
-    // every 200 ms
-    if(jiffies%200 == 0)
-    {
         display_on = true;
         
         // update the servo on this cycle
@@ -253,20 +261,97 @@ ISR(TCC0_OVF_vect)
     // 1 second
     if(jiffies%1000 == 0)
     {
-        //if(communication_on) sec_counter++;
         sec_counter++;
-        presModeCounter++;
+        if(special){
+            modeCounter++;
+            presModeCounter++;
+        }
         if (presenceDetected){
             presenceTimer++;
         }
         if(neighborPresenceDetected)
             neighborPresenceTimer++;
         
-        //sync = true;		//synchro bit should be set every 1 sec
-        //rhythm_on = true;
+        sync = true;		//synchro bit should be set every 1 sec
+        rhythm_on = true;
                 
         if(!communication_on) LED_PORT.OUT =  LED_USR_0_PIN_bm;
         if(communication_on)  LED_PORT.OUT = !LED_USR_0_PIN_bm;
+        
+        // cycle through all the current modes
+        // changing every cycleLength seconds
+        int cycleLength = 10;
+        int presenceCycleLength = 5;
+        if(cycleOn && special){
+            if (modeCounter >= cycleLength){
+                currentMode++;
+                if(currentMode > BREAK)
+                    currentMode = 0;
+                modeCounter = 0;
+                
+                fprintf_P(&usart_stream, PSTR("currentMode chaged to: %i, \r\n"), currentMode);
+                switch(currentMode){
+
+                    case SINY:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "1");
+                        break;
+                    case FM:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "2");
+                        break;
+                    case AM:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "3");
+                        break;
+                    case MESMER:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "4");
+                        break;
+                    case SWEEP:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "5");
+                        break;
+                    case TWITCH:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "6");
+                        break;
+                    case BREAK:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "-");
+                        break;
+                    case ZERO:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "0");
+                        break;
+                }
+
+            }
+            
+            if (presModeCounter >= presenceCycleLength){
+                presMode++;
+                if(presMode > IGNORE)
+                    presMode = 0;
+                presModeCounter = 0;
+                
+                fprintf_P(&usart_stream, PSTR("presMode chaged to: %i, \r\n"), presMode);
+                switch(presMode){
+                    case POINT:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "q");
+                        break;
+                    case SHAKE:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "w");
+                        break;
+                    case WAVE:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "e");
+                        break;
+                    case RANDOM:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "r");
+                        break;
+                    case RATE:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "t");
+                        break;
+                    case RHYTHM:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "y");
+                        break;
+                    case IGNORE:
+                        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "i");
+                        break;       
+                }
+            }
+        }
         
     }
     
@@ -304,42 +389,9 @@ ISR(TCC0_OVF_vect)
         }
     
     }
-   	xgrid.process();
+   	xgrid.process(); 
     
-    // cycle through all the current modes
-    // changing every cycleLength seconds
-    int cycleLength = 10;
-    int presenceCycleLength = 5;
-    if(cycleOn){
-        if (sec_counter >= cycleLength){
-            currentMode++;
-            if(currentMode > BREAK)
-                currentMode = 0;
-            sec_counter = 0;
-            
-            fprintf_P(&usart_stream, PSTR("currentMode chaged to: %i, \r\n"), currentMode);
-        }
-        
-        if (presModeCounter >= presenceCycleLength){
-            presMode++;
-            if(presMode > IGNORE)
-                presMode = 0;
-            presModeCounter = 0;
-            
-            fprintf_P(&usart_stream, PSTR("presMode chaged to: %i, \r\n"), presMode);
-        }
-    }
 }
-
-void StageInit(int StageTime, const char str[])
-{
-	if(sec_counter == StageTime && special)
-	{
-		send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, str);
-		init_variables();
-	}
-}
-
 
 
 // ============================================================================================
@@ -404,7 +456,7 @@ int main(void)
 		if(reboot_on)
 		{
 			temp_time = jiffies + 3000;
-			//while(jiffies < temp_time){LED_PORT.OUTTGL = LED_USR_1_PIN_bm; _delay_ms(100);}
+			while(jiffies < temp_time){LED_PORT.OUTTGL = LED_USR_1_PIN_bm; _delay_ms(100);}
 			xboot_reset();
 		}
         
