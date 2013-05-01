@@ -175,7 +175,7 @@ void servo_motor_control(float);
 #define MAX_ANGLE 65.0
 #define PRESENCE_THRESH 4000
 #define PRESENCE_OFF_THRESH 3500
-#define STRENGTH_THRESHOLD 0.2
+#define STRENGTH_THRESHOLD 0.11
 
 float curAngle = 0; // from -90 to 90
 float passThroughAngle = 0;
