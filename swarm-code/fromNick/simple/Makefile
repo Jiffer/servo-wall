@@ -261,7 +261,7 @@ PRINTF_LIB_MIN = -Wl,-u,vfprintf -lprintf_min
 # Floating point printf version (requires MATH_LIB = -lm below)
 PRINTF_LIB_FLOAT = -Wl,-u,vfprintf -lprintf_flt
 
-PRINTF_LIB = $(PRINTF_LIB_FLOAT)
+PRINTF_LIB = 
 
 # Minimalistic scanf version
 SCANF_LIB_MIN = -Wl,-u,vfscanf -lscanf_min
@@ -297,7 +297,7 @@ BUILD_NUMBER_LDFLAGS += -Xlinker --defsym -Xlinker __BUILD_NUMBER=$$(cat $(BUILD
 LDFLAGS = -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += $(EXTMEMOPTS)
-LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB_FLOAT) $(MATH_LIB)
+LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
 LDFLAGS += $(BUILD_NUMBER_LDFLAGS)
 
 # Programming support using avrdude. Settings and variables.

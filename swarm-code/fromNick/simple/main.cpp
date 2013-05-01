@@ -51,7 +51,10 @@ ISR(TCC0_OVF_vect)
     
     if (jiffies%30 == 0)
     {
-        send_neighbor_data(curAngle, myStrength);
+        if(!usePassThrough)
+            send_neighbor_data(curAngle, myStrength);
+        else
+            send_neighbor_data(passThroughAngle, myStrength);
         
         // storing as unsigned ints, when used must subtract 90
         neighborBuffer[ABOVE][neighborBufferPtr] = (uint8_t)(neighborData[ABOVE].angleValue + 90);

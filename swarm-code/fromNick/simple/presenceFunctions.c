@@ -6,10 +6,10 @@
 //  Copyright (c) 2013 Jiffer Harriman. All rights reserved.
 //
 #include <stdio.h>
-
+ 
 // ============================================================================================
 // presence detected functions
-// all functions return a bool indicating if they have updated the curAngle variable or not
+// all functions return a bool indicating if they have updated the curAngle variable or not 
 // based on presence in the system
 // ============================================================================================
 

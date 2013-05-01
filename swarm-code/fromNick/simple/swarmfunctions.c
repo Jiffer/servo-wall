@@ -167,7 +167,7 @@ void servoBehavior(){
             fprintf_P(&usart_stream, PSTR("newAlgoMode\r\n"));
             // where presence is used ignore when first entering new mode
             newPresence = false;
-
+            usePassThrough = false;
             // enable servo
             setServo(true);
             updateRate = SMOOTH; // for modes which use other updateRate set below in switch
@@ -180,6 +180,18 @@ void servoBehavior(){
                     break;*/
                 case MESMER:
                     randomPeriod = getRandom(4.0, 20.0);
+                    break;
+                case SWEEP:
+                    usePassThrough = true;
+                    break;
+                case SINY:
+                    usePassThrough = true;
+                    break;
+                case FM:
+                    usePassThrough = true;
+                    break;
+                case AM:
+                    usePassThrough = true;
                     break;
             }
         }
@@ -211,24 +223,51 @@ void servoBehavior(){
         case TWITCH:
             twitch();
             break;
-            
+        
+        bool updated;
+        float tempAngle;
         case SWEEP:
-            if(!sensorBehavior())
-                delayedReaction();
+            updated = sensorBehavior();
+            tempAngle = curAngle;
+            delayedReaction();
+            passThroughAngle = curAngle;
+            
+            if(updated && (presenceDetected || (neighborPresenceDetected && usingNeighborPresence))){
+                curAngle = tempAngle;
+            }
+            break;
             
         case SINY:
-            if(!sensorBehavior())
-                delayedReaction();
+            updated = sensorBehavior();
+            tempAngle = curAngle;
+            delayedReaction();
+            passThroughAngle = curAngle;
+            
+            if(updated && (presenceDetected || (neighborPresenceDetected && usingNeighborPresence))){
+                curAngle = tempAngle;
+            }
             break;
             
         case FM:
-            if(!sensorBehavior())
-                delayedReaction();
+            updated = sensorBehavior();
+            tempAngle = curAngle;
+            delayedReaction();
+            passThroughAngle = curAngle;
+            
+            if(updated && (presenceDetected || (neighborPresenceDetected && usingNeighborPresence))){
+                curAngle = tempAngle;
+            }
             break;
             
         case AM:
-            if(!sensorBehavior())
-                delayedReaction();
+            updated = sensorBehavior();
+            tempAngle = curAngle;
+            delayedReaction();
+            passThroughAngle = curAngle;
+            
+            if(updated && (presenceDetected || (neighborPresenceDetected && usingNeighborPresence))){
+                curAngle = tempAngle;
+            }
             break;
 
     }
