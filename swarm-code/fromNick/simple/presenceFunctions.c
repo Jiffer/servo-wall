@@ -28,14 +28,18 @@ bool point(){
         updated = true;
     }
     
-    else if(myStrength > STRENGTH_THRESHOLD && (!ignoreNeighborPresence && (neighborPresenceDetected || neighborPresenceDetectedLast)))
+    else if(fabs(myStrength) > STRENGTH_THRESHOLD && (!ignoreNeighborPresence && (neighborPresenceDetected || neighborPresenceDetectedLast)))
     {
         updated = true;
-        if(lastStrengthDir == LEFT)
-            curAngle = MAX_ANGLE * (1-myStrength);
-        else
+        if(myStrength <= 0){
+            //fprintf_P(&usart_stream, PSTR("point left\r\n"));
+            curAngle = MAX_ANGLE * (1-fabs(myStrength));
+        }
+        else{
             curAngle = -MAX_ANGLE * (1-myStrength);
-            
+            //fprintf_P(&usart_stream, PSTR("point right\r\n"));
+        }
+        
     }
     return updated;
 }
@@ -84,7 +88,7 @@ bool toFro(){
         lastBeat = currentBeat;
         // counterFiftyHz = 0;
         startAngle = curAngle;
-        if (abs(curAngle + direction * degreesPerBeat * beatPattern[currentBeat]) > MAX_ANGLE){
+        if (fabs(curAngle + direction * degreesPerBeat * beatPattern[currentBeat]) > MAX_ANGLE){
             direction *= -1;
         }
     }
@@ -117,7 +121,7 @@ bool presenceWave(bool wave){
     static bool reverb = false;
     
 
-    if(neighborData[LEFT].strength > STRENGTH_THRESHOLD || neighborData[RIGHT].strength > STRENGTH_THRESHOLD){
+    if(fabs(neighborData[LEFT].strength) > STRENGTH_THRESHOLD || neighborData[RIGHT].strength > STRENGTH_THRESHOLD){
         startTime = sec_counter;
         reverb = true;
     }
@@ -136,12 +140,12 @@ bool presenceWave(bool wave){
     else if(reverb){
         
         if(wave){
-            if(lastStrengthDir == RIGHT) // direction it is moving not where it came from
+            if(lastStrength > 0.0) // direction it is moving not where it came from
             {
                 curAngle = lastStrength * getDelNeighbor(RIGHT, 600 + offsetVar[0] * 100);
                 updated = true;
             }
-            else if(lastStrengthDir == LEFT)
+            else if(lastStrength < 0.0)
             {
                 curAngle = lastStrength * getDelNeighbor(LEFT, 600 + offsetVar[0] * 100);
                 updated = true;
@@ -181,7 +185,8 @@ bool sensorBehavior(){
             fprintf_P(&usart_stream, PSTR("changePresMode\r\n"));
             startXFade(0.01);
         }
-        
+        if (currentMode == SINY ||currentMode == SWEEP||currentMode == FM || currentMode == AM)
+            usePassThrough = true;
         switch(presMode){
             case POINT:
                 presenceTimeOut = 6; // in seconds
@@ -211,6 +216,7 @@ bool sensorBehavior(){
                 presenceTimeOut = 4;
                 neighborPresenceTimeOut = presenceTimeOut;
                 usingNeighborPresence = true;
+                usePassThrough = false;
                 break;
         
             case RHYTHM:
@@ -231,9 +237,10 @@ bool sensorBehavior(){
         newNeighborPresence = false;
         switch(presMode){
             case POINT:
-                fprintf_P(&usart_stream, PSTR("new neighbor\r\n"));
-                if (neighborPresenceDetected)
+                if (neighborPresenceDetected){
                     startXFade(0.05);
+                    fprintf_P(&usart_stream, PSTR("new neighbor\r\n"));
+                }
                 else
                     startXFade(0.01);
                 break;

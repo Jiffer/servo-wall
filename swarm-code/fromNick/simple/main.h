@@ -175,7 +175,7 @@ void servo_motor_control(float);
 #define MAX_ANGLE 65.0
 #define PRESENCE_THRESH 4000
 #define PRESENCE_OFF_THRESH 3500
-#define STRENGTH_THRESHOLD 0.11
+#define STRENGTH_THRESHOLD 0.1
 
 float curAngle = 0; // from -90 to 90
 float passThroughAngle = 0;
@@ -190,21 +190,21 @@ int offsetVarIndex = 0;
 float amplitudeScaler = 1.0;
 
 bool presenceDetected = false;
-bool neighborPresenceDetected = false;
 bool newPresence = false;
-bool newNeighborPresence = false;
 bool ignorePresence = false;
-bool ignoreNeighborPresence = false;
 bool presenceDetectedLast = false;
+
+bool neighborPresenceDetected = false;
 bool neighborPresenceDetectedLast = false;
+bool ignoreNeighborPresence = false;
+bool newNeighborPresence = false;
 bool usingNeighborPresence = false;
 
 int presenceTimeOut = 15;
 int neighborPresenceTimeOut = 15;
-float myStrength;
-float lastStrength;
-int strengthDir;
-int lastStrengthDir;
+float myStrength = 0.0;
+float lastStrength = 0.0;
+float strengthScaleFactor = 1.2;
 float randomPeriod = 0.0;
 float crossFade = 0.0;
 bool debugPrint = false;
@@ -224,7 +224,6 @@ struct NeighborData {
     float angleValue;
     int sensorValue;
     float strength; // use to impart influence on neighbors
-    int fromDir;
 } ;
 NeighborData sendData;
 NeighborData neighborData[6];
@@ -296,7 +295,7 @@ bool calib_switch;			// whether or not to begin the calibration
 int calib_times;			// how many time this is to calibration
 bool calib_double_switch;
 
-#define _MAIN_BOARD     26889//27385 //13068
+#define _MAIN_BOARD     23286 // 26889//27385 //13068
 #define _DELAY_CALIB    2
 #define _TIME_CALIB		10
 

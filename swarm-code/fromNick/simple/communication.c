@@ -39,7 +39,7 @@ void send_neighbor_data(float angle, float strength)
     sendData.angleValue = angle;
     sendData.sensorValue = sensor_value;
     sendData.strength = strength; //(float)sensor_value / 4096.0;
-    sendData.fromDir = strengthDir;
+
     
 	pkt.data = (uint8_t *)&sendData;
     
@@ -89,14 +89,23 @@ void rx_pkt(Xgrid::Packet *pkt)
             NeighborData* recvNeighborPtr = (NeighborData*) pkt->data;
             //neighborAngles[port] = recvNeighborPtr->angleValue;
             
-            
-            if (port == recvNeighborPtr->fromDir || (recvNeighborPtr->fromDir == MOOT && (port == LEFT || port == RIGHT))){
+            if ((port == LEFT && (recvNeighborPtr->strength <= 0 || recvNeighborPtr->strength == 1)) || (port == RIGHT && recvNeighborPtr->strength >=0))
+            {
                 neighborData[port] = *recvNeighborPtr;
-
+                if( port == LEFT && recvNeighborPtr->strength == 1 ){
+                    neighborData[LEFT].strength = -1.0;
+                }
             }
             else{ // don't update strength unless direction matches port
                 neighborData[port].angleValue = recvNeighborPtr->angleValue;
                 neighborData[port].sensorValue = recvNeighborPtr->sensorValue;
+                
+                if(port == LEFT){
+                    neighborData[LEFT].strength = 0.0;
+                }
+                if(port == RIGHT){
+                    neighborData[RIGHT].strength = 0.0;
+                }
             }
             
             // for columns set sensor value to that of the bottom board in the column

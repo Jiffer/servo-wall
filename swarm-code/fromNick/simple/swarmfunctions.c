@@ -17,7 +17,7 @@ void mesmer(){
     
     if(!sensorBehavior()){
     for(int i = 0; i < 6; i++){ 
-        if (abs(neighborData[i].angleValue) < MAX_ANGLE && connected[i]){ // neighborAngles[i]
+        if (fabs(neighborData[i].angleValue) < MAX_ANGLE && connected[i]){ // neighborAngles[i]
             average += (neighborData[i].angleValue);
             }
         }
@@ -182,16 +182,20 @@ void servoBehavior(){
                     randomPeriod = getRandom(4.0, 20.0);
                     break;
                 case SWEEP:
-                    usePassThrough = true;
+                    if (presMode != WAVE)
+                        usePassThrough = true;
                     break;
                 case SINY:
-                    usePassThrough = true;
+                    if (presMode != WAVE)
+                        usePassThrough = true;
                     break;
                 case FM:
-                    usePassThrough = true;
+                    if (presMode != WAVE)
+                        usePassThrough = true;
                     break;
                 case AM:
-                    usePassThrough = true;
+                    if (presMode != WAVE)
+                        usePassThrough = true;
                     break;
             }
         }

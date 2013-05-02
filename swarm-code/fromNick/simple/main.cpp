@@ -135,51 +135,48 @@ ISR(TCC0_OVF_vect)
             }
         }
         
-        if (neighborData[LEFT].strength > STRENGTH_THRESHOLD || neighborData[RIGHT].strength > STRENGTH_THRESHOLD){
-            neighborPresenceDetected = true;
-        }
-        else
-            neighborPresenceDetected = false;
+        
         
         if (presenceDetected != presenceDetectedLast){
             newPresence = true;
             presenceTimer = 0;
         }
         
-        // if presence is moving around in system reset timer
-        if (neighborPresenceDetected != neighborPresenceDetectedLast){
-            newNeighborPresence = true;
-            neighborPresenceTimer = 0;
-        }
+        
         
         if (presenceDetected){
             myStrength = 1.0;
-            strengthDir = MOOT;
         }
         
         else{
-            if((neighborData[LEFT].strength > STRENGTH_THRESHOLD) || (neighborData[RIGHT].strength > STRENGTH_THRESHOLD))
+            if((neighborData[LEFT].strength < -STRENGTH_THRESHOLD) || (neighborData[RIGHT].strength > STRENGTH_THRESHOLD))
             {
-                if (neighborData[LEFT].strength >= neighborData[RIGHT].strength && (neighborData[LEFT].fromDir == LEFT ||neighborData[LEFT].fromDir == MOOT)){
-                    myStrength = neighborData[LEFT].strength / 1.3;
-                    strengthDir = LEFT;
-                    lastStrengthDir = LEFT;
+                if (fabs(neighborData[LEFT].strength) >= neighborData[RIGHT].strength ){
+                    myStrength = neighborData[LEFT].strength / strengthScaleFactor;
                     lastStrength = myStrength;
+                    //fprintf_P(&usart_stream, PSTR("leftNeg %i, lpos: %i\r\n"), (int)(myStrength * 100), (int)(100 * fabs(myStrength)));
                 }
-                else if (neighborData[RIGHT].strength > neighborData[LEFT].strength && (neighborData[RIGHT].fromDir == RIGHT || neighborData[RIGHT].fromDir == MOOT)){
-                    myStrength = neighborData[RIGHT].strength / 1.3;
-                    strengthDir = RIGHT;
-                    lastStrengthDir = RIGHT;
+                else if (neighborData[RIGHT].strength > fabs(neighborData[LEFT].strength) ){
+                    myStrength = neighborData[RIGHT].strength / strengthScaleFactor;
                     lastStrength = myStrength;
+                    //fprintf_P(&usart_stream, PSTR("right %i\r\n"), (int)(myStrength * 100));
                 }
             }
             else
             {
                 myStrength = 0.0;
-                strengthDir = MOOT;
             }
         }
-        
+        if (neighborData[LEFT].strength < -STRENGTH_THRESHOLD || neighborData[RIGHT].strength > STRENGTH_THRESHOLD){
+            neighborPresenceDetected = true;
+        }
+        else
+            neighborPresenceDetected = false;
+        // if presence is moving around in system reset timer
+        if (neighborPresenceDetected != neighborPresenceDetectedLast ){ //TODO: || myStrength != lastStrength
+            newNeighborPresence = true;
+            neighborPresenceTimer = 0;
+        }
          
         if (neighborPresenceDetected){
             if (neighborPresenceTimer > neighborPresenceTimeOut){
@@ -264,6 +261,9 @@ ISR(TCC0_OVF_vect)
     // 1 second
     if(jiffies%1000 == 0)
     {
+        int presi = presenceDetected;
+        fprintf_P(&usart_stream, PSTR("p: %i, str: %i \r\n"), presi, (int)(100.0 * myStrength));
+
         sec_counter++;
         if(special){
             modeCounter++;
@@ -449,7 +449,7 @@ int main(void)
         Calib();
         special = true;
     }
-    
+    bottom = true;
     
     // #################### MAIN LOOP ####################
 
