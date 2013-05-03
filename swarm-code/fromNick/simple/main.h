@@ -173,8 +173,8 @@ void servo_motor_control(float);
 
 // jif's globals //
 #define MAX_ANGLE 65.0
-#define PRESENCE_THRESH 4000
-#define PRESENCE_OFF_THRESH 3500
+#define PRESENCE_THRESH 4050
+#define PRESENCE_OFF_THRESH 3800
 #define STRENGTH_THRESHOLD 0.1
 
 float curAngle = 0; // from -90 to 90
@@ -295,7 +295,7 @@ bool calib_switch;			// whether or not to begin the calibration
 int calib_times;			// how many time this is to calibration
 bool calib_double_switch;
 
-#define _MAIN_BOARD     23286 // 26889//27385 //13068
+#define _MAIN_BOARD     26889 //27385 //13068
 #define _DELAY_CALIB    2
 #define _TIME_CALIB		10
 

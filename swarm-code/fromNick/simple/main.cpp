@@ -283,8 +283,8 @@ ISR(TCC0_OVF_vect)
         
         // cycle through all the current modes
         // changing every cycleLength seconds
-        int cycleLength = 10;
-        int presenceCycleLength = 5;
+        int cycleLength = 42;
+        int presenceCycleLength = 33;
         if(cycleOn && special){
             if (modeCounter >= cycleLength){
                 currentMode++;
@@ -390,9 +390,62 @@ ISR(TCC0_OVF_vect)
             if (connected[i])
                 numConnected++;
         }
+        
+        if(special){
+            switch(currentMode){
+                    
+                case SINY:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "1");
+                    break;
+                case FM:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "2");
+                    break;
+                case AM:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "3");
+                    break;
+                case MESMER:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "4");
+                    break;
+                case SWEEP:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "5");
+                    break;
+                case TWITCH:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "6");
+                    break;
+                case BREAK:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "-");
+                    break;
+                case ZERO:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "0");
+                    break;
+            }
+            switch(presMode){
+                case POINT:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "q");
+                    break;
+                case SHAKE:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "w");
+                    break;
+                case WAVE:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "e");
+                    break;
+                case RANDOM:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "r");
+                    break;
+                case RATE:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "t");
+                    break;
+                case RHYTHM:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "y");
+                    break;
+                case IGNORE:
+                    send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "i");
+                    break;
+            }
+        }
     
     }
-   	xgrid.process(); 
+   	xgrid.process();
     
 }
 
@@ -449,7 +502,6 @@ int main(void)
         Calib();
         special = true;
     }
-    bottom = true;
     
     // #################### MAIN LOOP ####################
 

@@ -265,7 +265,7 @@ void key_input()
         currentMode = BREAK;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "-");
     }
-    if(input_char == '-'){
+    if(input_char == '0'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to linear ZERO\n"));
         currentMode = ZERO;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "0");
