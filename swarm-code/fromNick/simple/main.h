@@ -91,6 +91,7 @@ uint8_t SP_ReadUserSigRow( uint8_t index );
 #define LEFT_BOTTOM				2	//0b00000100
 #define RIGHT_BOTTOM			4	//0b00010000
 #define RIGHT_TOP				5	//0b00100000
+#define UP_DOWN 0b00100010
 
 #define MESSAGE_NUMDATA 0
 #define MESSAGE_COMMAND 1
@@ -117,6 +118,7 @@ int counterTenHz = 0;
 int counterFiftyHz = 0;
 int presenceTimer = 0;
 int neighborPresenceTimer = 0;
+int messageTimer = 0;
 int modeCounter = 0;
 int presModeCounter = 0;
 
@@ -172,9 +174,9 @@ void servo_motor_control(float);
 #define IGNORE_DISTANCE 400
 
 // jif's globals //
-#define MAX_ANGLE 65.0
-#define PRESENCE_THRESH 4050
-#define PRESENCE_OFF_THRESH 3800
+#define MAX_ANGLE 75.0
+#define PRESENCE_THRESH 4060
+#define PRESENCE_OFF_THRESH 4000
 #define STRENGTH_THRESHOLD 0.1
 
 float curAngle = 0; // from -90 to 90
@@ -208,7 +210,7 @@ float strengthScaleFactor = 1.2;
 float randomPeriod = 0.0;
 float crossFade = 0.0;
 bool debugPrint = false;
-bool cycleOn = false;
+bool cycleOn = true;
 bool servoEnabled = true;
 
 // from ports
@@ -260,29 +262,32 @@ enum updateInterval {
 
 
 enum algorithm {
-    MESMER,
-    SWEEP,
-    SINY,
-    FM,
+    SWEEP,  //
+    FM,    //
     AM,
+    MESMER,
     TWITCH,
+    SINY,
+    SWEEP2,  // write this with a 1 second period
     BREAK,
     ZERO
     };
 
 enum sensorAlgorithm {
-    POINT,
-    SHAKE,
-    WAVE,
     RANDOM,
-    RATE,
+    SHAKE,
     RHYTHM,
-    IGNORE
+    POINT,
+    WAVE,
+    RHYTHM2,
+    POINT2,
+    IGNORE,
+    RATE
 };
 
 int updateRate = SMOOTH; 
 int currentMode = SWEEP;
-int presMode = IGNORE;
+int presMode = RANDOM;
 
 int lastMode = -1; // first time through this will force initialization to run for whatever mode it starts in
 int lastPresMode = -1;

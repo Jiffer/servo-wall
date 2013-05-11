@@ -49,6 +49,30 @@ void send_neighbor_data(float angle, float strength)
 }
 
 // ============================================================================================
+// Send angle packet
+// Send Angle data and strength of message to neighbors
+// Sends to all ports
+// ============================================================================================
+void send_up(float angle, float strength)
+{
+	Xgrid::Packet pkt;
+	pkt.type = NEIGHBOR_DATA;
+	pkt.flags = 0;
+	pkt.radius = 1;
+	
+    sendData.angleValue = angle;
+    sendData.sensorValue = sensor_value;
+    sendData.strength = strength; //(float)sensor_value / 4096.0;
+    
+    
+	pkt.data = (uint8_t *)&sendData;
+    
+	pkt.data_len = sizeof(NeighborData);
+	
+	xgrid.send_packet(&pkt, UP_DOWN);
+}
+
+// ============================================================================================
 // Receive Packet
 // Parse input packet
 // ============================================================================================
@@ -111,6 +135,7 @@ void rx_pkt(Xgrid::Packet *pkt)
             // for columns set sensor value to that of the bottom board in the column
             if (port == BELOW){
                 sensor_value = recvNeighborPtr->sensorValue;
+                myStrength = recvNeighborPtr->strength;
             }
         }
     }
@@ -120,6 +145,9 @@ void rx_pkt(Xgrid::Packet *pkt)
         // ============================================================================================
     if(pkt->type == MESSAGE_COMMAND)
     {
+        // reset message timer
+        messageTimer = 0;
+        
         char command;
         //fprintf_P(&usart_stream, PSTR("got MESSAGE_COMMAND\r\n"));
         
@@ -146,17 +174,20 @@ void rx_pkt(Xgrid::Packet *pkt)
             case '4':   currentMode = MESMER; break;
             case '5':   currentMode = SWEEP; break;
             case '6':   currentMode = TWITCH; break;
+            case '7':   currentMode = SWEEP2; break;
 //            case '7':   currentMode = TWITCH_WAVE; break;
             case '-':   currentMode = BREAK; break;
             case '0':   currentMode = ZERO; break;
                 
             // sensor modes
             case 'q':   presMode = POINT; break;
+            case 'n':   presMode = POINT2; break;
             case 'w':   presMode = SHAKE; break;
             case 'e':   presMode = WAVE; break;
             case 'r':   presMode = RANDOM; break;
             case 't':   presMode = RATE; break;
             case 'y':   presMode = RHYTHM; break;
+            case 'b':   presMode = RHYTHM2; break;
             case 'i':   presMode = IGNORE; break;
                 
                 
@@ -207,7 +238,7 @@ void key_input()
 		temp_time = jiffies + 3000;
 		while(jiffies < temp_time)
 		{
-			//LED_PORT.OUTTGL = LED_USR_1_PIN_bm; _delay_ms(100);
+			LED_PORT.OUTTGL = LED_USR_1_PIN_bm; _delay_ms(100);
 		}
 		xboot_reset();
 	}
@@ -260,6 +291,11 @@ void key_input()
         currentMode = TWITCH;
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "6");
     }
+    if(input_char == '7'){
+        fprintf_P(&usart_stream, PSTR("setting currentMode to SWEEP2\n"));
+        currentMode = SWEEP2;
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "7");
+    }
     if(input_char == '-'){
         fprintf_P(&usart_stream, PSTR("setting currentMode to linear BREAK\n"));
         currentMode = BREAK;
@@ -290,6 +326,11 @@ void key_input()
         fprintf_P(&usart_stream, PSTR("presenceMode = %i, POINT\n"), presMode);
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "q");
     }
+    if(input_char == 'n'){
+        presMode = POINT2;
+        fprintf_P(&usart_stream, PSTR("presenceMode = %i, POINT2\n"), presMode);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "n");
+    }
     if(input_char == 'w'){
         presMode = SHAKE;
         fprintf_P(&usart_stream, PSTR("presenceMode = %i, SHAKE\n"), presMode);
@@ -306,7 +347,7 @@ void key_input()
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "r");
     }
     if(input_char == 't'){
-        presMode = POINT;
+        presMode = RATE;
         fprintf_P(&usart_stream, PSTR("presenceMode = %i, RATE\n"), presMode);
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "t");
     }
@@ -314,6 +355,11 @@ void key_input()
         presMode = RHYTHM;
         fprintf_P(&usart_stream, PSTR("presenceMode = %i, RHYTHM\n"), presMode);
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "y");
+    }
+    if(input_char == 'b'){
+        presMode = RHYTHM2;
+        fprintf_P(&usart_stream, PSTR("presenceMode = %i, RHYTHM2\n"), presMode);
+        send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "b");
     }
     
     if(input_char == 'i'){
@@ -333,22 +379,22 @@ void key_input()
     
     if(input_char == 'a'){
         offsetVar[offsetVarIndex] -= 1.0;
-        fprintf_P(&usart_stream, PSTR("index: %i, offset: %f\n"), offsetVarIndex, offsetVar[offsetVarIndex]);
+        fprintf_P(&usart_stream, PSTR("index: %i, offset: %i\n"), offsetVarIndex, (int)(1000 * offsetVar[offsetVarIndex]));
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "a");
     }
     if(input_char == 's'){
         offsetVar[offsetVarIndex] += 1.0;
-        fprintf_P(&usart_stream, PSTR("index: %i, offset: %f\n"), offsetVarIndex, offsetVar[offsetVarIndex]);
+        fprintf_P(&usart_stream, PSTR("index: %i, offset: %i\n"), offsetVarIndex, (int)(1000 * offsetVar[offsetVarIndex]));
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "s");
     }
     if(input_char == 'g'){
         offsetVar[offsetVarIndex] -= 0.1;
-        fprintf_P(&usart_stream, PSTR("index: %i, offset: %f\n"), offsetVarIndex, offsetVar[offsetVarIndex]);
+        fprintf_P(&usart_stream, PSTR("index: %i, offset: %i\n"), offsetVarIndex, (int)(1000 * offsetVar[offsetVarIndex]));
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "g");
     }
     if(input_char == 'h'){
         offsetVar[offsetVarIndex] += 0.1;
-        fprintf_P(&usart_stream, PSTR("index: %i, offset: %f\n"), offsetVarIndex, offsetVar[offsetVarIndex]);
+        fprintf_P(&usart_stream, PSTR("index: %i, offset: %i\n"), offsetVarIndex, (int)(1000 * offsetVar[offsetVarIndex]));
         send_message(MESSAGE_COMMAND, ALL_DIRECTION, ALL, "h");
     }
     

@@ -320,8 +320,8 @@ AVRDUDE_PROGRAMMER = avr109
 # Use usb for usb devices
 # For *nix, need device path (/dev/ttyUSBn, /dev/ttySn)
 #AVRDUDE_PORT = usb
-#AVRDUDE_PORT = /dev/cu.usbserial-AH019MLU
-AVRDUDE_PORT = /dev/cu.usbserial-AD02CS4P
+AVRDUDE_PORT = /dev/cu.usbserial-AH019MLU
+#AVRDUDE_PORT = /dev/cu.usbserial-AD02CS4P
 #AVRDUDE_PORT = COM11
 #AVRDUDE_PORT = COM3
 #AVRDUDE_PORT = COM12

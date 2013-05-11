@@ -11,7 +11,7 @@
 void mesmer(){
     float myAngle = cycle((float)randomPeriod, MAX_ANGLE, 0.0);
     //float weight = 20.0;
-    float weight = cycle(offsetVar[0] + 20, offsetVar[1] + 10, offsetVar[2] + 10);
+    float weight = cycle(offsetVar[0] + 20, offsetVar[1] + 7, offsetVar[2] + 7);
     float average = 0.0;
     float scaling = 6.0 + offsetVar[3];
     
@@ -26,7 +26,7 @@ void mesmer(){
             average = average / numConnected;
             float tempAngle = ((myAngle + weight * average) / (weight + 1)/scaling);
    
-            curAngle = constrainAngle(tempAngle * scaling);
+            curAngle = constrainAngle(tempAngle * ( (1 + offsetVar[4] )* scaling));
         }
         else{
             curAngle = constrainAngle(myAngle);
@@ -54,7 +54,7 @@ void quickSweep(){
 void twitch(){
     static float randomTime;
     int lowTime = offsetVar[0] + 2;
-    int hiTime = offsetVar[1] + 8;
+    int hiTime = offsetVar[1] + 5;
     float tempAngle = 0.0;
     
     if(lastMode != currentMode){
@@ -105,6 +105,7 @@ void delayedReaction(){
         //curAngle = cycle(9 + tempPeriod, 45, 0);
         //curAngle = 45 * sin((jiffies * 2.0 * PI /(9.0 * 1000.0)) + sin(jiffies * 2.0 * PI /(23.0 * 1000.0)));
         //curAngle = 45 * cycle(9, map(cycle(21), -1, 1, -3, 3));
+        float newAngle;
         switch(currentMode){
             case SINY:
                 curAngle = cycle(10 + offsetVar[0], 45, 0);
@@ -117,10 +118,16 @@ void delayedReaction(){
                 break;
                 
             case SWEEP:
-                float newAngle = linearSweep(4.0 + offsetVar[1], 0, MAX_ANGLE - 1);
+                newAngle = linearSweep(4.0 + offsetVar[1], 0, MAX_ANGLE - 1);
                 if ( newAngle > MAX_ANGLE - 1 || newAngle < 0)
                     newAngle = 0;
+                curAngle = newAngle;
+                break;
                 
+            case SWEEP2:
+                newAngle = linearSweep(1.0 + offsetVar[1], 0, MAX_ANGLE - 1);
+                if ( newAngle > MAX_ANGLE - 1 || newAngle < 0)
+                    newAngle = 0;
                 curAngle = newAngle;
                 break;
         }
@@ -140,6 +147,10 @@ void delayedReaction(){
                 break;
                 
             case SWEEP:
+                delayAmount = 150;
+                break;
+                
+            case SWEEP2:
                 delayAmount = 150;
                 break;
         }
@@ -179,9 +190,13 @@ void servoBehavior(){
                     updateRate = (int)getRandom(SMOOTH, FOUR_HUNDRED);
                     break;*/
                 case MESMER:
-                    randomPeriod = getRandom(4.0, 20.0);
+                    randomPeriod = getRandom(2.0, 20.0);
                     break;
                 case SWEEP:
+                    if (presMode != WAVE)
+                        usePassThrough = true;
+                    break;
+                case SWEEP2:
                     if (presMode != WAVE)
                         usePassThrough = true;
                     break;
@@ -236,6 +251,16 @@ void servoBehavior(){
             delayedReaction();
             passThroughAngle = curAngle;
             
+            if(updated && (presenceDetected || (neighborPresenceDetected && usingNeighborPresence))){
+                curAngle = tempAngle;
+            }
+            break;
+            
+        case SWEEP2:
+            updated = sensorBehavior();
+            tempAngle = curAngle;
+            delayedReaction();
+            passThroughAngle = curAngle;
             if(updated && (presenceDetected || (neighborPresenceDetected && usingNeighborPresence))){
                 curAngle = tempAngle;
             }

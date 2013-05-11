@@ -76,7 +76,7 @@ bool toFro(){
     if(currentBeat == 0)
         degreesPerBeat = 20;
     else
-        degreesPerBeat = 12;
+        degreesPerBeat = 15;
     
     if(newPresence){
         shufflePattern();
@@ -94,14 +94,14 @@ bool toFro(){
     }
     //fprintf_P(&usart_stream, PSTR("beat: %i\r\n"), currentBeat);
     if(presenceDetected && !ignorePresence){
+        updated = true;
         if(bottom){
             curAngle = constrainAngle( startAngle + beatPattern[currentBeat] * direction * degreesPerBeat * sinSweep(0.2));
-            updated = true;
+
         }
         else{
             // curAngle = neighborAngles;
             curAngle = neighborData[BELOW].angleValue;
-            updated = true;
         }
     }
     return updated;
@@ -137,7 +137,7 @@ bool presenceWave(bool wave){
     }
     
     // presense is detected somewhere in the system
-    else if(reverb){
+    else if(reverb && !ignoreNeighborPresence){
         
         if(wave){
             if(lastStrength > 0.0) // direction it is moving not where it came from
@@ -180,16 +180,25 @@ bool sensorBehavior(){
     bool updated = false;
     
     if (presMode != lastPresMode){
+        // reset timeout
+        presenceTimer = 0;
+        neighborPresenceTimer = 0;
+        
         if (presenceDetected && !ignorePresence){
             // smooth transition when changing presence modes
             fprintf_P(&usart_stream, PSTR("changePresMode\r\n"));
             startXFade(0.01);
         }
-        if (currentMode == SINY ||currentMode == SWEEP||currentMode == FM || currentMode == AM)
+        if (currentMode == SINY ||currentMode == SWEEP||currentMode == SWEEP2||currentMode == FM || currentMode == AM)
             usePassThrough = true;
         switch(presMode){
             case POINT:
-                presenceTimeOut = 6; // in seconds
+                presenceTimeOut = 7; // in seconds
+                neighborPresenceTimeOut = presenceTimeOut;
+                usingNeighborPresence = true;
+                break;
+            case POINT2:
+                presenceTimeOut = 7; // in seconds
                 neighborPresenceTimeOut = presenceTimeOut;
                 usingNeighborPresence = true;
                 break;
@@ -224,6 +233,11 @@ bool sensorBehavior(){
                 neighborPresenceTimeOut = presenceTimeOut;
                 usingNeighborPresence = false;
                 break;
+            case RHYTHM2:
+                presenceTimeOut = 40;
+                neighborPresenceTimeOut = presenceTimeOut;
+                usingNeighborPresence = false;
+                break;
         }
     }
     
@@ -245,12 +259,25 @@ bool sensorBehavior(){
                     startXFade(0.01);
                 break;
                 
+            case POINT2:
+                if (neighborPresenceDetected){
+                    startXFade(0.05);
+                    fprintf_P(&usart_stream, PSTR("new neighbor\r\n"));
+                }
+                else
+                    startXFade(0.01);
+                break;
+                
         }
     }
     
     switch(presMode)
     {
         case POINT:
+            updated = point();
+            break;
+            
+        case POINT2:
             updated = point();
             break;
             
@@ -272,6 +299,11 @@ bool sensorBehavior(){
             
         case RHYTHM:
             updated = toFro();
+            break;
+            
+        case RHYTHM2:
+            updated = toFro();
+            break;
             
         case IGNORE: // do nothing
             break;
